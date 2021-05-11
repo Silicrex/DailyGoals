@@ -15,7 +15,7 @@ import settings
 # Don't really need the return Falses, just handle updating farther down the chain
 
 
-def command_flow(line_data, user_input):
+def command_flow(database, user_input):
     def wrong_parameter_count(*expected):
         # Convert to list of len # instead of parameter #'s. List for pop() and list comprehension convenience
         expected = [x + 1 for x in expected]
@@ -110,7 +110,7 @@ def command_flow(line_data, user_input):
                               'denominator', 'setall', 'update')
             return
 
-        dict_route(line_data, command, mode, items)
+        dict_route(database, command, mode, items)
         # Saving/printing is managed in modify functions
 
     # elif command == 'endday':  # sadpofjd oifdS fgod FIX THIS
@@ -150,44 +150,44 @@ def command_flow(line_data, user_input):
     elif command == 'dailies':
         if wrong_parameter_count(0):
             return
-        console_display.print_daily_objectives(line_data)
+        console_display.print_daily_objectives(database)
 
     elif command == 'optionals':
         if wrong_parameter_count(0):
             return
         print('Optional daily objectives:')
-        console_display.print_optional_objectives(line_data)
+        console_display.print_optional_objectives(database)
 
     elif command == 'todos':
         if wrong_parameter_count(0):
             return
-        console_display.print_todo_objectives(line_data)
+        console_display.print_todo_objectives(database)
 
     elif command == 'cycles':
         if wrong_parameter_count(0):
             return
-        console_display.print_active_cycle_objectives(line_data)
-        console_display.print_inactive_cycle_objectives(line_data)
+        console_display.print_active_cycle_objectives(database)
+        console_display.print_inactive_cycle_objectives(database)
 
     elif command == 'longterms':
         if wrong_parameter_count(0):
             return
-        console_display.print_base_dictionary(line_data)
+        console_display.print_base_dictionary(database)
 
     elif command == 'counters':
         if wrong_parameter_count(0):
             return
-        console_display.print_counters(line_data['counter_dict'])
+        console_display.print_counters(database['counter_dict'])
 
     elif command == 'print':
         if wrong_parameter_count(0):
             return
-        console_display.print_display(line_data)
+        console_display.print_display(database)
 
     elif command in {'complete', 'reset'}:
         if wrong_parameter_count(0):
             return
-        core_dict_logic.change_all_dailies(line_data, command)
+        core_dict_logic.change_all_dailies(database, command)
 
     elif command == 'delete':
         if wrong_parameter_count(1):
@@ -197,10 +197,10 @@ def command_flow(line_data, user_input):
             invalid_parameter(1, 'daily', 'optional', 'todo', 'cycle', 'longterm', 'counter', 'all')
             return
 
-        core_dict_logic.clear_dictionary(line_data, mode)
+        core_dict_logic.clear_dictionary(database, mode)
 
-        file_management.update(line_data)
-        console_display.print_display(line_data)
+        file_management.update(database)
+        console_display.print_display(database)
 
     # elif command == 'stats':
     #     if wrong_parameters(0):
@@ -245,16 +245,16 @@ def command_flow(line_data, user_input):
         if not confirm_date_change():  # Returns True or False
             return
 
-        settings.set_week_day(line_data, input_week_day)
-        file_management.update(line_data)
-        console_display.print_display(line_data)
+        settings.set_week_day(database, input_week_day)
+        file_management.update(database)
+        console_display.print_display(database)
 
     elif command == 'setdate':
         if wrong_parameter_count(2):
             return
         input_month = int(user_input[1])
         input_day = int(user_input[2])
-        calendar_date = line_data['calendar_date']
+        calendar_date = database['calendar_date']
         if input_month == calendar_date[0] and input_day == calendar_date[1]:
             print('That date is already set')
             return
@@ -268,9 +268,9 @@ def command_flow(line_data, user_input):
         if not confirm_date_change():  # Returns True or False
             return
 
-        settings.set_date(line_data, input_month, input_day)
-        file_management.update(line_data)
-        console_display.print_display(line_data)
+        settings.set_date(database, input_month, input_day)
+        file_management.update(database)
+        console_display.print_display(database)
 
     # elif command == 'help':
     #     printing.print_help()
@@ -279,7 +279,7 @@ def command_flow(line_data, user_input):
     #     if wrong_parameters(0):
     #         continue
     #     with open('daily_manual_backup.dat', 'w') as manual_backup:
-    #         loading.back_up(manual_backup, create_line_data())
+    #         loading.back_up(manual_backup, create_database())
     #     print('Backup updated')
 
     elif command in {'exit', 'quit', 'stop'}:
@@ -289,25 +289,25 @@ def command_flow(line_data, user_input):
         print('Unrecognized command')
 
 
-def dict_route(line_data, command, mode, items):
+def dict_route(database, command, mode, items):
     if command == 'daily':
-        modify_goals(line_data, line_data['daily_objectives'], mode, items)
+        modify_goals(database, database['daily_objectives'], mode, items)
     elif command == 'optional':
-        modify_goals(line_data, line_data['optional_objectives'], mode, items)
+        modify_goals(database, database['optional_objectives'], mode, items)
     elif command == 'todo':
-        modify_goals(line_data, line_data['todo_objectives'], mode, items)
+        modify_goals(database, database['todo_objectives'], mode, items)
     elif command == 'cycle':
         if mode in {'add', 'update', 'complete', 'reset', 'setall'}:  # Needs to be handled differently for cycle
-            modify_cycles(line_data, mode, items)
+            modify_cycles(database, mode, items)
         else:
-            modify_goals(line_data, line_data['cycle_objectives'], mode, items)
+            modify_goals(database, database['cycle_objectives'], mode, items)
     elif command == 'longterm':
-        modify_goals(line_data, line_data['longterm_objectives'], mode, items)
+        modify_goals(database, database['longterm_objectives'], mode, items)
     elif command == 'counter':
-        modify_counters(line_data, mode, items)
+        modify_counters(database, mode, items)
 
 
-def modify_goals(line_data, dictionary, mode, items):
+def modify_goals(database, dictionary, mode, items):
     # Requires no objective name
     if mode == 'setall':
         if not core_dict_logic.dict_setall(dictionary, items['setall_value']):
@@ -318,13 +318,13 @@ def modify_goals(line_data, dictionary, mode, items):
         objective_name = items['objective_name']
 
         if mode == 'add':
-            if not core_dict_logic.add_item(line_data, dictionary, objective_name, items['command']):
+            if not core_dict_logic.add_item(database, dictionary, objective_name, items['command']):
                 return
 
         # All these modes require a specific objective to exist, so check first
         if objective_name not in dictionary:
             # Returns found objective or False
-            if not (objective_name := objective_search(objective_name, dictionary, line_data['auto_match_toggle'])):
+            if not (objective_name := objective_search(objective_name, dictionary, database['auto_match_toggle'])):
                 print('Item not found')
                 return
 
@@ -345,7 +345,7 @@ def modify_goals(line_data, dictionary, mode, items):
                 return
 
         elif mode == 'rename':
-            if not core_dict_logic.rename_item(line_data, dictionary, objective_name, items['replace_value'],
+            if not core_dict_logic.rename_item(database, dictionary, objective_name, items['replace_value'],
                                                items['command']):
                 return
 
@@ -357,27 +357,27 @@ def modify_goals(line_data, dictionary, mode, items):
             if not core_dict_logic.retask_item(dictionary, objective_name):
                 return
 
-    file_management.update(line_data)
-    console_display.print_display(line_data)
+    file_management.update(database)
+    console_display.print_display(database)
 
 
-def modify_cycles(line_data, mode, items):
+def modify_cycles(database, mode, items):
     # Requires no objective name
     if mode == 'setall':
         pass
 
     else:
-        dictionary = line_data['cycle_objectives']
+        dictionary = database['cycle_objectives']
         objective_name = items['objective_name']
 
         if mode == 'add':
-            if not cycle_logic.add_cycle_item(line_data, objective_name):
+            if not cycle_logic.add_cycle_item(database, objective_name):
                 return
 
         # All these modes require a specific objective to exist, so check first
         elif objective_name not in dictionary:
             # Returns found objective or False
-            if not (objective_name := objective_search(objective_name, dictionary, line_data['auto_match_toggle'])):
+            if not (objective_name := objective_search(objective_name, dictionary, database['auto_match_toggle'])):
                 print('Item not found')
                 return
 
@@ -388,12 +388,12 @@ def modify_cycles(line_data, mode, items):
         elif mode == 'reset':
             pass
 
-    file_management.update(line_data)
-    console_display.print_display(line_data)
+    file_management.update(database)
+    console_display.print_display(database)
 
 
-def modify_counters(line_data, mode, items):
-    dictionary = line_data['counter_dict']
+def modify_counters(database, mode, items):
+    dictionary = database['counter_dict']
     objective_name = items['objective_name']
 
     if mode == 'add':
@@ -403,7 +403,7 @@ def modify_counters(line_data, mode, items):
     # All these modes require a specific objective to exist, so check first
     if objective_name not in dictionary:
         # Returns found objective or False
-        if not (objective_name := objective_search(objective_name, dictionary, line_data['auto_match_toggle'])):
+        if not (objective_name := objective_search(objective_name, dictionary, database['auto_match_toggle'])):
             print('Item not found')
             return
 
@@ -427,12 +427,12 @@ def modify_counters(line_data, mode, items):
         if not core_dict_logic.retask_item(dictionary, objective_name):
             return
 
-    file_management.update(line_data)
+    file_management.update(database)
     # If counters are toggled to always show, then show full display instead of just counters
-    if line_data['counter_toggle']:
-        console_display.print_display(line_data)
+    if database['counter_toggle']:
+        console_display.print_display(database)
     else:
-        console_display.print_counters(line_data)
+        console_display.print_counters(database)
 
 
 def objective_search(input_objective_string, dictionary, auto_match_toggle):

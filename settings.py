@@ -2,23 +2,23 @@ import date_logic
 import file_management
 
 
-def set_week_day(line_data, input_week_day):
+def set_week_day(database, input_week_day):
     week_day_number = date_logic.convert_day(input_week_day)  # Convert day to day #
 
-    line_data['streak'] = 0
-    line_data['cycle_objectives'].clear()
-    line_data['active_cycle_objectives'].clear()
+    database['streak'] = 0
+    database['cycle_objectives'].clear()
+    database['active_cycle_objectives'].clear()
 
-    line_data['week_day'] = week_day_number
+    database['week_day'] = week_day_number
 
 
-def set_date(line_data, input_month, input_day):
-    line_data['streak'] = 0
-    line_data['cycle_objectives'].clear()
-    line_data['active_cycle_objectives'].clear()
+def set_date(database, input_month, input_day):
+    database['streak'] = 0
+    database['cycle_objectives'].clear()
+    database['active_cycle_objectives'].clear()
 
-    line_data['calendar_date'][0] = input_month
-    line_data['calendar_date'][0] = input_day
+    database['calendar_date'][0] = input_month
+    database['calendar_date'][0] = input_day
 
 
 def toggle(toggle_item, toggle_value):

@@ -1,57 +1,22 @@
-def get_template_dict():
-    template_dict = {
-        # Date/today stuff
-        'calendar_date': {'month': 1, 'day': 1, 'week_day': 1},
-        'week_day': 1,  # Day of the week 1-7
-        'welcome_message': None,
-        # Dictionaries
-        'daily_objectives': {},  # Dailies dictionary
-        'optional_objectives': {},  # Optional dailies dictionary
-        'todo_objectives': {},  # To-do dictionary
-        'cycle_objectives': {},  # Cycle dictionary
-        'longterm_objectives': {},  # Long-term dictionary
-        'counter_dict': {},  # Counter dictionary
-        'history_dict': {},  # Completed objectives
-        'stats': {
-            'total_completed': 0,  # Total completed dailies integer
-            'days_completed': 0,
-            'streak': 0,  # Current streak integer
-            'best_streak': 0, },  # Best streak integer
-        'settings': {
-            'date_switch': False,  # Switch MM/DD to DD/MM
-            'welcome_toggle': True,  # Toggle welcome messages
-            'total_toggle': True,  # Always display total completed dailies
-            'daily_toggle': True,  # Always display dailies
-            'todo_toggle': True,  # Always display todos
-            'cycle_toggle': True,  # Always display active cycles
-            'full_cycle_toggle': False,  # Always display active AND inactive cycles
-            'longterm_toggle': True,  # Always display long-terms
-            'counter_toggle': False,  # Always display counters
-            'auto_match_toggle': False,  # Automatically match first objective when searching
-            'track_history': True, }  # Tracks completed objectives
-    }
-    return template_dict
-
-
-def get_display_list(line_data):
-    settings = line_data['settings']
+def get_display_list(database):
+    settings = database['settings']
     toggle_list = {'daily': settings['daily_toggle'], 'todo': settings['todo_toggle'],
                    'cycle': settings['cycle_toggle'], 'longterm': settings['longterm_toggle'],
                    'counter': settings['counter_toggle']}
     return [x for x in toggle_list if toggle_list[x]]
 
 
-def name_to_dict(line_data, dict_name):
+def name_to_dict(database, dict_name):
     if dict_name == 'daily':
-        return line_data['daily_objectives']
+        return database['daily_objectives']
     elif dict_name == 'todo':
-        return line_data['todo_objectives']
+        return database['todo_objectives']
     elif dict_name == 'cycle':
-        return line_data['cycle_objectives']
+        return database['cycle_objectives']
     elif dict_name == 'longterm':
-        return line_data['longterm_objectives']
+        return database['longterm_objectives']
     elif dict_name == 'counter':
-        return line_data['counter_dict']
+        return database['counter_dict']
 
 
 def add_item_base(dictionary, objective_name, add_items):
@@ -79,14 +44,14 @@ def add_item_base(dictionary, objective_name, add_items):
     return True
 
 
-def add_item(line_data, dictionary, objective_name, command):
+def add_item(database, dictionary, objective_name, command):
     add_items = []  # Will be filled unless add_item_base returns False, [task_string, progress_denominator]
     if not add_item_base(dictionary, objective_name, add_items):
         return False
     task_string, progress_denominator = add_items
 
     dictionary.update({objective_name: [task_string, progress_denominator, 0]})  # 0 is the numerator
-    sort_dictionary(line_data, command)
+    sort_dictionary(database, command)
     print(f"Added '{objective_name}'")
     return True
 
@@ -122,13 +87,13 @@ def remove_item(dictionary, objective_name):
     return True
 
 
-def rename_item(line_data, dictionary, objective_name, new_name, command):
+def rename_item(database, dictionary, objective_name, new_name, command):
     if new_name in dictionary:
         print('That name is already in use')
         return False
     dictionary[new_name] = dictionary[objective_name]
     dictionary.pop(objective_name)
-    sort_dictionary(line_data, command)
+    sort_dictionary(database, command)
     return True
 
 
@@ -177,7 +142,7 @@ def get_task():
     return task_string
 
 
-def change_all_dailies(line_data, mode):
+def change_all_dailies(database, mode):
     while True:
         print('Set all to-do, active cycle, and daily objectives to ', end='')
         if mode == 'complete':  # If 'complete', print 'complete', else print '0%' for 'reset'
@@ -193,8 +158,8 @@ def change_all_dailies(line_data, mode):
     # daily/to-do value = [task_string, progress_denominator, progress numerator]
     # cycle value = [task_string, denominator, numerator, cycle length, current offset]
 
-    daily_dictionaries = (line_data['daily_objectives'], line_data['todo_objectives'],
-                          line_data['active_cycle_objectives'])
+    daily_dictionaries = (database['daily_objectives'], database['todo_objectives'],
+                          database['active_cycle_objectives'])
     if mode == 'complete':
         for dictionary in daily_dictionaries:
             for key, value in dictionary.items():
@@ -206,14 +171,14 @@ def change_all_dailies(line_data, mode):
     return True
 
 
-def clear_dictionary(line_data, mode):
-    daily_objectives = line_data['daily_objectives']
-    optional_objectives = line_data['optional_objectives']
-    todo_objectives = line_data['todo_objectives']
-    inactive_cycle_objectives = line_data['inactive_cycle_objectives']
-    active_cycle_objectives = line_data['active_cycle_objectives']
-    longterm_objectives = line_data['longterm_objectives']
-    counter_dict = line_data['counter_dict']
+def clear_dictionary(database, mode):
+    daily_objectives = database['daily_objectives']
+    optional_objectives = database['optional_objectives']
+    todo_objectives = database['todo_objectives']
+    inactive_cycle_objectives = database['inactive_cycle_objectives']
+    active_cycle_objectives = database['active_cycle_objectives']
+    longterm_objectives = database['longterm_objectives']
+    counter_dict = database['counter_dict']
 
     if mode == 'all':
         total_objectives = len(daily_objectives) + len(optional_objectives) + len(todo_objectives)\
@@ -284,10 +249,10 @@ def clear_dictionary(line_data, mode):
     print(f'Removed all {mode} objectives')
 
 
-def get_active_cycle_dict(line_data):
+def get_active_cycle_dict(database):
     # cycle value = [task_string, denominator, numerator, cycle length, current offset]
     active_cycle_objectives = []
-    for key, value in line_data['cycle_objectives'].items():
+    for key, value in database['cycle_objectives'].items():
         if value[4] == 0:
             active_cycle_objectives.append(key)
         else:  # Sorted for 0's to be on top
@@ -295,9 +260,9 @@ def get_active_cycle_dict(line_data):
     return active_cycle_objectives
 
 
-def get_inactive_cycle_dict(line_data):
+def get_inactive_cycle_dict(database):
     # cycle value = [task_string, denominator, numerator, cycle length, current offset]
-    cycle_dict_copy = line_data['cycle_objectives'].copy()
+    cycle_dict_copy = database['cycle_objectives'].copy()
     for key, value in cycle_dict_copy.copy():
         if value[4] == 0:
             inactive_cycle_objectives.append(key)
@@ -306,7 +271,7 @@ def get_inactive_cycle_dict(line_data):
     return inactive_cycle_objectives
 
 
-def sort_dictionary(line_data, command):
+def sort_dictionary(database, command):
     if command == 'daily':
         dictionary_name = 'daily_objectives'
     elif command == 'optional':
@@ -314,18 +279,18 @@ def sort_dictionary(line_data, command):
     elif command == 'todo':
         dictionary_name = 'todo_objectives'
     elif command == 'cycle':
-        sort_cycle_dictionary(line_data)
+        sort_cycle_dictionary(database)
         return
     elif command == 'longterm':
         dictionary_name = 'longterm_objectives'
     else:  # command == 'counter'
         dictionary_name = 'counter_dict'
 
-    temp_list = sorted(list(line_data[dictionary_name].items()))
-    line_data[dictionary_name] = dict(temp_list)
+    temp_list = sorted(list(database[dictionary_name].items()))
+    database[dictionary_name] = dict(temp_list)
 
 
-def sort_cycle_dictionary(line_data):
-    temp_list = list(line_data['cycle_objectives'].items())
+def sort_cycle_dictionary(database):
+    temp_list = list(database['cycle_objectives'].items())
     temp_list = sorted(temp_list, key=lambda obj: (obj[1][1], obj[0]))
-    line_data['cycle_objectives'] = dict(temp_list)
+    database['cycle_objectives'] = dict(temp_list)
