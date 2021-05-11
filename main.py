@@ -1,5 +1,5 @@
 # Set to enforce ASCII just because it's what Windows cmd can display. Can be avoided if this is interfaced
-# TODO: Help dialog, tutorial dialog
+# TODO: Help dialog, tutorial dialog, mention bakcup when running program
 # TODO: Error handling/polishing
 
 # TODO: Finish cycles (need to work around endday, fix for active vs inactive)
@@ -26,29 +26,29 @@
 # TODO: warn about clearing
 # TODO: idk.. option to hide completed?
 # TODO: maybe rename dicts
-# TODO: learn json
 # TODO: print help on the command for commands not being used right?
-import file_modification
-import command_flow_logic
-import console_display
+import file_management  # For loading/saving
+import command_flow_logic  # To pass input to for interpretation
+import console_display  # To print the initial console display
 
 
 def main():
-    file_modification.check_for_dat()
-    line_data = file_modification.initialize_data()
-    settings = line_data['settings']
+    database = file_management.load_data()  # If json successfully loaded, use that. Else default to base template.
 
-    console_display.print_display(line_data)
+    # Update backup right after loading (to save state before user performs any actions)
+    file_management.update(database, 'data_autobackup.json')
+
+    console_display.print_display(database)
 
     while True:
-        user_input = input().lower()
+        user_input = input().lower()  # Lower for string comparisons
         if not user_input:  # It's possible to enter nothing
             continue
         if not user_input.isascii():
             print('Please only use ASCII characters')
             continue
-        user_input = user_input.split()  # Split into a list of the command and parameters
-        command_flow_logic.command_flow(line_data, user_input)
+        user_input = user_input.split()  # Split into a list of space-separated terms
+        command_flow_logic.command_flow(database, user_input)  # Pass input to command_flow() to be handled
 
 
 if __name__ == '__main__':
