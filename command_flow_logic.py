@@ -1,7 +1,7 @@
 import core_dict_logic
 import counter_logic
 import cycle_logic
-import file_modification
+import file_management
 import console_display
 import date_logic
 import settings
@@ -199,7 +199,7 @@ def command_flow(line_data, user_input):
 
         core_dict_logic.clear_dictionary(line_data, mode)
 
-        file_modification.update(line_data)
+        file_management.update(line_data)
         console_display.print_display(line_data)
 
     # elif command == 'stats':
@@ -246,7 +246,7 @@ def command_flow(line_data, user_input):
             return
 
         settings.set_week_day(line_data, input_week_day)
-        file_modification.update(line_data)
+        file_management.update(line_data)
         console_display.print_display(line_data)
 
     elif command == 'setdate':
@@ -269,7 +269,7 @@ def command_flow(line_data, user_input):
             return
 
         settings.set_date(line_data, input_month, input_day)
-        file_modification.update(line_data)
+        file_management.update(line_data)
         console_display.print_display(line_data)
 
     # elif command == 'help':
@@ -357,7 +357,7 @@ def modify_goals(line_data, dictionary, mode, items):
             if not core_dict_logic.retask_item(dictionary, objective_name):
                 return
 
-    file_modification.update(line_data)
+    file_management.update(line_data)
     console_display.print_display(line_data)
 
 
@@ -388,7 +388,7 @@ def modify_cycles(line_data, mode, items):
         elif mode == 'reset':
             pass
 
-    file_modification.update(line_data)
+    file_management.update(line_data)
     console_display.print_display(line_data)
 
 
@@ -427,7 +427,7 @@ def modify_counters(line_data, mode, items):
         if not core_dict_logic.retask_item(dictionary, objective_name):
             return
 
-    file_modification.update(line_data)
+    file_management.update(line_data)
     # If counters are toggled to always show, then show full display instead of just counters
     if line_data['counter_toggle']:
         console_display.print_display(line_data)

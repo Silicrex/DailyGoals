@@ -1,5 +1,5 @@
 # Set to enforce ASCII just because it's what Windows cmd can display. Can be avoided if this is interfaced
-# TODO: Help dialog, tutorial dialog
+# TODO: Help dialog, tutorial dialog, mention bakcup when running program
 # TODO: Error handling/polishing
 
 # TODO: Finish cycles (need to work around endday, fix for active vs inactive)
@@ -28,14 +28,18 @@
 # TODO: maybe rename dicts
 # TODO: learn json
 # TODO: print help on the command for commands not being used right?
-import file_modification
+import file_management
 import command_flow_logic
 import console_display
 
 
 def main():
-    file_modification.check_for_dat()
-    line_data = file_modification.initialize_data()
+    line_data = file_management.load_data()  # If json successfully loaded, use that. Else default to base template.
+    # Update backup right after loading (to get state before user performs any actions)
+    with open('data_autobackup.json', 'w') as autobackup:
+        file_management.back_up(line_data, autobackup)
+
+    line_data = file_management.initialize_data()
     settings = line_data['settings']
 
     console_display.print_display(line_data)
