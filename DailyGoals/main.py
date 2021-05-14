@@ -1,5 +1,5 @@
 # Set to enforce ASCII just because it's what Windows cmd can display. Can be avoided if this is interfaced
-# TODO: Help dialog, tutorial dialog, mention bakcup when running program
+# TODO: Help dialog, tutorial dialog, mention bakcup when running program, mention case sensitviity
 # TODO: Error handling/polishing
 
 # TODO: Finish cycles (need to work around endday, fix for active vs inactive)
@@ -24,9 +24,8 @@
 # TODO: don't always need a task... and maybe allow spaces in obj name
 # TODO: change list stuff to dict for key organization? <<<<<<<<<<<<<<
 # TODO: warn about clearing
-# TODO: idk.. option to hide completed?
-# TODO: maybe rename dicts
 # TODO: print help on the command for commands not being used right?
+# TODO: Figure out how to print while also clearing console. Timer..? Manually printing after each function..?
 import file_management  # For loading/saving
 import command_flow_logic  # To pass input to for interpretation
 import console_display  # To print the initial console display

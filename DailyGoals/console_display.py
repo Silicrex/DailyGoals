@@ -1,7 +1,6 @@
 import os
 import date_logic
-import core_dict_logic
-import file_management
+import dict_management
 
 version_number = 0.8
 
@@ -34,7 +33,7 @@ def print_display(database):
         print('Total dailies completed:', stats['total_completed'])
     print(end='\n\n')  # Extra newlines
 
-    display_list = core_dict_logic.get_display_list(database)
+    display_list = dict_management.get_display_list(database)
     for dict_name in display_list:
         print_dictionary(database, dict_name)
         print()  # Extra newline
@@ -55,7 +54,7 @@ def print_dictionary(database, dict_name):
             print('>>> To-dos:', end='\n\n')
             print_base_dictionary(todo_dict)
     elif dict_name == 'cycle':
-        active_cycle_list = core_dict_logic.get_active_cycle_list(database)
+        active_cycle_list = dict_management.get_active_cycle_list(database)
         if active_cycle_list:  # Skip if empty
             print('>>> Active cycles', end='\n\n')
             print_active_cycle_objectives(database, active_cycle_list)

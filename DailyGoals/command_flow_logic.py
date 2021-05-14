@@ -1,6 +1,4 @@
-import core_dict_logic
-import counter_logic
-import cycle_logic
+import dict_management
 import file_management
 import console_display
 import date_logic
@@ -187,7 +185,7 @@ def command_flow(database, user_input):
     elif command in {'complete', 'reset'}:
         if wrong_parameter_count(0):
             return
-        core_dict_logic.change_all_dailies(database, command)
+        dict_management.change_all_dailies(database, command)
 
     elif command == 'delete':
         if wrong_parameter_count(1):
@@ -197,7 +195,7 @@ def command_flow(database, user_input):
             invalid_parameter(1, 'daily', 'optional', 'todo', 'cycle', 'longterm', 'counter', 'all')
             return
 
-        core_dict_logic.clear_dictionary(database, mode)
+        dict_management.clear_dictionary(database, mode)
 
         file_management.update(database)
         console_display.print_display(database)
@@ -310,7 +308,7 @@ def dict_route(database, command, mode, items):
 def modify_goals(database, dictionary, mode, items):
     # Requires no objective name
     if mode == 'setall':
-        if not core_dict_logic.dict_setall(dictionary, items['setall_value']):
+        if not dict_management.dict_setall(dictionary, items['setall_value']):
             return
 
     # Requires objective name
@@ -318,7 +316,7 @@ def modify_goals(database, dictionary, mode, items):
         objective_name = items['objective_name']
 
         if mode == 'add':
-            if not core_dict_logic.add_item(database, dictionary, objective_name, items['command']):
+            if not dict_management.add_item(database, dictionary, objective_name, items['command']):
                 return
 
         # All these modes require a specific objective to exist, so check first
@@ -329,32 +327,32 @@ def modify_goals(database, dictionary, mode, items):
                 return
 
         if mode == 'update':
-            if not core_dict_logic.update_item(dictionary, objective_name, items['update_value']):
+            if not dict_management.update_item(dictionary, objective_name, items['update_value']):
                 return
 
         elif mode == 'complete':
-            if not core_dict_logic.complete_item(dictionary, objective_name):
+            if not dict_management.complete_item(dictionary, objective_name):
                 return
 
         elif mode == 'reset':
-            if not core_dict_logic.reset_item(dictionary, objective_name):
+            if not dict_management.reset_item(dictionary, objective_name):
                 return
 
         elif mode == 'remove':
-            if not core_dict_logic.remove_item(dictionary, objective_name):
+            if not dict_management.remove_item(dictionary, objective_name):
                 return
 
         elif mode == 'rename':
-            if not core_dict_logic.rename_item(database, dictionary, objective_name, items['replace_value'],
+            if not dict_management.rename_item(database, dictionary, objective_name, items['replace_value'],
                                                items['command']):
                 return
 
         elif mode == 'denominator':
-            if not core_dict_logic.change_denominator(dictionary, objective_name, items['replace_value']):
+            if not dict_management.change_denominator(dictionary, objective_name, items['replace_value']):
                 return
 
         elif mode == 'retask':
-            if not core_dict_logic.retask_item(dictionary, objective_name):
+            if not dict_management.retask_item(dictionary, objective_name):
                 return
 
     file_management.update(database)
@@ -416,15 +414,15 @@ def modify_counters(database, mode, items):
             return
 
     elif mode == 'remove':
-        if not core_dict_logic.remove_item(dictionary, objective_name):
+        if not dict_management.remove_item(dictionary, objective_name):
             return
 
     elif mode == 'rename':
-        if not core_dict_logic.rename_item(dictionary, objective_name, items['replace_value']):
+        if not dict_management.rename_item(dictionary, objective_name, items['replace_value']):
             return
 
     elif mode == 'retask':
-        if not core_dict_logic.retask_item(dictionary, objective_name):
+        if not dict_management.retask_item(dictionary, objective_name):
             return
 
     file_management.update(database)

@@ -1,7 +1,12 @@
 import random
 
 
-def get_welcome():
+def get_welcome(current_welcome=None):
+    if current_welcome is None:
+        return "Welcome! I hope you have a great and productive experience with the program!"
+    if current_welcome != "Welcome!!" and random.randint(1, 10) == 1:  # 10% chance, no consecutive reroll
+        return "Welcome!!"
+
     welcome_messages = [
         "WELCOME! HOW IS YOUR DAY GOING?",
         "EAT YOUR FRUITS AND VEGGIES!!",
@@ -33,9 +38,6 @@ def get_welcome():
         "CREATIVE EXERCISE!",
         "HAVE ANY GOOD PLANS AFTER FINISHING YOUR GOALS TODAY? IF SO, USE THAT AS MOTIVATION TO FINISH THEM FIRST!",
         "WELCOME! HAVE A GOOD DAY!",
-        "WELCOME!!!!!",
-        "WELCOME!!!",
-        "WELCOME!",
         "ANYONE YOU'VE BEEN MEANING TO TALK TO?",
         "QUICK! WHAT'S THE 13TH LETTER OF THE ALPHABET?",
         "GREETINGS!",
@@ -46,4 +48,5 @@ def get_welcome():
         "PLAY ANY GAMES LATELY? IF SO, WHAT'S BEEN YOUR FAVORITE?",
         "ALOHA!",
     ]
+    welcome_messages.remove(current_welcome)  # No consecutive reroll of same message!
     return random.choice(welcome_messages)
