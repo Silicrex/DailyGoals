@@ -47,7 +47,7 @@ def command_flow(database, user_input):
         mode = user_input[1]
         items = {'command': command}  # Just a misc dict for any info might need
 
-        # Aliases other than update one
+        # Aliases other than update one (update alias needs special parsing)
         if mode in {'c', 'r', 'd'}:
             if mode == 'c':
                 mode = 'complete'

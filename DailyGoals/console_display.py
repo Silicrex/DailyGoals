@@ -36,38 +36,44 @@ def print_display(database):
     display_list = dict_management.get_display_list(database)
     for dict_name in display_list:
         print_dictionary(database, dict_name)
-        print()  # Extra newline
 
 
 def print_dictionary(database, dict_name):
     if dict_name == 'daily':
         daily_dict = database['daily_objectives']
+        optional_dict = database['optional_objectives']
         if daily_dict: # Skip if empty
-            print('>>> Daily objectives:', end='\n\n')
-            print_base_dictionary(daily_dict)
+            print_daily_objectives(daily_dict)
+        if optional_dict:
+            print_optional_objectives(optional_dict)
             print()  # Extra newline
-            print('(Optional)', end='\n\n')
-            print_base_dictionary(database['optional_objectives'])
+        elif daily_dict:
+            print()  # Print extra newline here if dailies but no optionals
     elif dict_name == 'todo':
         todo_dict = database['todo_objectives']
         if todo_dict:  # Skip if empty
-            print('>>> To-dos:', end='\n\n')
-            print_base_dictionary(todo_dict)
+            print_todo_objectives(todo_dict)
+            print()  # Extra newline
     elif dict_name == 'cycle':
         active_cycle_list = dict_management.get_active_cycle_list(database)
+        inactive_cycle_list = dict_management.get_inactive_cycle_list(database)
         if active_cycle_list:  # Skip if empty
-            print('>>> Active cycles', end='\n\n')
             print_active_cycle_objectives(database, active_cycle_list)
-        if database['settings']['full_cycle_toggle']:
+        if database['settings']['full_cycle_toggle'] and inactive_cycle_list:  # Skip if toggle off or dict empty
+            print_inactive_cycle_objectives(database, inactive_cycle_list)
             print()  # Extra newline
-            print('(Inactive cycles)')
-            print_inactive_cycle_objectives(database)
+        elif active_cycle_list:
+            print()  # Extra newline if actives but no inactives
     elif dict_name == 'longterm':
-        print('>>> Long-term goals:', end='\n\n')
-        print_base_dictionary(database['longterm_objectives'])
+        longterm_dict = database['longterm_objectives']
+        if longterm_dict:  # Skip if empty
+            print_longterm_objectives(longterm_dict)
+            print()  # Extra newline
     elif dict_name == 'counter':
-        print('>>> Counters:', end='\n\n')
-        print_counters(database)
+        counter_dict = database['counter_dict']
+        if counter_dict:
+            print_counter_dict(counter_dict)
+            print()  # Extra newline
     return
 
 
@@ -85,37 +91,64 @@ def print_base_dictionary(dictionary):
             print('({:.2%})'.format(numerator / denominator))
 
 
+def print_daily_objectives(daily_dict):
+    print('>>> Daily objectives:', end='\n\n')
+    print_base_dictionary(daily_dict)
+
+
+def print_optional_objectives(optional_dict):
+    print('(Optional)', end='\n\n')
+    print_base_dictionary(optional_dict)
+
+
+def print_todo_objectives(todo_dict):
+    print('>>> To-dos:', end='\n\n')
+    print_base_dictionary(todo_dict)
+
+
 def print_active_cycle_objectives(database, active_cycle_list):
-    active_cycles = {}
-    for objective in active_cycle_list:
-        active_cycles.update({objective: database['cycle_objectives'][objective]})
-    for key, value in active_cycles.items():
-        # [task_string, progress_denominator, progress numerator, cycle length, current offset]
-        task = value[0]
-        denominator = value[1]
-        numerator = value[2]
-        length = value[3]
+    print('>>> Active cycles', end='\n\n')
+    cycle_objectives = database['cycle_objectives']
+    for key in active_cycle_list:
+        # {task_string, progress_denominator, progress numerator, cycle_length, current_offset}
+        value = cycle_objectives[key]
+        task_string = value['task_string']
+        denominator = value['progress_denominator']
+        numerator = value['progress_denominator']
+        cycle_frequency = value['cycle_frequency']
         percent = numerator/denominator
         if numerator >= denominator:  # Complete
-            print(f'[x] {key} ({task}) (every {length}d): {numerator}/{denominator} (DONE!!)', end='')
+            print(f'[x] {key} ({task_string}) (every {cycle_frequency}d): {numerator}/{denominator} (DONE!!)', end='')
             print('({:.2%})'.format(percent))
         else:  # Incomplete
-            print(f'[ ] {key} ({task}) (every {length}d): {numerator}/{denominator} ', end='')
+            print(f'[ ] {key} ({task_string}) (every {cycle_frequency}d): {numerator}/{denominator} ', end='')
             print('({:.2%})'.format(percent))
 
 
-def print_inactive_cycle_objectives(database):
-    # [task_string, progress_denominator, progress numerator, cycle length, current offset]
-    for key, value in database['cycle_objectives'].items():
-        if value[4] == 0:  # Skip actives
-            continue
-        print(f'{key} ({value[0]}): Every {value[3]}d, next in {value[4]}d')
+def print_inactive_cycle_objectives(database, inactive_cycle_list):
+    print('(Inactive cycles)')
+    cycle_objectives = database['cycle_objectives']
+    # {task_string, progress_denominator, progress numerator, cycle_length, current_offset}
+    for key in inactive_cycle_list:
+        value = cycle_objectives[key]
+        task_string = value['task_string']
+        cycle_frequency = value['cycle_frequency']
+        current_offset = value['current_offset']
+        print(f'{key} ({task_string}): Every {cycle_frequency}d, next in {current_offset}d')
 
 
-def print_counters(database):
-    for key, value in database['counter_dict'].items():
-        # value = [task_string, number]
-        print(f'{key} ({value[0]}): {value[1]}')
+def print_longterm_objectives(longterm_dict):
+    print('>>> Long-term goals:', end='\n\n')
+    print_base_dictionary(longterm_dict)
+
+
+def print_counter_dict(counter_dict):
+    print('>>> Counters', end='\n\n')
+    for key, value in counter_dict.items():
+        # {task_string, counter}
+        task_string = counter_dict['task_string']
+        counter = counter_dict['counter']
+        print(f'{key} ({task_string}): {counter}')
 
 
 def print_stats(database):

@@ -72,17 +72,24 @@ def change_all_dailies(database, mode):
             return False
 
     daily_dictionaries = (name_to_dict(database, 'daily'), name_to_dict(database, 'todo'),
-                          get_active_cycle_dict(database))
+                          get_active_cycle_list(database))
+    cycle_objectives = database['cycle_objectives']
     if mode == 'complete':
-        for dictionary in daily_dictionaries:
-            # value is the key's dictionary value
+        for dictionary in daily_dictionaries[:-1]:  # Splice because cycles needs to be handled differently
             for key, value in dictionary.items():
+                # value is the key's dictionary value
                 value['progress_numerator'] = value['progress_denominator']
+        for key in daily_dictionaries[-1]:
+            value = cycle_objectives[key]
+            value['progress_numerator'] = value['progress_denominator']
     elif mode == 'reset':
-        for dictionary in daily_dictionaries:
-            # value is the key's dictionary value
+        for dictionary in daily_dictionaries[:-1]:  # Splice because cycles needs to be handled differently
             for key, value in dictionary.items():
+                # value is the key's dictionary value
                 value['progress_numerator'] = 0
+        for key in daily_dictionaries[-1]:
+            value = cycle_objectives[key]
+            value['progress_numerator'] = 0
     return True
 
 
@@ -132,23 +139,22 @@ def delete_dictionary(database, mode):
         print(f'Removed all {mode} objectives')
 
 
-def get_active_cycle_dict(database):
-    active_cycle_objectives = {}
+def get_active_cycle_list(database):
+    active_cycle_list = []
     for key, value in database['cycle_objectives'].items():
         if value['current_offset'] == 0:
-            active_cycle_objectives.update(key)
+            active_cycle_list.append(key)
         else:  # Sorted for 0's to be on top, so once you exit the 0 range, it's all 1+
             break
-    return active_cycle_objectives
+    return active_cycle_list
 
 
-def get_inactive_cycle_dict(database):
-    cycle_objectives = database['cycle_objectives']
-    cycle_set = set(cycle_objectives)
-    active_cycle_set = set(get_active_cycle_dict(database))
-    inactive_cycle_set = cycle_set - active_cycle_set  # Getting inactives by subtracting actives from whole
-    inactive_cycle_dict = {key: cycle_objectives[key] for key in inactive_cycle_set}
-    return sort_dictionary(database, inactive_cycle_dict)
+def get_inactive_cycle_list(database):
+    cycle_objective_keys = database['cycle_objectives'].keys()
+    active_cycle_list = get_active_cycle_list(database)
+    for key in active_cycle_list:
+        cycle_objective_keys.remove(key)
+    return cycle_objective_keys  # Remove active keys to get inactive keys
 
 
 def sort_dictionary(database, mode):
