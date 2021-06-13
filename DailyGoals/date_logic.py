@@ -56,6 +56,11 @@ def next_week_day(week_day):
         return 1
 
 
+def get_week_days():
+    week_days = {'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'}
+    return week_days
+
+
 def convert_day_number(week_day):
     if week_day == 1:
         return 'Sunday'

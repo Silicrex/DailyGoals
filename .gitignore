@@ -3,3 +3,4 @@ __pycache__
 .idea
 data.json
 data_autobackup.json
+data_manualbackup.json

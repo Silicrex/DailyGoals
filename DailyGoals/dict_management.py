@@ -1,147 +1,183 @@
-def get_dictionary_list(database):
-    dictionary_list = [database['daily_objectives'], database['optional_objectives'], database['todo_objectives'],
-                       database['inactive_cycle_objectives'], database['active_cycle_objectives'],
-                       database['longterm_objectives'], database['counter_dict']]
-    return dictionary_list
+import file_management
+import item_management
+import console_display
+import documentation
 
 
 def get_display_list(database):
     settings = database['settings']
-    toggle_list = {'daily': settings['daily_toggle'], 'todo': settings['todo_toggle'],
-                   'cycle': settings['cycle_toggle'], 'longterm': settings['longterm_toggle'],
-                   'counter': settings['counter_toggle']}
-    return [x for x in toggle_list if toggle_list[x]]
+    toggle_list = {'daily': settings['daily'], 'optional': settings['optional'],
+                   'todo': settings['todo'], 'active_cycle': settings['cycle'],
+                   'inactive_cycle': settings['full_cycle'], 'longterm': settings['longterm'],
+                   'counter': settings['counter'], 'note': settings['note']}
+    return [x for x in toggle_list if toggle_list[x] and database[x]]
+    # Add toggle to list if the toggle is on and if the corresponding container isn't empty
 
 
-def name_to_dict(database, dict_name):
-    if dict_name == 'daily':
-        return database['daily_objectives']
-    elif dict_name == 'optional':
-        return database['optional_objectives']
-    elif dict_name == 'todo':
-        return database['todo_objectives']
-    elif dict_name == 'cycle':
-        return database['cycle_objectives']
-    elif dict_name == 'longterm':
-        return database['longterm_objectives']
-    elif dict_name == 'counter':
-        return database['counter_dict']
+def name_to_container(database, name):
+    if name == 'active_cycle':
+        return get_active_cycle_list(database)
+    elif name == 'inactive_cycle':
+        return get_inactive_cycle_list(database)
+    else:
+        return database[name]
 
 
-def mode_to_dict_name(mode):
-    if mode == 'daily':
-        return 'daily_objectives'
-    elif mode == 'optional':
-        return 'optional_objectives'
-    elif mode == 'todo':
-        return 'todo_objectives'
-    elif mode == 'cycle':
-        return 'cycle_objectives'
-    elif mode == 'longterm':
-        return 'longterm_objectives'
-    elif mode == 'counter':
-        return 'counter_dict'
+def objective_search(database, dictionary, input_objective_string):  # Search by startswith then substring
+    auto_match = database['settings']['auto_match']
+    objective_keys = list(dictionary.keys())
+    objective_keys.sort()  # Alphabetize list of keys
+    objectives_seen = set()  # Track objectives already seen/suggested
+    for objective in objective_keys:  # Search for via startswith()
+        if objective.startswith(input_objective_string):
+
+            if auto_match:  # If auto_match, don't ask, just return that
+                return objective
+
+            objectives_seen.add(objective)
+            print(f"Could not find '{input_objective_string}', but found '{objective}'\n")
+            while True:
+                print('Is this what you meant? (y/n/cancel)')
+                user_response = input().lower()
+                if user_response in {'y', 'n', 'cancel'}:
+                    break
+            if user_response == 'y':
+                return objective
+            elif user_response == 'n':
+                continue
+            elif user_response == 'cancel':
+                return False
+    for objective in objective_keys:  # Search for via find()
+        if objective not in objectives_seen and objective.find(input_objective_string) != -1:
+
+            if auto_match:  # If auto_match, don't ask, just return that
+                return objective
+
+            print(f"Could not find '{input_objective_string}', but found '{objective}'\n")
+            while True:
+                print('Is this what you meant? (y/n/cancel)')
+                user_response = input().lower()
+                if user_response in {'y', 'n', 'cancel'}:
+                    break
+            if user_response == 'y':
+                return objective
+            elif user_response == 'n':
+                continue
+            elif user_response == 'cancel':
+                return False
+    print('Could not find objective. Returning to menu')
+    return False
 
 
-def dict_setall(dictionary, setall_value):
-    if setall_value not in {'complete', 'reset'}:
-        print('Invalid 1st parameter. Expected "complete" or "reset"')
-        return False
-    if setall_value == 'complete':
-        for key, value in dictionary.items():
-            # Set the numerator to the denominator (100%). value is the key's dictionary value
-            value['progress_numerator'] = value['progress_denominator']
-        print('Set all given objectives to 100%')
-    elif setall_value == 'reset':
-        for key, value in dictionary.items():
-            value['progress_numerator'] = 0
-        print('Set all given objectives to 0%')
-    return True
+def wrong_parameter_count(parameter_length, *expected):
+    # Convert to list of len # instead of parameter #'s. List for pop() and list comprehension convenience
+    expected = list(expected)
+    if parameter_length not in expected:  # -1 so it's by parameter count instead of by length
+        print(f'Invalid amount of parameters (expected {expected.pop(0)}', end='')  # Pop to check for more
+        if expected:  # If there are more term numbers left after popping the first one
+            for value in expected:
+                print(' or', value, end='')  # Print 'or x' for them all
+        print(')', end='\n\n')  # Print the close-parenthesis and extra newline
+        return True  # Return True, as in to say there were a wrong # of terms
+    return False  # Else return False, as in not wrong #
 
 
-def change_all_dailies(database, mode):
+def change_all_daily_dicts(database, mode):
+    daily_dictionary_names = documentation.get_daily_dictionary_names()
+    daily_dict_item_length = 0
+    for dict_name in daily_dictionary_names:
+        daily_dict_item_length += len(name_to_container(database, dict_name))
+    if daily_dict_item_length == 0:
+        print('There are no active daily objectives', end='\n\n')
+        return
+
+    # Get confirmation
     while True:
         if mode == 'complete':  # If 'complete', print 'complete', else print '0%' for 'reset'
-            print('Set all daily, to-do, and active cycle objectives to complete? (y/n)')
+            print('Set all daily, optional, and active cycle objectives to complete? (y/n)', end='\n\n')
         elif mode == 'reset':
-            print('Set all daily, to-do, and active cycle objectives to 0%? (y/n)')
+            print('Set all daily, optional, and active cycle objectives to 0%? (y/n)', end='\n\n')
         user_input = input().lower()
         if user_input == 'y':
             break
         elif user_input == 'n':
-            return False
+            return
 
-    daily_dictionaries = (name_to_dict(database, 'daily'), name_to_dict(database, 'todo'),
-                          get_active_cycle_list(database))
-    cycle_objectives = database['cycle_objectives']
     if mode == 'complete':
-        for dictionary in daily_dictionaries[:-1]:  # Splice because cycles needs to be handled differently
-            for key, value in dictionary.items():
-                # value is the key's dictionary value
-                value['progress_numerator'] = value['progress_denominator']
-        for key in daily_dictionaries[-1]:
-            value = cycle_objectives[key]
-            value['progress_numerator'] = value['progress_denominator']
+        for dict_name in daily_dictionary_names:
+            # Function expects a dictionary with {database, command, dictionary, parameters} (command = dict name)
+            items = {
+                'database': database,
+                'dictionary': name_to_container(database, dict_name),
+                'command': dict_name,
+                'parameters': ['complete']
+            }
+            item_management.setall_mode(items)
     elif mode == 'reset':
-        for dictionary in daily_dictionaries[:-1]:  # Splice because cycles needs to be handled differently
-            for key, value in dictionary.items():
-                # value is the key's dictionary value
-                value['progress_numerator'] = 0
-        for key in daily_dictionaries[-1]:
-            value = cycle_objectives[key]
-            value['progress_numerator'] = 0
-    return True
+        for dict_name in daily_dictionary_names:
+            # Function expects a dictionary with {command, dictionary, parameters} (command = dict name)
+            items = {
+                'database': database,
+                'dictionary': name_to_container(database, dict_name),
+                'command': dict_name,
+                'parameters': ['reset']
+            }
+            item_management.setall_mode(items)
+
+    for dict_name in daily_dictionary_names:
+        sort_dictionary(database, dict_name)
+    file_management.update(database)
+    console_display.print_display(database)
+    print('Dictionary successfully updated', end='\n\n')
 
 
 def delete_dictionary(database, mode):
     def get_confirmation():
         while True:
-            print(f"Are you sure you'd like to remove all {mode} objectives ({total_objectives_removed})? (y/n)")
+            if mode == 'all':
+                print(f"Are you sure you'd like to delete ALL objectives"
+                      f" ({total_objectives_to_remove})? (y/n)", end='\n\n')
+            else:
+                print(f"Are you sure you'd like to delete ALL {mode} items"
+                      f" ({total_objectives_to_remove})? (y/n)", end='\n\n')
             user_response = input().lower()
-            if user_response in {'y', 'n'}:
-                break
-        if user_response == 'n':
-            return False  # Return to menu
-        else:
-            return True
+            if user_response == 'y':
+                return True
+            elif user_response == 'n':
+                return False
 
     if mode == 'all':
-        dictionary_list = get_dictionary_list(database)
+        dict_list = documentation.get_dictionary_list(database)
 
-        total_objectives_removed = 0
-        for dictionary in dictionary_list:
-            total_objectives_removed += len(dictionary)
-
-        if not total_objectives_removed:  # If there are none
-            print('There are no objectives to delete')
+        total_objectives_to_remove = 0
+        for dict_name in dict_list:
+            total_objectives_to_remove += len(dict_name)
+        if not total_objectives_to_remove:  # If there are none
+            print('There are no objectives to delete', end='\n\n')
             return False
-
         if not get_confirmation():
+            console_display.print_display(database)
             return False
-
-        for dictionary in dictionary_list:
+        for dictionary in dict_list:
             dictionary.clear()
-        print('Removed all objectives')
         return True
 
-    else:  # Specific dictionary
-        dictionary = name_to_dict(database, mode)
-        total_objectives_removed = len(dictionary)
-
-        if not total_objectives_removed:  # If there are none
-            print('There are no objectives to delete')
+    else:  # Specified dictionary
+        dictionary = name_to_container(database, mode)
+        total_objectives_to_remove = len(dictionary)
+        if not total_objectives_to_remove:  # If there are none
+            print('That container has no items', end='\n\n')
             return False
-
         if not get_confirmation():
+            console_display.print_display(database)
             return False
-
         dictionary.clear()
-        print(f'Removed all {mode} objectives')
+        return True
 
 
 def get_active_cycle_list(database):
     active_cycle_list = []
-    for key, value in database['cycle_objectives'].items():
+    for key, value in database['cycle'].items():
         if value['current_offset'] == 0:
             active_cycle_list.append(key)
         else:  # Sorted for 0's to be on top, so once you exit the 0 range, it's all 1+
@@ -150,35 +186,36 @@ def get_active_cycle_list(database):
 
 
 def get_inactive_cycle_list(database):
-    cycle_objective_keys = database['cycle_objectives'].keys()
+    cycle_objective_keys = list(database['cycle'].keys())
     active_cycle_list = get_active_cycle_list(database)
     for key in active_cycle_list:
         cycle_objective_keys.remove(key)
     return cycle_objective_keys  # Remove active keys to get inactive keys
 
 
-def sort_dictionary(database, mode):
-    def normal_sort(obj):
-        # (completion bool, name)
+def sort_dictionary(database, command):
+    def completion_then_alpha_sort(obj):
+        # obj[1] refers to dictionary value in tuple (obj_name, dict value)
         # False sorts before True in ascending. a sorts before z. Sorts incomplete to top, then alphabetically.
-        return obj[1]['progress_numerator'] >= obj[1]['progress denominator'], obj[0]
+        # (completion bool, name)
+        return obj[1]['numerator'] >= obj[1]['denominator'], obj[0]
 
-    if mode == 'cycle':
-        sort_cycle_dictionary(database)  # Handled differently
-        return
-
-    dictionary = name_to_dict(database, mode)
-    temp_list = list(dictionary.items())  # ie: [(name, {dict_elements}])
-    temp_list = sorted(temp_list, key=normal_sort)
-    database[mode_to_dict_name(mode)] = dict(temp_list)  # Assignment via method to preserve object
-
-
-def sort_cycle_dictionary(database):
     def cycle_sort(obj):
         # (current offset, completion bool, name)
         # 0 sorts before 1, False before True, a before z. Sorts by offset, then completion bool, then name
-        return obj[1]['current_offset'], obj[1]['progress_numerator'] >= obj[1]['progress denominator'], obj[0]
+        return obj[1]['current_offset'], obj[1]['numerator'] >= obj[1]['denominator'], obj[0]
 
-    temp_list = list(database['cycle_objectives'].items())  # ie: [(name, {dict_elements}])
-    temp_list = sorted(temp_list, key=cycle_sort)
-    database['cycle_objectives'] = dict(temp_list)
+    def alpha_sort(obj):
+        return obj[0]  # Just by the name
+
+    dictionary = name_to_container(database, command)
+    temp_list = list(dictionary.items())  # ie: [(name, {dict_elements}])
+
+    if command == 'cycle':
+        temp_list = sorted(temp_list, key=cycle_sort)
+    elif command == 'counter':
+        temp_list = sorted(temp_list, key=alpha_sort)
+    else:
+        temp_list = sorted(temp_list, key=completion_then_alpha_sort)
+
+    database[command] = dict(temp_list)  # Assignment via method to preserve object

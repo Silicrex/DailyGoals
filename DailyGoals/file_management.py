@@ -5,34 +5,42 @@ import welcome_messages
 
 def get_template_dict():  # Database structure
     template_dict = {
-        # Date/today stuff
-        'calendar_date': {'month': 1, 'day': 1, 'week_day': 1},
-        'week_day': 1,  # Day of the week 1-7
+        # Welcome
         'welcome_message': None,
-        # Dictionaries
-        'daily_objectives': {},  # Dailies dictionary
-        'optional_objectives': {},  # Optional dailies dictionary
-        'todo_objectives': {},  # To-do dictionary
-        'cycle_objectives': {},  # Cycle dictionary
-        'longterm_objectives': {},  # Long-term dictionary
-        'counter_dict': {},  # Counter dictionary
-        'history_dict': {},  # Completed objectives
+        # Containers
+        'daily': {},  # Dailies dictionary
+        'optional': {},  # Optional dailies dictionary
+        'todo': {},  # To-do dictionary
+        'cycle': {},  # Cycle dictionary
+        'longterm': {},  # Long-term dictionary
+        'counter': {},  # Counter dictionary
+        'note': [],  # Notes list
+        'history': {  # Completed objectives
+            'daily': {},
+            'optional': {},
+            'todo': {},
+            'cycle': {},
+            'longterm': {}, },
+        # Stats/settings
         'stats': {
             'total_completed': 0,  # Total completed dailies integer
             'days_completed': 0,
             'streak': 0,  # Current streak integer
             'best_streak': 0, },  # Best streak integer
         'settings': {
+            'calendar_date': {'month': 1, 'day': 1, 'week_day': 1},
             'date_switch': False,  # Switch MM/DD to DD/MM
-            'welcome_toggle': True,  # Toggle welcome messages
-            'total_toggle': True,  # Always display total completed dailies
-            'daily_toggle': True,  # Always display dailies
-            'todo_toggle': True,  # Always display todos
-            'cycle_toggle': True,  # Always display active cycles
-            'full_cycle_toggle': False,  # Always display active AND inactive cycles
-            'longterm_toggle': True,  # Always display long-terms
-            'counter_toggle': False,  # Always display counters
-            'auto_match_toggle': False,  # Automatically match first objective when searching
+            'welcome': True,  # Toggle welcome messages
+            'total': True,  # Always display total completed dailies
+            'daily': True,  # Always display dailies
+            'optional': True,  # Always display optionals
+            'todo': True,  # Always display todos
+            'cycle': True,  # Always display cycles
+            'full_cycle': False,  # Always display active AND inactive cycles
+            'longterm': True,  # Always display long-terms
+            'counter': True,  # Always display counters
+            'note': True,  # Always display notes
+            'auto_match': False,  # Automatically match first objective when searching
             'track_history': True, }  # Tracks completed objectives
     }
     return template_dict

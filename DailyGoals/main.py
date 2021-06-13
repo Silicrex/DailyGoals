@@ -1,4 +1,6 @@
 # Set to enforce ASCII just because it's what Windows cmd can display. Can be avoided if this is interfaced
+# If interfaced; could definitely use containers. Group objectives within a dictionary,
+# complete with collapsing/minimizing.
 # TODO: Help dialog, tutorial dialog, mention bakcup when running program, mention case sensitviity
 # TODO: Error handling/polishing
 
@@ -9,16 +11,20 @@
 #       Long-term one doesn't need a count
 #       Pages
 #       History combine command to sum up different objects that refer to the same exact thing
-# TODO: Move command aliases up so it doesn't unnecessarily check for alias string twice
-# TODO: Notes/reminders box
-# TODO: Enforce full cycle requriing normal cyclet gogel eonon
-# TODO: toggle default settings
+# TODO: Notes
 # TODO: warn about clearing
 # TODO: print help on the command for commands not being used right?
-# TODO: Figure out how to print while also clearing console. Timer..? Manually printing after each function..?
+# TODO: reset data comandd
+# TODO: setting for sorting counter by counter val instead of name
 import file_management  # For loading/saving
-import command_flow_logic  # To pass input to for interpretation
+import commands  # Command functions, alias_format()
 import console_display  # To print the initial console display
+
+# main gets input
+# -> command_flow for parameter confirmation and sorting
+# -> dict_route to modify right data right way
+# -> goal_modification or counter_modification
+# -> core_dict_logic or counter_logic
 
 
 def main():
@@ -37,7 +43,18 @@ def main():
             print('Please only use ASCII characters')
             continue
         user_input = user_input.split()  # Split into a list of space-separated terms
-        command_flow_logic.command_flow(database, user_input)  # Pass input to command_flow() to be handled
+        commands.alias_format(user_input)
+        command = user_input[0]
+        print()  # Newline to separate input from printing
+        try:
+            # Try to get corresponding function from commands.py
+            # Command functions have '_command' appended to name
+            command_function = getattr(commands, command + '_command')
+        except AttributeError:  # If function is not found
+            print('Invalid command')
+            print()  # Newline to separate input from printing
+            continue
+        command_function(database, user_input)
 
 
 if __name__ == '__main__':
