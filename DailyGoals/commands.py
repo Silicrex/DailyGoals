@@ -3,7 +3,7 @@ import item_management
 import dict_management
 import file_management
 import settings_management
-import history_management
+import history_interface
 import date_logic
 import console_display
 
@@ -39,10 +39,10 @@ def note_command(database, user_input):
     if not len(user_input) > 1:
         print('Invalid number of parameters, expected at least 2', end='\n\n')
         return
-    mode = user_input[2]
+    mode = user_input[1]
     valid_modes = documentation.get_modes('note')
     if mode in valid_modes:
-        mode_function = getattr(item_management, 'note_' + mode + '_mode')  # ie 'add' goes to note_add_mode()
+        mode_function = getattr(item_management, mode + '_note_mode')  # ie 'add' goes to add_note_mode()
     else:
         print('Invalid mode', end='\n\n')
         return
@@ -55,8 +55,9 @@ def note_command(database, user_input):
 
 
 def mode_route(database, user_input):
-    if not len(user_input) > 1:
-        print('Invalid number of parameters, expected at least 2', end='\n\n')
+    input_length = len(user_input)
+    if not input_length >= 2 and input_length < 4:  # These commands always take 2-4 inputs
+        print('Invalid number of parameters, expected 2-4', end='\n\n')
         return
     command = user_input[0]  # To know which dict we're working with
     mode = user_input[1]
@@ -66,15 +67,13 @@ def mode_route(database, user_input):
     else:
         print('Invalid mode', end='\n\n')
         return
-    dictionary = database['command']
-    items = {  # Pack it up so modes can be more flexible about what parameters they actually use
-        'database': database,
-        'dictionary': dictionary,
-        'command': command,
+    dictionary = database[command]
+    input_info = {
+        'command': command,  # Some containers need different routing within a mode function
         'mode': mode,
-        'parameters': user_input[2:],  # Everything after mode
+        'parameter_length': len(user_input[2:]) # For these commands, 'parameters' = inputs following command/mode
     }
-    if not mode_function(items):
+    if not mode_function(database, dictionary, input_info, *user_input[2:]):  # Expand input parameters into arguments
         return
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
@@ -172,7 +171,7 @@ def history_command(database, user_input):
     if dict_name_input not in documentation.get_goal_dictionary_names():
         print('Invalid mode, takes goals-based dictionary as input (ie daily)', end='\n\n')
         return
-    history_management.launch_history_interface(database, dict_name_input)
+    history_interface.launch_history_interface(database, dict_name_input)
 
 
 def help_command(_, user_input):

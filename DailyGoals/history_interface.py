@@ -5,16 +5,16 @@ def launch_history_interface(database, dict_name):
     def print_current_page():
         print(f'Page {current_page}/{total_pages}:', end='\n\n')
 
-        keys_left_on_page = total_keys - (current_page - 1) * keys_per_page
         index_offset = (current_page - 1) * keys_per_page  # Skip past prior pages
+        keys_left_on_page = total_keys - (current_page - 1) * keys_per_page
         # Get min between keys_per_page and # of keys left for that page (so last page doesn't index error)
         for n in range(min(keys_per_page, keys_left_on_page)):  # Iterate for # of items to print on that page
             # Start printing from the desired index
             index = index_offset + n
             print(f'#{index + 1}: {dictionary[index]}')
 
-    def key_index_to_page(key_place):  # key_index starts counting from 0
-        return 1 + (key_place - 1) // keys_per_page  # 0 = 0 page, 1-20 = 1 page, 21-40 = 2 pages w/ 20
+    def key_index_to_page(key_index):  # key_index starts counting from 0
+        return 1 + key_index // keys_per_page  # 0 = 0 page, 1-20 = 1 page, 21-40 = 2 pages w/ 20
 
     dictionary = database['history'][dict_name]
     keys = list(dictionary)
@@ -43,11 +43,11 @@ def launch_history_interface(database, dict_name):
         if command in {'next', 'n'}:
             pages_to_next = 1  # Default
             if input_length == 2:  # Specific value given
-                try:
-                    pages_to_next = eval(user_input[1])
-                except (NameError, SyntaxError, TypeError):
-                    print('Invalid command usage, expected number of pages to jump')
+                second_parameter = user_input[1]
+                if not second_parameter.isnumeric():
+                    print('Invalid parameter. Only allows positive integers')
                     continue
+                pages_to_next = eval(second_parameter)
             current_page += pages_to_next
             if current_page > total_pages:
                 current_page = total_pages
@@ -56,23 +56,25 @@ def launch_history_interface(database, dict_name):
         elif command in {'previous', 'p'}:
             pages_to_previous = 1  # Default
             if input_length == 2:  # Specific value given
-                try:
-                    pages_to_previous = eval(user_input[1])
-                except (NameError, SyntaxError, TypeError):
-                    print('Invalid command usage, expected number of pages to jump')
+                second_parameter = user_input[1]
+                if not second_parameter.isnumeric():
+                    print('Invalid parameter. Only allows positive integers')
                     continue
+                pages_to_previous = eval(second_parameter)
             current_page -= pages_to_previous
             if current_page < 1:
                 current_page = 1
             print_current_page()
 
         elif command in {'page', 'pg'}:
-            try:
-                current_page = eval(user_input[1])
-            except (NameError, SyntaxError, TypeError):
-                print('Invalid command usage for history interface')
+            if len(user_input) != 2:
+                print('Invalid # of parameters. Expected 2')
                 continue
-
+            second_parameter = user_input[1]
+            if not second_parameter.isnumeric():
+                print('Invalid parameter. Only allows positive integers')
+                continue
+            current_page = eval(second_parameter)
             if current_page > total_pages:
                 current_page = total_pages
             elif current_page < 1:

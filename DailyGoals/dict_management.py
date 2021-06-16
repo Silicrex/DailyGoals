@@ -10,7 +10,7 @@ def get_display_list(database):
                    'todo': settings['todo'], 'active_cycle': settings['cycle'],
                    'inactive_cycle': settings['full_cycle'], 'longterm': settings['longterm'],
                    'counter': settings['counter'], 'note': settings['note']}
-    return [x for x in toggle_list if toggle_list[x] and database[x]]
+    return [x for x in toggle_list if toggle_list[x] and name_to_container(database, x)]
     # Add toggle to list if the toggle is on and if the corresponding container isn't empty
 
 

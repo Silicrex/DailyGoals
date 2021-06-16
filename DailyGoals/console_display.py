@@ -40,11 +40,10 @@ def print_display(database):
             display_list.remove('inactive_cycle')
     if not display_list:  # If display_list is empty
         overall_item_length = 0
-        for dictionary in documentation.get_dictionary_names():
-            overall_item_length += len(dictionary)
-
+        for container in documentation.get_dictionary_names():
+            overall_item_length += len(dict_management.name_to_container(database, container))
         if overall_item_length == 0:
-            print("No items exist! Create some with '<type> add' (ex: daily add)!", end='\n\n')
+            print("No items exist! Create some with '<container> add' (ex: daily add)!", end='\n\n')
         else:
             print("No items are visible! You can change toggle settings with 'toggle'", end='\n\n')
         return
