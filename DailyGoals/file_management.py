@@ -31,7 +31,7 @@ def get_template_dict():  # Database structure
             'calendar_date': {'month': 1, 'day': 1, 'week_day': 1},
             'date_switch': False,  # Switch MM/DD to DD/MM
             'welcome': True,  # Toggle welcome messages
-            'total': True,  # Always display total completed dailies
+            'display_total': True,  # Always display total completed dailies in header
             'daily': True,  # Always display dailies
             'optional': True,  # Always display optionals
             'todo': True,  # Always display todos
@@ -53,7 +53,7 @@ def load_data():
                 database = json.load(data_json)
             except json.JSONDecodeError:
                 print('data.json could not be read. Attempting to use backup')
-                database = load_backup()  # Either gets data or aborts if failed
+                database = load_backup()  # Either gets data or aborts program if failed
     else:  # If data.json doesn't exist, create new one
         database = get_template_dict()
         database['welcome_message'] = welcome_messages.get_welcome()  # Used to persist a welcome msg per day
@@ -70,7 +70,7 @@ def load_backup():
             print('Backup read failed. Please contact developer or manually investigate json files.')
             print('Please abort program. Delete data file to reset (likely unnecessary).')
             input('Press enter to close . . .')  # To pause before exiting
-            exit()
+            quit()
 
 
 def update(database, file_name='data.json'):  # By default, write to primary json file

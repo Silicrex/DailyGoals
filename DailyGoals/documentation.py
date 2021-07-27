@@ -95,8 +95,10 @@ def print_submodule(command, submodule=None):
 
 def print_toggle_help():
     os.system('cls')
-    print("[Keyword]: <description>\n\n"
-          ">>> Display corresponding dictionary in main display (doesn't impact commands like 'dailies')\n\n"
+    print("toggle <keyword>\n"
+          "[Keyword]: <description>\n"
+          "'settings' to view current values\n\n"
+          ">>> Settings to display dictionaries in main display (doesn't impact commands like 'dailies')\n\n"
           "[daily]: Show dailies\n"
           "[todo]: Show to-dos\n"
           "[cycle]: Show active cycle objectives\n"
@@ -107,7 +109,7 @@ def print_toggle_help():
           ">>> Show these things in main display header\n\n"
           "[date_switch]: Display DD/MM instead of MM/DD\n"
           "[welcome]: Show welcome message\n"
-          "[total]: Include overall number of completed daily objectives\n\n\n"
+          "[display_total]: Include overall number of completed daily objectives\n\n\n"
           ">>> Dictionary functionality\n\n"
           "[auto_match]: If a given objective isn't found,"
           " automatically match to the closest without confirmation\n"

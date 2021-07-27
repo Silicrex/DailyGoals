@@ -7,7 +7,7 @@
 # TODO: Finish cycles (need to work around endday, fix for active vs inactive)
 # TODO: uhhhh END DAY Cycles etc. count for streak, todo for total etc
 #       Make the stats increment, make sure auto toggle actually does something
-# TODO: Toggle a history dict. {'dict_type': {obj_name + task_string: times done}}
+# TODO: history dict toggle. {'dict_type': {obj_name + task_string: {count: #, tag: str}}}
 #       Long-term one doesn't need a count
 #       Pages
 #       History combine command to sum up different objects that refer to the same exact thing
@@ -16,19 +16,19 @@
 # TODO: print help on the command for commands not being used right?
 # TODO: reset data comandd
 # TODO: setting for sorting counter by counter val instead of name
+# TODO: k/m/b
 import file_management  # For loading/saving
 import commands  # Command functions, alias_format()
 import console_display  # To print the initial console display
 
 # main gets input
-# -> command_flow for parameter confirmation and sorting
-# -> dict_route to modify right data right way
-# -> goal_modification or counter_modification
-# -> core_dict_logic or counter_logic
+# -> checks for validity and matching command. If found, pass to commands.py
+# -> Corresponding command function executes
 
 
 def main():
-    database = file_management.load_data()  # If json successfully loaded, use that. Else default to base template.
+    # Load the database from file
+    database = file_management.load_data()  # If json successfully loaded, use that. Else default to base template
 
     # Update backup right after loading (to save state before user performs any actions)
     file_management.update(database, 'data_autobackup.json')
@@ -37,24 +37,25 @@ def main():
 
     while True:
         user_input = input().lower()  # Lower for string comparisons
-        if not user_input:  # It's possible to enter nothing
+        if not user_input:  # It's possible to enter nothing- continue loop
             continue
         if not user_input.isascii():
-            print('Please only use ASCII characters')
+            print('Please only use ASCII characters')  # Limitation from lack of interfacing
             continue
         user_input = user_input.split()  # Split into a list of space-separated terms
-        commands.alias_format(user_input)
+        commands.alias_format(user_input)  # Reformats input list according to alias dict
         command = user_input[0]
+
         print()  # Newline to separate input from printing
         try:
             # Try to get corresponding function from commands.py
-            # Command functions have '_command' appended to name
+            # Command functions have '_command' appended to name, ie daily_command
             command_function = getattr(commands, command + '_command')
         except AttributeError:  # If function is not found
             print('Invalid command')
             print()  # Newline to separate input from printing
             continue
-        command_function(database, user_input)
+        command_function(database, user_input)  # All is well, proceed to command function
 
 
 if __name__ == '__main__':

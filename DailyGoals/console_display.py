@@ -30,7 +30,7 @@ def print_display(database):
 
     # Streak/total header: Streak: 0
     print(f"Streak: {stats['streak']}")
-    if settings['total']:
+    if settings['display_total']:
         print('Total dailies completed:', stats['total_completed'])
     print(end='\n\n')  # Extra newlines
 
@@ -47,6 +47,7 @@ def print_display(database):
         else:
             print("No items are visible! You can change toggle settings with 'toggle'", end='\n\n')
         return
+
     for dict_name in display_list:
         print_dictionary(database, dict_name)
 
@@ -103,10 +104,12 @@ def print_base_dictionary(dictionary):
         denominator = value['denominator']
         numerator = value['numerator']
         if numerator >= denominator:  # Complete
-            print(f'[x] {key}{formatted_task_string}: {numerator}/{denominator} ', end='')
+            print(f'[x] {key}{formatted_task_string}: ', end='')
+            print('{:,}/{:,} '.format(numerator, denominator), end='')
             print('({:.2%}) (DONE!!)'.format(numerator / denominator))
         else:  # Incomplete
-            print(f'[ ] {key}{formatted_task_string}: {numerator}/{denominator} ', end='')
+            print(f'[ ] {key}{formatted_task_string}: ', end='')
+            print('{:,}/{:,} '.format(numerator, denominator), end='')
             print('({:.2%})'.format(numerator / denominator))
 
 
@@ -140,10 +143,12 @@ def print_active_cycle_objectives(database, active_cycle_list):
         cycle_frequency = value['cycle_frequency']
         percent = numerator/denominator
         if numerator >= denominator:  # Complete
-            print(f'[x] {key}{formatted_task_string} (every {cycle_frequency}d): {numerator}/{denominator} ', end='')
+            print(f'[x] {key}{formatted_task_string} (every {cycle_frequency}d): ', end='')
+            print('{:,}/{:,} '.format(numerator, denominator), end='')
             print('({:.2%}) (DONE!!)'.format(percent))
         else:  # Incomplete
-            print(f'[ ] {key}{formatted_task_string} (every {cycle_frequency}d): {numerator}/{denominator} ', end='')
+            print(f'[ ] {key}{formatted_task_string} (every {cycle_frequency}d): ', end='')
+            print('{:,}/{:,} '.format(numerator, denominator), end='')
             print('({:.2%})'.format(percent))
 
 
@@ -196,6 +201,6 @@ def print_settings(database):
           f">>> Main display header\n\n"
           f"Print DD/MM: {settings['date_switch']}\n"
           f"Print welcome: {settings['welcome']}\n"
-          f"Show total completed dailies: {settings['total']}\n\n\n"
+          f"Show total completed dailies: {settings['display_total']}\n\n\n"
           f">>> Dictionary functionality\n\n"
           f"Objective search auto-match (skip confirmation): {settings['auto_match']}", end='\n\n')

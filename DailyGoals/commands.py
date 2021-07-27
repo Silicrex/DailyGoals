@@ -67,19 +67,19 @@ def mode_route(database, user_input):
     else:
         print('Invalid mode', end='\n\n')
         return
-    dictionary = database[command]
+    dictionary = database[command]  # ie 'daily' gets 'daily' dict
     input_info = {
         'command': command,  # Some containers need different routing within a mode function
         'mode': mode,
-        'parameter_length': len(user_input[2:]) # For these commands, 'parameters' = inputs following command/mode
+        'parameter_length': len(user_input[2:])  # For these commands, 'parameters' = inputs following command/mode
     }
-    if not mode_function(database, dictionary, input_info, *user_input[2:]):  # Expand input parameters into arguments
-        return
+    if not mode_function(database, dictionary, input_info, *user_input[2:]):  # Expand input past mode as args (if any)
+        return  # Returns false to indicate error. Else...
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
     file_management.update(database)
     console_display.print_display(database)
-    print_mode_success(mode)
+    print_mode_success(mode)  # To leave success print after everything else
 
 
 def complete_command(database, user_input):
@@ -330,15 +330,15 @@ def alias_format(user_input):
     mode_alias_dict = documentation.get_mode_alias()
     if user_input[1] in mode_alias_dict:  # Replace alias with corresponding mode
         user_input[1] = mode_alias_dict[user_input[1]]
-    elif user_input[1].startswith('+') and len(user_input[1]) > 1:  # Update shorthand, format of +x
+    elif user_input[1].startswith('+') and len(user_input[1]) > 1:  # Update shorthand; format of +x
         input_length = len(user_input)
         # ie daily +wanikani, daily +wanikani 5, should be daily update wanikani 5
         if input_length == 2:  # Looking for daily +name
             user_input.append(user_input[1][1:])  # Splice after the + symbol, put at index 2
             user_input[1] = 'update'  # Make like daily update <name>, which defaults to +1
-        elif input_length == 3:  # Looking for daily +name 5
+        elif input_length == 3:  # Looking for daily +name #
             user_input.append(user_input[2])  # Take update value, move to index 3, ie [daily, +name, 5, 5]
-            user_input[2] = user_input[1][1:]  # Splice after + symbol
+            user_input[2] = user_input[1][1:]  # Splice after + symbol, ie [daily, name, 5, 5]
             user_input[1] = 'update'  # Like [daily, update, name, 2]
 
 

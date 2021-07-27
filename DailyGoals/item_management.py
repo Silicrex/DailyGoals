@@ -8,8 +8,7 @@ import date_logic
 # Adding items ------------------------------------------------------------------------------------------
 def add_mode(database, dictionary, input_info):
     # ex input: daily add
-    parameter_length = input_info['parameter_length']
-    if dict_management.wrong_parameter_count(parameter_length, 0):
+    if dict_management.wrong_parameter_count(input_info['parameter_length'], 0):
         return False
 
     command = input_info['command']  # Command to identify if different add type
@@ -145,25 +144,22 @@ def get_task_string():
 
 def get_denominator():
     while True:
-        print('Enter a progress denominator (ie 2 becomes 0/2) (blank defaults to 1)')
-        print()  # Extra newline
+        print('Enter a progress denominator (ie 2 becomes 0/2) (blank defaults to 1)', end='\n\n')
         denominator = input()
         print()  # Extra newline
-        if not denominator:
-            print('Progress denominator cannot be blank')
+
+        if denominator == '':  # Default to 1
+            return 1
+        if not (denominator := format_integer(denominator)):
             continue
-        if not denominator.isnumeric():
-            print('Progress denominator must be a positive integer')
-            continue
-        denominator = eval(denominator)
-        if denominator <= 0:
-            print('Progress quantity must be greater than 0')
+        if denominator < 0:  # Case of 0 is already handled in format_integer()
+            print('Denominator must be greater than 0')
             continue
         return denominator
 
 
 # Updating/editing items ------------------------------------------------------------------------------------------
-def update_mode(database, dictionary, input_info, objective_name, update_value=1):
+def update_mode(database, dictionary, input_info, objective_name, update_value='1'):
     # ex input: daily update wanikani 50
     # ex input: daily update wanikani
     parameter_length = input_info['parameter_length']
@@ -177,16 +173,8 @@ def update_mode(database, dictionary, input_info, objective_name, update_value=1
             print('Cannot update progress for inactive cycle objectives', end='\n\n')
             return False
 
-    if parameter_length == 2:  # Update value given, will be a string
-        try:
-            # noinspection PyTypeChecker
-            update_value = eval(update_value)
-        except (SyntaxError, NameError):
-            print('Update value must be a number', end='\n\n')
-            return False
-        if not isinstance(update_value, int):
-            print('Update value must be an integer', end='\n\n')
-            return False
+    if not (update_value := format_integer(update_value)):  # Enforces non-zero integer. Accepts extension ie 1k
+        return False
 
     if objective_name not in dictionary:  # If not found, look for as a substring
         if not (objective_name := dict_management.objective_search(database, dictionary, objective_name)):
@@ -197,19 +185,12 @@ def update_mode(database, dictionary, input_info, objective_name, update_value=1
 
 def set_mode(database, dictionary, input_info, objective_name, set_value):
     # ex input: daily set wanikani 50
-    parameter_length = input_info['parameter_length']
-    if dict_management.wrong_parameter_count(parameter_length, 2):
+    if dict_management.wrong_parameter_count(input_info['parameter_length'], 2):
         return False
 
     command = input_info['command']  # Cycle handled differently
 
-    try:
-        set_value = eval(set_value)
-    except (SyntaxError, NameError):
-        print('Set value must be a number', end='\n\n')
-        return False
-    if not isinstance(set_value, int):
-        print('Set value must be an integer', end='\n\n')
+    if not (set_value := format_integer(set_value)):  # Enforces non-zero integer. Accepts extension ie 1k
         return False
 
     if command == 'cycle':
@@ -227,8 +208,7 @@ def set_mode(database, dictionary, input_info, objective_name, set_value):
 
 def complete_mode(database, dictionary, input_info, objective_name):
     # ex input: daily complete wanikani
-    parameter_length = input_info['parameter_length']
-    if dict_management.wrong_parameter_count(parameter_length, 1):
+    if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
         return False
 
     command = input_info['command']
@@ -237,7 +217,7 @@ def complete_mode(database, dictionary, input_info, objective_name):
         if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
             print('Cannot update progress for inactive cycle objectives', end='\n\n')
             return False
-        
+
     if objective_name not in dictionary:  # If not found, look for as a substring
         if not (objective_name := dict_management.objective_search(database, dictionary, objective_name)):
             return False
@@ -254,8 +234,7 @@ def complete_mode(database, dictionary, input_info, objective_name):
 
 def reset_mode(database, dictionary, input_info, objective_name):
     # ex input: daily reset wanikani
-    parameter_length = input_info['parameter_length']
-    if dict_management.wrong_parameter_count(parameter_length, 1):
+    if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
         return False
 
     command = input_info['command']
@@ -264,7 +243,7 @@ def reset_mode(database, dictionary, input_info, objective_name):
         if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
             print('Cannot update progress for inactive cycle objectives', end='\n\n')
             return False
-        
+
     if objective_name not in dictionary:  # If not found, look for as a substring
         if not (objective_name := dict_management.objective_search(database, dictionary, objective_name)):
             return False
@@ -279,8 +258,7 @@ def reset_mode(database, dictionary, input_info, objective_name):
 
 def setall_mode(database, dictionary, input_info, setall_value):
     # ex input: daily setall complete
-    parameter_length = input_info['parameter_length']
-    if dict_management.wrong_parameter_count(parameter_length, 1):
+    if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
         return False
 
     command = input_info['command']
@@ -298,7 +276,7 @@ def setall_mode(database, dictionary, input_info, setall_value):
     if not dictionary:
         print('That dictionary is empty', end='\n\n')
         return False
-    
+
     if setall_value == 'complete':
         for key, value in dictionary.items():
             # Set the numerator to the denominator (100%). value is the key's dictionary value
@@ -361,8 +339,7 @@ def setall_counter_mode(_, dictionary, setall_value):  # _: doesn't need databas
 
 def rename_mode(database, dictionary, input_info, objective_name):
     # ex input: daily rename wanikani
-    parameter_length = input_info['parameter_length']
-    if dict_management.wrong_parameter_count(parameter_length, 1):
+    if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
         return False
 
     if objective_name not in dictionary:  # If not found, look for as a substring
@@ -379,8 +356,7 @@ def rename_mode(database, dictionary, input_info, objective_name):
 
 def retask_mode(database, dictionary, input_info, objective_name):
     # ex input: daily retask wanikani
-    parameter_length = input_info['parameter_length']
-    if dict_management.wrong_parameter_count(parameter_length, 1):
+    if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
         return False
 
     if objective_name not in dictionary:  # If not found, look for as a substring
@@ -393,14 +369,15 @@ def retask_mode(database, dictionary, input_info, objective_name):
 
 def denominator_mode(database, dictionary, input_info, objective_name):
     # ex input: daily denominator wanikani
-    parameter_length = input_info['parameter_length']
-    if dict_management.wrong_parameter_count(parameter_length, 1):
+    if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
         return False
 
     if objective_name not in dictionary:  # If not found, look for as a substring
         if not (objective_name := dict_management.objective_search(database, dictionary, objective_name)):
             return False
-    new_denominator = get_denominator()
+    if not (new_denominator := get_nonzero_integer('Enter a progress denominator (ie 2 becomes 0/2) '
+                                                   '(blank defaults to 1)')):
+        return False
     dictionary[objective_name]['denominator'] = new_denominator
     return True
 
@@ -408,8 +385,7 @@ def denominator_mode(database, dictionary, input_info, objective_name):
 # Removing items ------------------------------------------------------------------------------------------
 def remove_mode(database, dictionary, input_info, objective_name):
     # ex input: daily remove wanikani
-    parameter_length = input_info['parameter_length']
-    if dict_management.wrong_parameter_count(parameter_length, 1):
+    if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
         return False
 
     if objective_name not in dictionary:  # If not found, look for as a substring
@@ -417,3 +393,47 @@ def remove_mode(database, dictionary, input_info, objective_name):
             return False
     dictionary.pop(objective_name)
     return True
+
+
+# Misc utility ------------------------------------------------------------------------------------------
+def get_nonzero_integer(msg=None):
+    while True:
+        if msg:
+            print(msg)
+            print('Enter blank to cancel', end='\n\n')
+        value = input().lower()
+        print()  # Extra newline
+
+        if not value:  # Cancel
+            print('Returning to menu')
+            return False
+        if not format_integer(value):
+            continue
+        return value
+
+
+def format_integer(value: str):
+    multiplier = 1
+    if value[-1] in {'k', 'm', 'b', 't'}:  # Extension
+        extension = value[-1]
+        value = value[:-1]
+        if extension == 'k':
+            multiplier = 1e3
+        elif extension == 'm':
+            multiplier = 1e6
+        elif extension == 'b':
+            multiplier = 1e9
+        elif extension == 't':
+            multiplier = 1e12
+    try:
+        number = eval(value)
+    except (SyntaxError, NameError):
+        print('Value must be a number')
+        return False
+    if not number:  # If it's 0
+        print('Value cannot be 0')
+        return False
+    if isinstance(number, float):
+        print('Value must be an integer')
+        return False
+    return int(number * multiplier)
