@@ -96,7 +96,8 @@ def print_dictionary(database, dict_name):
 
 def print_base_dictionary(dictionary):
     for key, value in dictionary.items():
-        # {task_string, denominator, numerator}
+        # {display_name, task_string, denominator, numerator}
+        display_name = value['display_name']
         task_string = value['task_string']
         formatted_task_string = ''
         if task_string:  # If it's not blank
@@ -104,11 +105,11 @@ def print_base_dictionary(dictionary):
         denominator = value['denominator']
         numerator = value['numerator']
         if numerator >= denominator:  # Complete
-            print(f'[x] {key}{formatted_task_string}: ', end='')
+            print(f'[x] {display_name}{formatted_task_string}: ', end='')
             print('{:,}/{:,} '.format(numerator, denominator), end='')
             print('({:.2%}) (DONE!!)'.format(numerator / denominator))
         else:  # Incomplete
-            print(f'[ ] {key}{formatted_task_string}: ', end='')
+            print(f'[ ] {display_name}{formatted_task_string}: ', end='')
             print('{:,}/{:,} '.format(numerator, denominator), end='')
             print('({:.2%})'.format(numerator / denominator))
 
@@ -132,8 +133,9 @@ def print_active_cycle_objectives(database, active_cycle_list):
     print('>>> Active cycles', end='\n\n')
     cycle_objectives = database['cycle']
     for key in active_cycle_list:
-        # {task_string, denominator, progress numerator, cycle_length, current_offset}
+        # {display_name, task_string, denominator, progress numerator, cycle_length, current_offset}
         value = cycle_objectives[key]
+        display_name = value['display_name']
         task_string = value['task_string']
         formatted_task_string = ''
         if task_string:  # If it's not blank
@@ -143,11 +145,11 @@ def print_active_cycle_objectives(database, active_cycle_list):
         cycle_frequency = value['cycle_frequency']
         percent = numerator/denominator
         if numerator >= denominator:  # Complete
-            print(f'[x] {key}{formatted_task_string} (every {cycle_frequency}d): ', end='')
+            print(f'[x] {display_name}{formatted_task_string} (every {cycle_frequency}d): ', end='')
             print('{:,}/{:,} '.format(numerator, denominator), end='')
             print('({:.2%}) (DONE!!)'.format(percent))
         else:  # Incomplete
-            print(f'[ ] {key}{formatted_task_string} (every {cycle_frequency}d): ', end='')
+            print(f'[ ] {display_name}{formatted_task_string} (every {cycle_frequency}d): ', end='')
             print('{:,}/{:,} '.format(numerator, denominator), end='')
             print('({:.2%})'.format(percent))
 
@@ -155,14 +157,15 @@ def print_active_cycle_objectives(database, active_cycle_list):
 def print_inactive_cycle_objectives(database, inactive_cycle_list):
     print('(Inactive cycles)', end='\n\n')
     cycle_objectives = database['cycle']
-    # {task_string, denominator, progress numerator, cycle_length, current_offset}
+    # {display_name, task_string, denominator, progress numerator, cycle_length, current_offset}
     for key in inactive_cycle_list:
         value = cycle_objectives[key]
+        display_name = value['display_name']
         task_string = value['task_string']
         cycle_frequency = value['cycle_frequency']
         current_offset = value['current_offset']
         denominator = value['denominator']
-        print(f'{key} ({task_string}) (x/{denominator}): Every {cycle_frequency}d, next in {current_offset}d')
+        print(f'{display_name} ({task_string}) (x/{denominator}): Every {cycle_frequency}d, next in {current_offset}d')
 
 
 def print_longterm_objectives(longterm_dict):
@@ -173,10 +176,11 @@ def print_longterm_objectives(longterm_dict):
 def print_counter_dict(counter_dict):
     print('>>> Counters', end='\n\n')
     for key, value in counter_dict.items():
-        # {task_string, numerator}
+        # {display_name, task_string, numerator}
+        display_name = value['display_name']
         task_string = value['task_string']
         numerator = value['numerator']
-        print(f'{key} ({task_string}): {numerator}')
+        print(f'{display_name} ({task_string}): {numerator}')
 
 
 def print_stats(database):

@@ -1,5 +1,4 @@
 import file_management
-import item_management
 import console_display
 import documentation
 
@@ -30,12 +29,12 @@ def objective_search(database, dictionary, input_objective_string):  # Search by
     objectives_seen = set()  # Track objectives already seen/suggested
     for objective in objective_keys:  # Search for via startswith()
         if objective.startswith(input_objective_string):
-
             if auto_match:  # If auto_match, don't ask, just return that
                 return objective
 
             objectives_seen.add(objective)
-            print(f"Could not find '{input_objective_string}', but found '{objective}'\n")
+            display_name = dictionary[objective]['display_name']
+            print(f"Could not find '{input_objective_string}', but found '{display_name}'\n")
             while True:
                 print('Is this what you meant? (y/n/cancel)')
                 user_response = input().lower()
@@ -49,11 +48,11 @@ def objective_search(database, dictionary, input_objective_string):  # Search by
                 return False
     for objective in objective_keys:  # Search for via find()
         if objective not in objectives_seen and objective.find(input_objective_string) != -1:
-
             if auto_match:  # If auto_match, don't ask, just return that
                 return objective
 
-            print(f"Could not find '{input_objective_string}', but found '{objective}'\n")
+            display_name = dictionary[objective]['display_name']
+            print(f"Could not find '{input_objective_string}', but found '{display_name}'\n")
             while True:
                 print('Is this what you meant? (y/n/cancel)')
                 user_response = input().lower()
@@ -105,30 +104,22 @@ def change_all_daily_dicts(database, mode):
 
     if mode == 'complete':
         for dict_name in daily_dictionary_names:
-            # Function expects a dictionary with {database, command, dictionary, parameters} (command = dict name)
-            items = {
-                'database': database,
-                'dictionary': name_to_container(database, dict_name),
-                'command': dict_name,
-                'parameters': ['complete']
-            }
-            item_management.setall_mode(items)
+            dictionary = database[dict_name]
+            for key, value in dictionary.items():
+                # Set the numerator to the denominator (100%). value is the key's dictionary value
+                value['numerator'] = value['denominator']
+            sort_dictionary(database, dict_name)
+
     elif mode == 'reset':
         for dict_name in daily_dictionary_names:
-            # Function expects a dictionary with {command, dictionary, parameters} (command = dict name)
-            items = {
-                'database': database,
-                'dictionary': name_to_container(database, dict_name),
-                'command': dict_name,
-                'parameters': ['reset']
-            }
-            item_management.setall_mode(items)
+            dictionary = database[dict_name]
+            for key, value in dictionary.items():
+                value['numerator'] = 0
+            sort_dictionary(database, dict_name)
 
-    for dict_name in daily_dictionary_names:
-        sort_dictionary(database, dict_name)
     file_management.update(database)
     console_display.print_display(database)
-    print('Dictionary successfully updated', end='\n\n')
+    print('Dictionaries successfully updated', end='\n\n')
 
 
 def delete_dictionary(database, mode):

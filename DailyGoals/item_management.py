@@ -20,18 +20,21 @@ def add_mode(database, dictionary, input_info):
         return True
 
     objective_name = get_objective_name()
-    if objective_name in dictionary:
+    objective_name_lower = objective_name.lower()
+    if objective_name_lower in dictionary:
         print('Objective by that name already exists. Returning to menu', end='\n\n')
         return False
     task_string = get_task_string()
     denominator = get_denominator()
-    dictionary.update({objective_name: {'task_string': task_string, 'denominator': denominator, 'numerator': 0}})
+    dictionary.update({objective_name_lower: {'display_name': objective_name, 'task_string': task_string,
+                                              'denominator': denominator, 'numerator': 0}})
     return True
 
 
 def add_cycle_mode(database, dictionary):
     objective_name = get_objective_name()
-    if objective_name in dictionary:
+    objective_name_lower = objective_name.lower()
+    if objective_name_lower in dictionary:
         print('Objective by that name already exists. Returning to menu', end='\n\n')
         return False
     task_string = get_task_string()
@@ -60,19 +63,21 @@ def add_cycle_mode(database, dictionary):
         print('Invalid input. Expected day name or day offset integer. Returning to menu.', end='\n\n')
         return False
 
-    dictionary.update({objective_name: {'task_string': task_string, 'denominator': denominator,
-                                        'numerator': 0, 'cycle_frequency': cycle_frequency,
-                                        'current_offset': current_offset}})
+    dictionary.update({objective_name_lower: {'display_name': objective_name, 'task_string': task_string,
+                                              'denominator': denominator, 'numerator': 0,
+                                              'cycle_frequency': cycle_frequency, 'current_offset': current_offset}})
     return True
 
 
 def add_counter_mode(_, dictionary):  # Takes (database, dictionary), doesn't need database
     objective_name = get_objective_name()
-    if objective_name in dictionary:
+    objective_name_lower = objective_name.lower()
+    if objective_name_lower in dictionary:
         print('Counter by that name already exists. Returning to menu', end='\n\n')
         return False
     task_string = get_task_string()
-    dictionary.update({objective_name: {'task_string': task_string, 'numerator': 0}})
+    dictionary.update({objective_name_lower: {'display_name': objective_name, 'task_string': task_string,
+                                              'numerator': 0}})
     return True
 
 
@@ -167,6 +172,7 @@ def update_mode(database, dictionary, input_info, objective_name, update_value='
         return False
 
     command = input_info['command']  # Cycle handled differently
+    objective_name = objective_name.lower()
 
     if command == 'cycle':
         if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
@@ -189,6 +195,7 @@ def set_mode(database, dictionary, input_info, objective_name, set_value):
         return False
 
     command = input_info['command']  # Cycle handled differently
+    objective_name = objective_name.lower()
 
     if not (set_value := format_integer(set_value)):  # Enforces non-zero integer. Accepts extension ie 1k
         return False
@@ -212,6 +219,7 @@ def complete_mode(database, dictionary, input_info, objective_name):
         return False
 
     command = input_info['command']
+    objective_name = objective_name.lower()
 
     if command == 'cycle':
         if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
@@ -238,6 +246,7 @@ def reset_mode(database, dictionary, input_info, objective_name):
         return False
 
     command = input_info['command']
+    objective_name = objective_name.lower()
 
     if command == 'cycle':
         if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
@@ -342,6 +351,8 @@ def rename_mode(database, dictionary, input_info, objective_name):
     if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
         return False
 
+    objective_name = objective_name.lower()
+
     if objective_name not in dictionary:  # If not found, look for as a substring
         if not (objective_name := dict_management.objective_search(database, dictionary, objective_name)):
             return False
@@ -359,6 +370,8 @@ def retask_mode(database, dictionary, input_info, objective_name):
     if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
         return False
 
+    objective_name=objective_name.lower()
+
     if objective_name not in dictionary:  # If not found, look for as a substring
         if not (objective_name := dict_management.objective_search(database, dictionary, objective_name)):
             return False
@@ -371,6 +384,8 @@ def denominator_mode(database, dictionary, input_info, objective_name):
     # ex input: daily denominator wanikani
     if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
         return False
+
+    objective_name = objective_name.lower()
 
     if objective_name not in dictionary:  # If not found, look for as a substring
         if not (objective_name := dict_management.objective_search(database, dictionary, objective_name)):
@@ -387,6 +402,8 @@ def remove_mode(database, dictionary, input_info, objective_name):
     # ex input: daily remove wanikani
     if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
         return False
+
+    objective_name = objective_name.lower()
 
     if objective_name not in dictionary:  # If not found, look for as a substring
         if not (objective_name := dict_management.objective_search(database, dictionary, objective_name)):
