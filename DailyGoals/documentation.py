@@ -22,7 +22,7 @@ def get_goal_dictionary_names():
     return goal_dictionaries
 
 
-def get_daily_dictionary_names():
+def get_daily_container_names():
     goal_dictionaries = ('daily', 'optional', 'active_cycle')
     return goal_dictionaries
 
@@ -207,7 +207,7 @@ dictionary_module = {
     'complete': "- 'complete'\n"
                 "Usage: complete <dictionary>\n"
                 "ex: complete todo\n"
-                "Note: Sets all active members of the dictionary to completed\n",
+                "Note: Sets all active members of the dictionary to completed",
     'reset': "- 'reset'\n"
              "Usage: reset <dictionary>\n"
              "ex: reset cycle\n"

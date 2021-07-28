@@ -82,9 +82,9 @@ def wrong_parameter_count(parameter_length, *expected):
 
 
 def change_all_daily_dicts(database, mode):
-    daily_dictionary_names = documentation.get_daily_dictionary_names()
+    daily_container_names = documentation.get_daily_container_names()
     daily_dict_item_length = 0
-    for dict_name in daily_dictionary_names:
+    for dict_name in daily_container_names:
         daily_dict_item_length += len(name_to_container(database, dict_name))
     if daily_dict_item_length == 0:
         print('There are no active daily objectives', end='\n\n')
@@ -97,25 +97,37 @@ def change_all_daily_dicts(database, mode):
         elif mode == 'reset':
             print('Set all daily, optional, and active cycle objectives to 0%? (y/n)', end='\n\n')
         user_input = input().lower()
-        if user_input == 'y':
+        if user_input in {'yes', 'y'}:
             break
-        elif user_input == 'n':
+        elif user_input in {'no', 'n'}:
             return
 
     if mode == 'complete':
-        for dict_name in daily_dictionary_names:
-            dictionary = database[dict_name]
+        for dict_name in daily_container_names[:-1]:  # Exclude last one, active_cycles (it's a list)
+            dictionary = name_to_container(database, dict_name)
             for key, value in dictionary.items():
                 # Set the numerator to the denominator (100%). value is the key's dictionary value
                 value['numerator'] = value['denominator']
             sort_dictionary(database, dict_name)
+        active_cycles = name_to_container(database, 'active_cycle')
+        cycle_dict = database['cycle']
+        for key in active_cycles:
+            value = cycle_dict[key]
+            value['numerator'] = value['denominator']
+        sort_dictionary(database, 'cycle')
 
     elif mode == 'reset':
-        for dict_name in daily_dictionary_names:
-            dictionary = database[dict_name]
+        for dict_name in daily_container_names[:-1]:
+            dictionary = name_to_container(database, dict_name)
             for key, value in dictionary.items():
                 value['numerator'] = 0
             sort_dictionary(database, dict_name)
+        active_cycles = name_to_container(database, 'active_cycle')
+        cycle_dict = database['cycle']
+        for key in active_cycles:
+            value = cycle_dict[key]
+            value['numerator'] = 0
+        sort_dictionary(database, 'cycle')
 
     file_management.update(database)
     console_display.print_display(database)
