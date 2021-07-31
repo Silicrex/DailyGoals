@@ -321,7 +321,7 @@ def endday_command(database, user_input):
         history_dict = database['history'][dict_name]
         task_string = f" ({obj_value['task_string']})" if obj_value['task_string'] else ''
         denominator_string = '{:,}'.format(obj_denominator)
-        history_key = f'{obj_name}{task_string} (/{denominator_string})'
+        history_key = f"{obj_value['display_name']}{task_string} (/{denominator_string})"
         history_key_lower = history_key.lower()
 
         if dict_name == 'longterm':  # Longterm is a one-and-done structure
