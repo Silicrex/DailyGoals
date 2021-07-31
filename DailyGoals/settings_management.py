@@ -30,9 +30,9 @@ def force_date_change_prompt(database):  # If week day or date is changed, need 
     while True:
         print('WARNING: Resets streak and *DELETES* ALL CYCLE OBJECTIVES. Proceed? (y/n)')
         user_input = input().lower()
-        if user_input == 'y':
+        if user_input in {'yes', 'y'}:
             database['streak'] = 0
             database['cycle'].clear()
             return True
-        elif user_input == 'n':
+        elif user_input in {'no', 'n'}:
             return False

@@ -11,20 +11,18 @@ def valid_date(month, day):
     return False
 
 
-def next_day(date):
-    # date = [M, D]
-    month = date[0]
-    day = date[1]
+def next_day(month, day):
     if day < 28:
         day += 1
     # Else, month matters
     elif month in {1, 3, 5, 7, 8, 10, 12}:  # 31 days
         if day < 31:
             day += 1
-        elif month != 12:  # Day is 31, meaning month changes. Is it December?
-            month += 1  # Not December, just increase month by 1
-        else:  # It's December 31st
-            month = 1
+        elif month == 12:  # Day is 31, meaning month changes. Is it December?
+            month = 1  # It's December 31st, reset date to Jan 1st
+            day = 1
+        else:
+            month += 1  # Not December, just increase month by 1 and reset day
             day = 1
     elif month in {4, 6, 9, 11}:  # 30 days
         if day < 30:
@@ -32,21 +30,24 @@ def next_day(date):
         else:  # Day is 30
             month += 1
             day = 1
-    else:  # month = 2
+    else:  # month == 2
         if day < 28:
             day += 1
-        else:  # Day is 28
+        elif day == 28:  # Day is 28
             while True:
                 print('Is it a leap year (is tomorrow the 29th)? (y/n)')
-                user_input = input().lower()
-                if user_input in {'y', 'n'}:
+                user_response = input().lower()
+                if user_response in {'yes', 'y', 'no', 'n'}:
                     break
-            if user_input == 'y':
+            if user_response in {'yes', 'y'}:
                 day += 1
             else:  # Not a leap year, so set to March 1st
                 month = 3
                 day = 1
-    return [month, day]
+        else:  # It was a leap year and it was the 29th
+            month = 3
+            day = 1
+    return month, day
 
 
 def next_week_day(week_day):

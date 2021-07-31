@@ -23,7 +23,7 @@ def get_goal_dictionary_names():
 
 
 def get_daily_container_names():
-    goal_dictionaries = ('daily', 'optional', 'active_cycle')
+    goal_dictionaries = ('daily', 'active_cycle')
     return goal_dictionaries
 
 
@@ -45,6 +45,7 @@ def get_command_alias():
         'd': 'daily',
         'o': 'optional',
         't': 'todo',
+        'p': 'print'
     }
     return command_alias_dict
 

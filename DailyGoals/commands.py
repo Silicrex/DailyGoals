@@ -1,3 +1,5 @@
+import datetime
+import os  # For os.system('cls')
 import documentation
 import item_management
 import dict_management
@@ -117,12 +119,14 @@ def delete_command(database, user_input):
 def print_command(database, user_input):
     if dict_management.wrong_parameter_count(len(user_input), 1):
         return
+    os.system('cls')
     console_display.print_display(database)
 
 
 def dailies_command(database, user_input):
     if dict_management.wrong_parameter_count(len(user_input), 1):
         return
+    os.system('cls')
     console_display.print_dictionary(database, 'daily')
     console_display.print_dictionary(database, 'optional')
 
@@ -130,18 +134,21 @@ def dailies_command(database, user_input):
 def optionals_command(database, user_input):
     if dict_management.wrong_parameter_count(len(user_input), 1):
         return
+    os.system('cls')
     console_display.print_dictionary(database, 'optional')
 
 
 def todos_command(database, user_input):
     if dict_management.wrong_parameter_count(len(user_input), 1):
         return
+    os.system('cls')
     console_display.print_dictionary(database, 'todo')
 
 
 def cycles_command(database, user_input):
     if dict_management.wrong_parameter_count(len(user_input), 1):
         return
+    os.system('cls')
     console_display.print_dictionary(database, 'active_cycle')
     console_display.print_dictionary(database, 'inactive_cycle')
 
@@ -149,24 +156,28 @@ def cycles_command(database, user_input):
 def longterms_command(database, user_input):
     if dict_management.wrong_parameter_count(len(user_input), 1):
         return
+    os.system('cls')
     console_display.print_dictionary(database, 'longterm')
 
 
 def counters_command(database, user_input):
     if dict_management.wrong_parameter_count(len(user_input), 1):
         return
+    os.system('cls')
     console_display.print_dictionary(database, 'counter')
 
 
 def stats_command(database, user_input):
     if dict_management.wrong_parameter_count(len(user_input), 1):
         return
+    os.system('cls')
     console_display.print_stats(database)
 
 
 def history_command(database, user_input):
     if dict_management.wrong_parameter_count(len(user_input), 2):
         return
+    os.system('cls')
     dict_name_input = user_input[1]
     if dict_name_input not in documentation.get_goal_dictionary_names():
         print('Invalid mode, takes goals-based dictionary as input (ie daily)', end='\n\n')
@@ -177,6 +188,7 @@ def history_command(database, user_input):
 def help_command(_, user_input):
     if dict_management.wrong_parameter_count(len(user_input), 1):
         return
+    os.system('cls')
     documentation.print_help()
 
 
@@ -292,14 +304,124 @@ def settings_command(database, user_input):
 
 def endday_command(database, user_input):
     # ex input: endday
-    # deserve streak point?
+    # deserve streak point? (check for completion across dailies)
+    # increment total dailies completed
     # reset all
     # delete completed todo's
     # adjust cycle offset
     # add to history
     # adjust date/weekday
+    # Dicts: daily, optional, todo, cycle, longterm, counter, note, history
+    # Streak point: daily, cycle
+    # Total dailies completed: daily, optional, todo, cycle
+    def add_to_history(dict_name, obj_name, obj_value):
+        obj_numerator = obj_value['numerator']
+        obj_denominator = obj_value['denominator']
+
+        history_dict = database['history'][dict_name]
+        task_string = f" ({obj_value['task_string']})" if obj_value['task_string'] else ''
+        denominator_string = '{:,}'.format(obj_denominator)
+        history_key = f'{obj_name}{task_string} (/{denominator_string})'
+        history_key_lower = history_key.lower()
+
+        if dict_name == 'longterm':  # Longterm is a one-and-done structure
+            if history_key_lower in history_dict:
+                return
+            else:  # First time, so create entry
+                first_completed = datetime.datetime.now().date()
+                history_dict.update({history_key_lower: {'display_name': history_key,
+                                                         'first_completed': str(first_completed)}})
+                return
+
+        if history_key_lower in history_dict:
+            history_value = history_dict[history_key_lower]
+            percent_completed = round(obj_numerator / obj_denominator, 2)  # Tracks >100% comp
+            history_value['total_percent_completed'] += percent_completed
+            history_value['times_completed'] += 1
+        else:  # First time, so create entry
+            percent_completed = round(obj_numerator/obj_denominator, 2)  # Tracks >100% completion
+            first_completed = datetime.datetime.now().date()
+            history_dict.update({history_key_lower: {'display_name': history_key, 'times_completed': 1,
+                                                     'total_percent_completed': percent_completed,
+                                                     'first_completed': str(first_completed)}})
+
     if dict_management.wrong_parameter_count(len(user_input), 1):
         return
+
+    daily_dict = database['daily']
+    cycle_dict = database['cycle']
+    active_cycle_list = dict_management.get_active_cycle_list(database)
+    stats = database['stats']
+
+    streak_deserved = True
+
+    # key represents lowercase objective name
+    # value is a dict with {display_name, task_string, denominator, numerator}, unless specified otherwise
+    for key, value in daily_dict.items():
+        objective_completed = value['numerator'] >= value['denominator']
+        if objective_completed:
+            stats['total_completed'] += 1
+            add_to_history('daily', key, value)
+        else:
+            streak_deserved = False
+        value['numerator'] = 0
+    for key, value in database['optional'].items():
+        objective_completed = value['numerator'] >= value['denominator']
+        if objective_completed:
+            stats['total_completed'] += 1
+            add_to_history('optional', key, value)
+        value['numerator'] = 0
+    todo_delete_list = []
+    for key, value in database['todo'].items():
+        objective_completed = value['numerator'] >= value['denominator']
+        if objective_completed:
+            stats['total_completed'] += 1
+            add_to_history('todo', key, value)
+            todo_delete_list.append(key)  # Completed to-do's are deleted
+    for key in todo_delete_list:
+        database['todo'].pop(key)
+    for key in active_cycle_list:
+        # value has {display_name, task_string, denominator, numerator, cycle_frequency, current_offset}
+        value = cycle_dict[key]
+        objective_completed = value['numerator'] >= value['denominator']
+        if objective_completed:
+            stats['total_completed'] += 1
+            add_to_history('cycle', key, value)
+        else:
+            streak_deserved = False
+        value['numerator'] = 0
+    for key, value in cycle_dict.items():
+        if value['current_offset'] == 0:  # Was an active today
+            value['current_offset'] = value['cycle_frequency'] - 1  # Then reset; -1 to account for date switching now
+        else:
+            value['current_offset'] -= 1
+    dict_management.sort_dictionary(database, 'cycle')
+    for key, value in database['longterm'].items():
+        objective_completed = value['numerator'] >= value['denominator']
+        if objective_completed:
+            add_to_history('longterm', key, value)  # Works differently; does not track stats past 'has been done'
+
+    # Time to handle streak
+    if len(daily_dict) + len(active_cycle_list) > 0:  # If there are none, then ignore streak for the day
+        if streak_deserved:
+            stats['days_completed'] += 1
+            stats['streak'] += 1  # Increment current streak
+            if stats['streak'] > stats['best_streak']:  # Check if it's new best streak
+                stats['best_streak'] = stats['streak']
+        else:
+            stats['streak'] = 0
+
+    # Time to handle date
+    calendar_date = database['settings']['calendar_date']
+    # Increment month/day properly
+    calendar_date['month'], calendar_date['day'] = date_logic.next_day(calendar_date['month'], calendar_date['day'])
+    # Increment week day
+    calendar_date['week_day'] = date_logic.next_week_day(calendar_date['week_day'])
+
+    # Save, sort, and print display
+    file_management.update(database)
+    console_display.print_display(database)
+    print_mode_success('endday')  # To leave success print after everything else
 
 
 def backup_command(database, user_input):
@@ -351,6 +473,7 @@ def print_mode_success(mode):
         'setall': 'Dictionary successfully updated',
         'swap': 'Items successfully updated',
         'remove': 'Item successfully removed',
+        'endday': 'Day successfully ended!! See you next time!'
     }
     print(mode_success_dict[mode], end='\n\n')
 

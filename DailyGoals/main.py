@@ -16,7 +16,9 @@
 # TODO: print help on the command for commands not being used right?
 # TODO: reset data comandd
 # TODO: setting for sorting counter by counter val instead of name
-# TODO: k/m/b
+# TODO: Note groups (have naems and load different configs). Notes that autoload on certain days?
+# TODO: Counter groups in the same fashion
+# TODO: Audo date switching setting
 import file_management  # For loading/saving
 import commands  # Command functions, alias_format()
 import console_display  # To print the initial console display
@@ -38,6 +40,7 @@ def main():
     while True:
         user_input = input().lower()  # Lower for string comparisons
         if not user_input:  # It's possible to enter nothing- continue loop
+            console_display.print_display(database)
             continue
         if not user_input.isascii():
             print('Please only use ASCII characters')  # Limitation from lack of interfacing

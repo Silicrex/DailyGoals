@@ -3,7 +3,7 @@ import documentation
 
 def launch_history_interface(database, dict_name):
     def print_current_page():
-        print(f'Page {current_page}/{total_pages}:', end='\n\n')
+        print(f'Page {current_page}/{total_pages} ({total_keys} total items):', end='\n\n')
 
         index_offset = (current_page - 1) * keys_per_page  # Skip past prior pages
         keys_left_on_page = total_keys - (current_page - 1) * keys_per_page
@@ -11,7 +11,15 @@ def launch_history_interface(database, dict_name):
         for n in range(min(keys_per_page, keys_left_on_page)):  # Iterate for # of items to print on that page
             # Start printing from the desired index
             index = index_offset + n
-            print(f'#{index + 1}: {dictionary[index]}')
+            value = dictionary[keys[index]]
+            times_completed = value['times_completed']
+            total_percent_completed = value['total_percent_completed']
+            total_percent_string = '{:,.2%}'.format(total_percent_completed)
+            avg_percent_completed_str = '{:,.2%}'.format(total_percent_completed/times_completed)
+            print(f"#{index + 1}: {value['display_name']}\n"
+                  f"Times completed: {times_completed}\n"
+                  f"Total % completed: {total_percent_string}\n"
+                  f"Average % completed: {avg_percent_completed_str}", end='\n\n')
 
     def key_index_to_page(key_index):  # key_index starts counting from 0
         return 1 + key_index // keys_per_page  # 0 = 0 page, 1-20 = 1 page, 21-40 = 2 pages w/ 20
@@ -96,7 +104,7 @@ def launch_history_interface(database, dict_name):
 
         elif command in {'exit', 'e'}:
             print('Returning to menu')
-
+            return
         else:
-            print('Invalid command')
+            print("Invalid command ('exit' to return to normal menu)")
         print()  # Newline to separate input from print
