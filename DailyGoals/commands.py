@@ -342,6 +342,7 @@ def endday_command(database, user_input):
             percent_completed = round(obj_numerator/obj_denominator, 2)  # Tracks >100% completion
             first_completed = datetime.datetime.now().date()
             history_dict.update({history_key_lower: {'display_name': history_key, 'times_completed': 1,
+                                                     'denominator': obj_denominator,
                                                      'total_percent_completed': percent_completed,
                                                      'first_completed': str(first_completed)}})
 

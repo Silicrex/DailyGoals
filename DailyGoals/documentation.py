@@ -120,7 +120,8 @@ def print_toggle_help():
 def print_history_commands():
     print("\n'next'/'n', 'previous'/'p', 'page <#>'/'pg <#>', 'find <obj>'/'f <item value>', 'help', 'exit'\n"
           "Notes:\n"
-          "- Can also provide a number with next/previous, ie 'next 5' goes forward 5 pages\n")
+          "- Can also provide a number with next/previous, ie 'next 5' goes forward 5 pages\n"
+          "- 'exit' or enter blank to return to main menu")
 
 
 def print_modules():

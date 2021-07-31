@@ -208,3 +208,10 @@ def print_settings(database):
           f"Show total completed dailies: {settings['display_total']}\n\n\n"
           f">>> Dictionary functionality\n\n"
           f"Objective search auto-match (skip confirmation): {settings['auto_match']}", end='\n\n')
+
+
+def print_commas(value, percent=False):
+    if percent:
+        return '{:,.2%}'.format(value)
+    else:
+        return '{:,}'.format(value)
