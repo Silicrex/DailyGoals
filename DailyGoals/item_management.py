@@ -14,7 +14,7 @@ def add_mode(database, dictionary, input_info):
 
     command = input_info['command']  # Command to identify if different add type
 
-    if command in {'counter', 'cycle'}:
+    if command in {'counter', 'cycle', 'todo'}:
         special_add_function = globals()['add_' + command + '_mode']  # ie add_cycle_mode, gets corresponding func
         if not special_add_function(database, dictionary):
             return False
@@ -82,6 +82,30 @@ def add_counter_mode(_, dictionary):  # Takes (database, dictionary), doesn't ne
     return True
 
 
+def add_todo_mode(database, dictionary):
+    objective_name = get_objective_name()
+    objective_name_lower = objective_name.lower()
+    if objective_name_lower in dictionary:
+        print('Objective by that name already exists. Returning to menu', end='\n\n')
+        return False
+    task_string = get_task_string()
+    denominator = get_denominator()
+    while True:
+        print('Should this todo objective count towards daily requirement? (y/n)', end='\n\n')
+        user_response = input().lower()
+        print()  # Newline
+        if user_response in {'yes', 'y'}:
+            enforced_daily = True
+            break
+        elif user_response in {'no', 'n'}:
+            enforced_daily = False
+            break
+    dictionary.update({objective_name_lower: {'display_name': objective_name, 'task_string': task_string,
+                                              'denominator': denominator, 'numerator': 0,
+                                              'enforced_daily': enforced_daily}})
+    return True
+
+
 def add_note_mode(database, user_input):
     # ex input: note add
     # ex input: note add 0
@@ -116,8 +140,7 @@ def add_note_mode(database, user_input):
 
 def get_objective_name():
     while True:
-        print('Enter a name for the objective (must be unique, no spaces)')
-        print()  # Extra newline
+        print('Enter a name for the objective (must be unique, no spaces)', end='\n\n')
         objective_name = input().strip()  # Get input and remove leading/trailing spaces
         print()  # Extra newline
         if not objective_name:

@@ -379,6 +379,8 @@ def endday_command(database, user_input):
             stats['total_completed'] += 1
             add_to_history('todo', key, value)
             todo_delete_list.append(key)  # Completed to-do's are deleted
+        elif value['enforced_daily']:  # If it's an enforced daily to-do, that is not completed, it breaks streak
+            streak_deserved = False
     for key in todo_delete_list:
         database['todo'].pop(key)
     for key in active_cycle_list:

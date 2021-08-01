@@ -23,7 +23,7 @@ def get_goal_dictionary_names():
 
 
 def get_daily_container_names():
-    goal_dictionaries = ('daily', 'active_cycle')
+    goal_dictionaries = ('daily', 'enforced_todo', 'active_cycle')
     return goal_dictionaries
 
 

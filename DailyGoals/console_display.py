@@ -70,7 +70,7 @@ def print_dictionary(database, dict_name):
     elif dict_name == 'todo':
         todo_dict = database['todo']
         if todo_dict:  # Skip if empty
-            print_todo_objectives(todo_dict)
+            print_todo_objectives(database, todo_dict)
             print()  # Extra newline
     elif dict_name == 'active_cycle':
         active_cycle_list = dict_management.get_active_cycle_list(database)
@@ -124,9 +124,37 @@ def print_optional_objectives(optional_dict):
     print_base_dictionary(optional_dict)
 
 
-def print_todo_objectives(todo_dict):
-    print('>>> To-dos:', end='\n\n')
-    print_base_dictionary(todo_dict)
+def print_todo_objectives(database, todo_dict):
+    def print_obj(obj_value):
+        display_name = obj_value['display_name']
+        task_string = obj_value['task_string']
+        formatted_task_string = ''
+        if task_string:  # If it's not blank
+            formatted_task_string = f' ({task_string})'
+        denominator = obj_value['denominator']
+        numerator = obj_value['numerator']
+        if numerator >= denominator:  # Complete
+            print(f'[x] {display_name}{formatted_task_string}: ', end='')
+            print('{:,}/{:,} '.format(numerator, denominator), end='')
+            print('({:.2%}) (DONE!!)'.format(numerator / denominator))
+        else:  # Incomplete
+            print(f'[ ] {display_name}{formatted_task_string}: ', end='')
+            print('{:,}/{:,} '.format(numerator, denominator), end='')
+            print('({:.2%})'.format(numerator / denominator))
+
+    print('>>> To-dos:')
+    enforced_daily_list = dict_management.get_enforced_dailys_list(database)
+    if enforced_daily_list:
+        print("* '>' signifies enforced to-do; required for streak today", end='\n\n')
+        for key in enforced_daily_list:
+            print('> ', end='')
+            print_obj(todo_dict[key])
+    else:
+        print()  # Newline to make up for lack of enforced newline print
+    for key in dict_management.get_unenforced_cycle_list(database):
+        # {display_name, task_string, denominator, numerator, enforced_daily}
+        value = todo_dict[key]
+        print_obj(value)
 
 
 def print_active_cycle_objectives(database, active_cycle_list):

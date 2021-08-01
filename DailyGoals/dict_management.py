@@ -18,6 +18,10 @@ def name_to_container(database, name):
         return get_active_cycle_list(database)
     elif name == 'inactive_cycle':
         return get_inactive_cycle_list(database)
+    elif name == 'enforced_todo':
+        return get_enforced_dailys_list(database)
+    elif name == 'unenforced_todo':
+        return get_unenforced_cycle_list(database)
     else:
         return database[name]
 
@@ -103,27 +107,39 @@ def change_all_daily_dicts(database, mode):
             return
 
     if mode == 'complete':
-        for dict_name in daily_container_names[:-1]:  # Exclude last one, active_cycles (it's a list)
+        for dict_name in daily_container_names[:-2]:  # Exclude last two, enforced_todo and active_cycles (lists)
             dictionary = name_to_container(database, dict_name)
             for key, value in dictionary.items():
                 # Set the numerator to the denominator (100%). value is the key's dictionary value
                 value['numerator'] = value['denominator']
             sort_dictionary(database, dict_name)
+        enforced_todos =  name_to_container(database, 'enforced_todo')
+        todo_dict = database['todo']
         active_cycles = name_to_container(database, 'active_cycle')
         cycle_dict = database['cycle']
+        for key in enforced_todos:
+            value = todo_dict[key]
+            value['numerator'] = value['denominator']
+        sort_dictionary(database, 'todo')
         for key in active_cycles:
             value = cycle_dict[key]
             value['numerator'] = value['denominator']
         sort_dictionary(database, 'cycle')
 
     elif mode == 'reset':
-        for dict_name in daily_container_names[:-1]:
+        for dict_name in daily_container_names[:-2]: # Exclude last two, enforced_todo and active_cycles (lists)
             dictionary = name_to_container(database, dict_name)
             for key, value in dictionary.items():
                 value['numerator'] = 0
             sort_dictionary(database, dict_name)
+        enforced_todos = name_to_container(database, 'enforced_todo')
+        todo_dict = database['todo']
         active_cycles = name_to_container(database, 'active_cycle')
         cycle_dict = database['cycle']
+        for key in enforced_todos:
+            value = todo_dict[key]
+            value['numerator'] = 0
+        sort_dictionary(database, 'todo')
         for key in active_cycles:
             value = cycle_dict[key]
             value['numerator'] = 0
@@ -178,6 +194,24 @@ def delete_dictionary(database, mode):
         return True
 
 
+def get_enforced_dailys_list(database):
+    enforced_dailys_list = []
+    for key, value in database['todo'].items():
+        if value['enforced_daily']:
+            enforced_dailys_list.append(key)
+        else:  # Sorted for all enforced to-do's to be first, so once you encounter one that's not, that's the end
+            break
+    return enforced_dailys_list
+
+
+def get_unenforced_cycle_list(database):
+    unenforced_list = list(database['todo'].keys())
+    enforced_list = get_enforced_dailys_list(database)
+    for key in enforced_list:
+        unenforced_list.remove(key)
+    return unenforced_list  # Remove enforced keys to get unenforced keys
+
+
 def get_active_cycle_list(database):
     active_cycle_list = []
     for key, value in database['cycle'].items():
@@ -208,6 +242,11 @@ def sort_dictionary(database, command):
         # 0 sorts before 1, False before True, a before z. Sorts by offset, then completion bool, then name
         return obj[1]['current_offset'], obj[1]['numerator'] >= obj[1]['denominator'], obj[0]
 
+    def todo_sort(obj):
+        # Puts enforced daily to-do objectives on top (False sorts before True, so invert with not)
+        # enforced_daily -> completed or not -> name
+        return not obj[1]['enforced_daily'], obj[1]['numerator'] >= obj[1]['denominator'], obj[0]
+
     def alpha_sort(obj):
         return obj[0]  # Just by the name
 
@@ -218,6 +257,8 @@ def sort_dictionary(database, command):
         temp_list = sorted(temp_list, key=cycle_sort)
     elif command == 'counter':
         temp_list = sorted(temp_list, key=alpha_sort)
+    elif command == 'todo':
+        temp_list = sorted(temp_list, key=todo_sort)
     else:
         temp_list = sorted(temp_list, key=completion_then_alpha_sort)
 
