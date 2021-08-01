@@ -47,7 +47,7 @@ def launch_history_interface(database, dict_name):
     total_keys = len(keys)
 
     current_page = 1  # Default page
-    keys_per_page = 10
+    keys_per_page = 5
     total_pages = key_index_to_page(total_keys - 1)  # Get page # of the last key. len starts at 1, index starts at 0
 
     print_header()
@@ -114,9 +114,12 @@ def launch_history_interface(database, dict_name):
 
         elif command in {'find', 'f'}:
             item_name = user_input[1]
-            try:
-                item_index = keys.index(item_name)
-            except ValueError:
+            item_index = 0
+            for key in keys:
+                if key.startswith(item_name):
+                    break
+                item_index += 1
+            if item_index == total_keys:  # If loop went through all and found nothing, they will be equal
                 refresh_display()
                 print('Item not found')
                 continue
