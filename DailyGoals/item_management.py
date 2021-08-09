@@ -1,5 +1,6 @@
 import dict_management
 import date_logic
+import exceptions
 
 
 # Base core dict functions need to take (database, dictionary, input_info)
@@ -7,12 +8,13 @@ import date_logic
 # Return False = abort, return True = sort and save
 
 # Adding items ------------------------------------------------------------------------------------------
-def add_mode(database, dictionary, input_info):
+def add_mode(database, dictionary, input_info, *extra_input):
     # ex input: daily add
-    if dict_management.wrong_parameter_count(input_info['parameter_length'], 0):
-        return False
-
     command = input_info['command']  # Command to identify if different add type
+
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
 
     if command in {'counter', 'cycle', 'todo'}:
         special_add_function = globals()['add_' + command + '_mode']  # ie add_cycle_mode, gets corresponding func
@@ -140,14 +142,11 @@ def add_note_mode(database, user_input):
 
 def get_objective_name():
     while True:
-        print('Enter a name for the objective (must be unique, no spaces)', end='\n\n')
+        print('Enter a name for the objective (must be unique; no leading/trailing spaces)', end='\n\n')
         objective_name = input().strip()  # Get input and remove leading/trailing spaces
         print()  # Extra newline
         if not objective_name:
             print('Objective name cannot be blank')
-            continue
-        if len(objective_name.split()) > 1:  # If there are spaces
-            print('Please do not use spaces')
             continue
         if not objective_name.isascii():
             print('Please only use ASCII characters')
@@ -189,37 +188,53 @@ def get_denominator():
 
 
 # Updating/editing items ------------------------------------------------------------------------------------------
-def update_mode(database, dictionary, input_info, objective_name=None, update_value='1'):
+def update_mode(database, dictionary, input_info, *extra_input):
     # ex input: daily update wanikani 50
-    # ex input: daily update wanikani
-    parameter_length = input_info['parameter_length']
-    if dict_management.wrong_parameter_count(parameter_length, 1, 2):
-        return False
+    # ex input: daily update clean dishes
+
+    # Spaces in names complicates. Prioritize searching for objective name over valid update value.
+    # Can have a case where obj name is something like "Do number 9". Command could potentially be
+    # "daily update do number 9" to increment it by one, or "daily update do number 9 1" for specified.
 
     command = input_info['command']  # Cycle handled differently
-    objective_name = objective_name.lower()
 
-    if command == 'cycle':
-        if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
+    if not extra_input:
+        print('Must provide an objective to update', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+
+    full_string = ' '.join(extra_input).lower()  # Lowercase string of entire rest of input
+    # Search for full string as an objective name; assuming no update value specified
+    if (objective_name := dict_management.objective_search(database, dictionary, full_string)) in dictionary:
+        update_value = '1'  # str because format_integer takes a string
+    else:  # Objective wasn't found. Assume update value was specified
+        sub_string = ' '.join(extra_input[:-1]).lower()  # Last element should be update value
+        if not (objective_name := dict_management.objective_search(database, dictionary, sub_string)):
+            print('Objective name not found', end='\n\n')
+            raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        update_value = extra_input[-1]
+
+    # Validate/format update value from str to int
+    if not (update_value := format_integer(update_value)):  # Enforces non-zero integer. Accepts extension ie 1k
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])  # Invalid update value
+
+    if command == 'cycle':  # Can't update inactive item
+        if objective_name not in dict_management.get_active_cycle_list(database):
             print('Cannot update progress for inactive cycle objectives', end='\n\n')
             return False
 
-    if not (update_value := format_integer(update_value)):  # Enforces non-zero integer. Accepts extension ie 1k
-        return False
-
-    if objective_name not in dictionary:  # If not found, look for as a substring
-        if not (objective_name := dict_management.objective_search(database, dictionary, objective_name)):
-            return False
     dictionary[objective_name]['numerator'] += update_value
     return True
 
 
-def set_mode(database, dictionary, input_info, objective_name=None, set_value=None):
+def set_mode(database, dictionary, input_info, *extra_input):
     # ex input: daily set wanikani 50
-    if dict_management.wrong_parameter_count(input_info['parameter_length'], 2):
-        return False
 
     command = input_info['command']  # Cycle handled differently
+
+    if not extra_input:
+        print('Must provide an objective to update', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+
     objective_name = objective_name.lower()
 
     if not (set_value := format_integer(set_value)):  # Enforces non-zero integer. Accepts extension ie 1k
@@ -453,12 +468,12 @@ def format_integer(value: str):
     try:
         number = eval(value)
     except (SyntaxError, NameError):
-        print('Value must be a number')
+        print('Value must be a number', end='\n\n')
         return False
     if number == 0:
-        print('Value cannot be 0')
+        print('Value cannot be 0', end='\n\n')
         return False
     if isinstance(number, float):
-        print('Value must be an integer')
+        print('Value must be an integer', end='\n\n')
         return False
     return int(number * multiplier)

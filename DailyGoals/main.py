@@ -22,6 +22,7 @@
 import file_management  # For loading/saving
 import commands  # Command functions, alias_format()
 import console_display  # To print the initial console display
+import exceptions
 
 # main gets input
 # -> checks for validity and matching command. If found, pass to commands.py
@@ -58,7 +59,11 @@ def main():
             print('Invalid command')
             print()  # Newline to separate input from printing
             continue
-        command_function(database, user_input)  # All is well, proceed to command function
+
+        try:
+            command_function(database, user_input)  # All is well, proceed to command function
+        except exceptions.InvalidCommandUsage as error:
+            print(f'help for {error.command} {error.subcommand} :)')
 
 
 if __name__ == '__main__':

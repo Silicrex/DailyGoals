@@ -73,7 +73,7 @@ def mode_route(database, user_input):
     input_info = {
         'command': command,  # Some containers need different routing within a mode function
         'mode': mode,
-        'parameter_length': len(user_input[2:])  # For these commands, 'parameters' = inputs following command/mode
+        'arg_length': len(user_input[2:])  # For these commands, 'arguments' = inputs following command/mode
     }
     if not mode_function(database, dictionary, input_info, *user_input[2:]):  # Expand input past mode as args (if any)
         return  # Returns false to indicate error. Else...
@@ -455,16 +455,12 @@ def alias_format(user_input):
     mode_alias_dict = documentation.get_mode_alias()
     if user_input[1] in mode_alias_dict:  # Replace alias with corresponding mode
         user_input[1] = mode_alias_dict[user_input[1]]
-    elif user_input[1].startswith('+') and len(user_input[1]) > 1:  # Update shorthand; format of +x
-        input_length = len(user_input)
-        # ie daily +wanikani, daily +wanikani 5, should be daily update wanikani 5
-        if input_length == 2:  # Looking for daily +name
-            user_input.append(user_input[1][1:])  # Splice after the + symbol, put at index 2
-            user_input[1] = 'update'  # Make like daily update <name>, which defaults to +1
-        elif input_length == 3:  # Looking for daily +name #
-            user_input.append(user_input[2])  # Take update value, move to index 3, ie [daily, +name, 5, 5]
-            user_input[2] = user_input[1][1:]  # Splice after + symbol, ie [daily, name, 5, 5]
-            user_input[1] = 'update'  # Like [daily, update, name, 2]
+    # Update shorthand; format of dict +x
+    elif user_input[1].startswith('+') and len(user_input[1]) > 1:  # 2nd input starts with + and is more than 1 char
+        # ie daily +wanikani; daily +wanikani 5 should be daily update wanikani 5
+        # End result: replace + with 'update' and push everything else further. Works with spaced names
+        user_input.insert(2, user_input[1][1:])  # Splice after the + symbol, put at index 2
+        user_input[1] = 'update'  # Make like daily update <name>, which defaults to +1
 
 
 def print_mode_success(mode):
@@ -479,15 +475,3 @@ def print_mode_success(mode):
         'endday': 'Day successfully ended!! See you next time!'
     }
     print(mode_success_dict[mode], end='\n\n')
-
-
-# def invalid_parameter(parameter_number, *expected):  # Takes which parameter # and what was expected
-#     # expected should be a list of potential expected words
-#     expected = list(expected)  # List so we can use pop()
-#     print(f'Invalid parameter #{parameter_number}. Expected "{expected.pop(0)}"', end='')
-#     while expected:  # If there are more words left
-#         if len(expected) > 1:  # If it isn't the last one
-#             print(f', "{expected.pop(0)}"', end='')
-#         else:  # Last one
-#             print(f', or "{expected.pop(0)}"', end='')
-#     print()  # Newline

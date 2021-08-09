@@ -26,7 +26,10 @@ def name_to_container(database, name):
         return database[name]
 
 
-def objective_search(database, dictionary, input_objective_string):  # Search by startswith then substring
+def objective_search(database, dictionary, input_objective_string):  # Search by in, then startswith, then substring
+    if input_objective_string in dictionary:  # If the search term is an objective name, just return it back
+        return input_objective_string
+
     auto_match = database['settings']['auto_match']
     objective_keys = list(dictionary.keys())
     objective_keys.sort()  # Alphabetize list of keys
@@ -68,7 +71,6 @@ def objective_search(database, dictionary, input_objective_string):  # Search by
                 continue
             elif user_response == 'cancel':
                 return False
-    print('Could not find objective. Returning to menu')
     return False
 
 
