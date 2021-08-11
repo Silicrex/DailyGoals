@@ -73,7 +73,6 @@ def mode_route(database, user_input):
     input_info = {
         'command': command,  # Some containers need different routing within a mode function
         'mode': mode,
-        'arg_length': len(user_input[2:])  # For these commands, 'arguments' = inputs following command/mode
     }
     if not mode_function(database, dictionary, input_info, *user_input[2:]):  # Expand input past mode as args (if any)
         return  # Returns false to indicate error. Else...

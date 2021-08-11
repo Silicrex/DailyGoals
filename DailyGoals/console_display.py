@@ -238,8 +238,8 @@ def print_settings(database):
           f"Objective search auto-match (skip confirmation): {settings['auto_match']}", end='\n\n')
 
 
-def print_commas(value, percent=False):
+def print_commas(value, percent=False):  # Prints comma-separated number, %'s rounded to 2 decimals
     if percent:
-        return '{:,.2%}'.format(value)
+        return f'{value:,.2%}'
     else:
-        return '{:,}'.format(value)
+        return f'{value:,}'

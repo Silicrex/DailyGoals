@@ -12,15 +12,15 @@ def add_mode(database, dictionary, input_info, *extra_input):
     # ex input: daily add
     command = input_info['command']  # Command to identify if different add type
 
+    if command in {'counter', 'cycle', 'todo'}:
+        special_add_function = globals()['add_' + command + '_mode']  # ie add_cycle_mode, gets corresponding func
+        if not special_add_function(database, dictionary, *extra_input):
+            return False
+        return True
+
     if extra_input:
         print('Unnecessary arguments!', end='\n\n')
         raise exceptions.InvalidCommandUsage(command, input_info['mode'])
-
-    if command in {'counter', 'cycle', 'todo'}:
-        special_add_function = globals()['add_' + command + '_mode']  # ie add_cycle_mode, gets corresponding func
-        if not special_add_function(database, dictionary):
-            return False
-        return True
 
     objective_name = get_objective_name()
     objective_name_lower = objective_name.lower()
@@ -34,7 +34,11 @@ def add_mode(database, dictionary, input_info, *extra_input):
     return True
 
 
-def add_cycle_mode(database, dictionary):
+def add_cycle_mode(database, dictionary, *extra_input):
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage('cycle', 'add')
+
     objective_name = get_objective_name()
     objective_name_lower = objective_name.lower()
     if objective_name_lower in dictionary:
@@ -72,7 +76,11 @@ def add_cycle_mode(database, dictionary):
     return True
 
 
-def add_counter_mode(_, dictionary):  # Takes (database, dictionary), doesn't need database
+def add_counter_mode(_, dictionary, *extra_input):  # Doesn't need database
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage('counter', 'add')
+
     objective_name = get_objective_name()
     objective_name_lower = objective_name.lower()
     if objective_name_lower in dictionary:
@@ -84,7 +92,11 @@ def add_counter_mode(_, dictionary):  # Takes (database, dictionary), doesn't ne
     return True
 
 
-def add_todo_mode(database, dictionary):
+def add_todo_mode(_, dictionary, *extra_input):
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage('todo', 'add')
+
     objective_name = get_objective_name()
     objective_name_lower = objective_name.lower()
     if objective_name_lower in dictionary:
@@ -108,21 +120,26 @@ def add_todo_mode(database, dictionary):
     return True
 
 
-def add_note_mode(database, user_input):
+def add_note_mode(_, dictionary, *extra_input):
     # ex input: note add
     # ex input: note add 0
-    input_length = len(user_input)
-    if dict_management.wrong_parameter_count(input_length, 2, 3):
-        return False
-    dictionary = database['note']
+    if len(extra_input) > 1:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage('note', 'add')
+
     note_count = len(dictionary)
-    if input_length == 3:
-        note_index = user_input[2]
-        if not note_index.isnumeric():
-            print('Invalid parameter. Index must be a positive integer', end='\n\n')
-            return False
-        note_index = eval(note_index)
-        if note_index > note_count:  # If specified index is higher than list length, bump down to end index
+    if extra_input:
+        note_index = extra_input[0]
+        try:
+            note_index = eval(note_index)
+        except (NameError, SyntaxError):
+            print('Invalid index', end='\n\n')
+            raise exceptions.InvalidCommandUsage('note', 'add')
+        if not isinstance(note_index, int):
+            print('Invalid index', end='\n\n')
+            raise exceptions.InvalidCommandUsage('note', 'add')
+
+        if note_index > note_count - 1:  # If specified index is higher than list length, bump down to end index
             print('Index adjusted as given value was higher than list length')
             note_index = note_count
     else:
@@ -232,85 +249,94 @@ def set_mode(database, dictionary, input_info, *extra_input):
     command = input_info['command']  # Cycle handled differently
 
     if not extra_input:
-        print('Must provide an objective to update', end='\n\n')
+        print('Must provide an objective to update and set value', end='\n\n')
         raise exceptions.InvalidCommandUsage(command, input_info['mode'])
 
-    objective_name = objective_name.lower()
+    input_string = ' '.join(extra_input[:-1]).lower()  # Last element should be set value
+    if not (objective_name := dict_management.objective_search(database, dictionary, input_string)):
+        print('Objective name not found', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
 
-    if not (set_value := format_integer(set_value)):  # Enforces non-zero integer. Accepts extension ie 1k
-        return False
+    if not (set_value := format_integer(extra_input[-1])):  # Enforces non-zero integer. Accepts extension ie 1k
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
 
     if command == 'cycle':
         if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
             print('Cannot update progress for inactive cycle objectives', end='\n\n')
-            return False
-
-    if objective_name not in dictionary:  # If not found, look for as a substring
-        if not (objective_name := dict_management.objective_search(database, dictionary, objective_name)):
             return False
 
     dictionary[objective_name]['numerator'] = set_value
     return True
 
 
-def complete_mode(database, dictionary, input_info, objective_name=None):
+def complete_mode(database, dictionary, input_info, *extra_input):
     # ex input: daily complete wanikani
-    if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
-        return False
 
     command = input_info['command']
-    objective_name = objective_name.lower()
+
+    if not extra_input:
+        print('Must provide an objective to set as complete', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+
+    input_string = ' '.join(extra_input).lower()
+    if not (objective_name := dict_management.objective_search(database, dictionary, input_string)):
+        print('Objective name not found', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
 
     if command == 'cycle':
         if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
             print('Cannot update progress for inactive cycle objectives', end='\n\n')
             return False
 
-    if objective_name not in dictionary:  # If not found, look for as a substring
-        if not (objective_name := dict_management.objective_search(database, dictionary, objective_name)):
-            return False
     value = dictionary[objective_name]
     # If numerator < denominator
     if value['numerator'] < value['denominator']:
         # Then make it 100%
         value['numerator'] = value['denominator']
     else:
-        print('That objective is already marked as at least 100% complete')
+        print('That objective is already marked as at least 100% complete', end='\n\n')
         return False
     return True
 
 
-def reset_mode(database, dictionary, input_info, objective_name=None):
+def reset_mode(database, dictionary, input_info, *extra_input):
     # ex input: daily reset wanikani
-    if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
-        return False
 
     command = input_info['command']
-    objective_name = objective_name.lower()
+
+    if not extra_input:
+        print('Must provide an objective to reset', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+
+    input_string = ' '.join(extra_input).lower()
+    if not (objective_name := dict_management.objective_search(database, dictionary, input_string)):
+        print('Objective name not found', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
 
     if command == 'cycle':
         if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
             print('Cannot update progress for inactive cycle objectives', end='\n\n')
             return False
 
-    if objective_name not in dictionary:  # If not found, look for as a substring
-        if not (objective_name := dict_management.objective_search(database, dictionary, objective_name)):
-            return False
     value = dictionary[objective_name]
     if value['numerator'] != 0:
         value['numerator'] = 0
     else:
-        print('That item already has no progress')
+        print('That item already has no progress', end='\n\n')
         return False
     return True
 
 
-def setall_mode(database, dictionary, input_info, setall_value=None):
+def setall_mode(database, dictionary, input_info, *extra_input):
     # ex input: daily setall complete
-    if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
-        return False
 
     command = input_info['command']
+
+    if not extra_input or len(extra_input) > 1:
+        print('Must provide a setall type', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+
+    setall_value = extra_input[0]
 
     if command in {'counter', 'cycle'}:
         special_setall_function = globals()['setall_' + command + '_mode']  # ie setall_cycle_mode, gets func
@@ -319,8 +345,8 @@ def setall_mode(database, dictionary, input_info, setall_value=None):
         return True
 
     if setall_value not in {'complete', 'reset'}:
-        print('Invalid parameter. Expected "complete" or "reset"', end='\n\n')
-        return False
+        print('Invalid parameter setall value', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
 
     if not dictionary:
         print('That dictionary is empty', end='\n\n')
@@ -340,8 +366,8 @@ def setall_cycle_mode(database, dictionary, setall_value):
     active_cycle_list = dict_management.get_active_cycle_list(database)
 
     if setall_value not in {'complete', 'reset'}:
-        print('Invalid parameter. Expected "complete" or "reset"', end='\n\n')
-        return False
+        print('Invalid parameter setall value', end='\n\n')
+        raise exceptions.InvalidCommandUsage('cycle', 'setall')
 
     if not active_cycle_list:
         print('There are no active cycle objectives', end='\n\n')
@@ -360,14 +386,8 @@ def setall_cycle_mode(database, dictionary, setall_value):
 
 
 def setall_counter_mode(_, dictionary, setall_value):  # _: doesn't need database
-    try:
-        setall_value = eval(setall_value)
-    except (SyntaxError, NameError):
-        print('Setall value must be a number', end='\n\n')
-        return False
-    if not isinstance(setall_value, int):
-        print('Setall value must be an integer', end='\n\n')
-        return False
+    if not (setall_value := format_integer(setall_value)):  # Enforces non-zero integer. Accepts extension ie 1k
+        raise exceptions.InvalidCommandUsage('counter', 'setall')
 
     if not dictionary:
         print('There are no counters', end='\n\n')
@@ -386,16 +406,20 @@ def setall_counter_mode(_, dictionary, setall_value):  # _: doesn't need databas
     return True
 
 
-def rename_mode(database, dictionary, input_info, objective_name=None):
+def rename_mode(database, dictionary, input_info, *extra_input):
     # ex input: daily rename wanikani
-    if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
-        return False
 
-    objective_name = objective_name.lower()
+    command = input_info['command']
 
-    if objective_name not in dictionary:  # If not found, look for as a substring
-        if not (objective_name := dict_management.objective_search(database, dictionary, objective_name)):
-            return False
+    if not extra_input:
+        print('Must provide an objective to rename', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+
+    input_string = ' '.join(extra_input).lower()
+    if not (objective_name := dict_management.objective_search(database, dictionary, input_string)):
+        print('Objective name not found', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+
     new_name = get_objective_name()
     if new_name in dictionary:
         print('That name is already in use', end='\n\n')
@@ -405,31 +429,37 @@ def rename_mode(database, dictionary, input_info, objective_name=None):
     return True
 
 
-def retask_mode(database, dictionary, input_info, objective_name=None):
+def retask_mode(database, dictionary, input_info, *extra_input):
     # ex input: daily retask wanikani
-    if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
-        return False
+    command = input_info['command']
 
-    objective_name = objective_name.lower()
+    if not extra_input:
+        print('Must provide an objective to retask', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
 
-    if objective_name not in dictionary:  # If not found, look for as a substring
-        if not (objective_name := dict_management.objective_search(database, dictionary, objective_name)):
-            return False
+    input_string = ' '.join(extra_input).lower()
+    if not (objective_name := dict_management.objective_search(database, dictionary, input_string)):
+        print('Objective name not found', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+
     new_task_string = get_task_string()
     dictionary[objective_name]['task_string'] = new_task_string
     return True
 
 
-def denominator_mode(database, dictionary, input_info, objective_name=None):
+def denominator_mode(database, dictionary, input_info, *extra_input):
     # ex input: daily denominator wanikani
-    if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
-        return False
+    command = input_info['command']
 
-    objective_name = objective_name.lower()
+    if not extra_input:
+        print('Must provide an objective to change the denominator of', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
 
-    if objective_name not in dictionary:  # If not found, look for as a substring
-        if not (objective_name := dict_management.objective_search(database, dictionary, objective_name)):
-            return False
+    input_string = ' '.join(extra_input).lower()
+    if not (objective_name := dict_management.objective_search(database, dictionary, input_string)):
+        print('Objective name not found', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+
     if not (new_denominator := get_denominator()):
         return False
     dictionary[objective_name]['denominator'] = new_denominator
@@ -437,16 +467,19 @@ def denominator_mode(database, dictionary, input_info, objective_name=None):
 
 
 # Removing items ------------------------------------------------------------------------------------------
-def remove_mode(database, dictionary, input_info, objective_name=None):
+def remove_mode(database, dictionary, input_info, *extra_input):
     # ex input: daily remove wanikani
-    if dict_management.wrong_parameter_count(input_info['parameter_length'], 1):
-        return False
+    command = input_info['command']
 
-    objective_name = objective_name.lower()
+    if not extra_input:
+        print('Must provide an objective to remove', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
 
-    if objective_name not in dictionary:  # If not found, look for as a substring
-        if not (objective_name := dict_management.objective_search(database, dictionary, objective_name)):
-            return False
+    input_string = ' '.join(extra_input).lower()
+    if not (objective_name := dict_management.objective_search(database, dictionary, input_string)):
+        print('Objective name not found', end='\n\n')
+        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+
     dictionary.pop(objective_name)
     return True
 

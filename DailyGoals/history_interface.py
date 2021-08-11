@@ -20,7 +20,6 @@ def launch_history_interface(database, dict_name):
             times_completed = value['times_completed']
             total_percent_completed = value['total_percent_completed']
 
-            avg_percent_completed_str = '{:,.2%}'.format(total_percent_completed/times_completed)
             print(f"#{console_display.print_commas(index + 1)}: {value['display_name']}\n"
                   f"-----------------------------------\n"
                   f">>> Times completed: {console_display.print_commas(times_completed)}\n"
