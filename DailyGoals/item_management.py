@@ -486,7 +486,7 @@ def remove_mode(database, dictionary, input_info, *extra_input):
 
 # Misc utility ------------------------------------------------------------------------------------------
 def format_integer(value: str):
-    multiplier = 1
+    multiplier = 1  # Default value
     if value[-1] in {'k', 'm', 'b', 't'}:  # Extension
         extension = value[-1]
         value = value[:-1]
@@ -498,15 +498,24 @@ def format_integer(value: str):
             multiplier = 1e9
         elif extension == 't':
             multiplier = 1e12
-    try:
-        number = eval(value)
+    try:  # Try an eval
+        value = eval(value)
     except (SyntaxError, NameError):
-        print('Value must be a number', end='\n\n')
+        print('Value must be an number', end='\n\n')
         return False
+
+    try:  # The input base value can be a float, as long as the end result is an integer
+        # We need output to be an integer. But, something like "1.5b" will result in a float, since there is
+        # multiplication by a float involved. Don't want any implicit conversions, so compare int result to float
+        # result, and see if they're numerically equal.
+        if not (number := int(value * multiplier)) == value * multiplier:
+            print('Value must be an integer', end='\n\n')
+            return False
+    except TypeError:  # Valid eval happened, but not a valid number
+        print('Value must be an integer*', end='\n\n')
+        return False
+
     if number == 0:
         print('Value cannot be 0', end='\n\n')
         return False
-    if isinstance(number, float):
-        print('Value must be an integer', end='\n\n')
-        return False
-    return int(number * multiplier)
+    return number

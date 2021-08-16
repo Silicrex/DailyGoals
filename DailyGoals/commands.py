@@ -46,6 +46,7 @@ def note_command(database, user_input):
     if mode in valid_modes:
         mode_function = getattr(item_management, mode + '_note_mode')  # ie 'add' goes to add_note_mode()
     else:
+        console_display.print_display(database)
         print('Invalid mode', end='\n\n')
         return
     if not mode_function(database, user_input):
@@ -67,6 +68,7 @@ def mode_route(database, user_input):
     if mode in valid_modes:
         mode_function = getattr(item_management, mode + '_mode')  # ie 'add' goes to add_mode()
     else:
+        console_display.print_display(database)
         print('Invalid mode', end='\n\n')
         return
     dictionary = database[command]  # ie 'daily' gets 'daily' dict

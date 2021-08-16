@@ -56,6 +56,7 @@ def main():
             # Command functions have '_command' appended to name, ie daily_command
             command_function = getattr(commands, command + '_command')
         except AttributeError:  # If function is not found
+            console_display.print_display(database)
             print('Invalid command')
             print()  # Newline to separate input from printing
             continue
