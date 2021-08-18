@@ -36,6 +36,10 @@ def main():
     # Update backup right after loading (to save state before user performs any actions)
     file_management.update(database, 'data_autobackup.json')
 
+    # Used to pass around non-persisted data, ie command used
+    context = {'last_printed': None, 'command': None}
+    # last_printed is used to tell what display to print after a command is used
+
     console_display.print_display(database)
 
     while True:
@@ -46,9 +50,11 @@ def main():
         if not user_input.isascii():
             print('Please only use ASCII characters')  # Limitation from lack of interfacing
             continue
+
         user_input = user_input.split()  # Split into a list of space-separated terms
         commands.alias_format(user_input)  # Reformats input list according to alias dict
         command = user_input[0]
+        context['command'] = command
 
         print()  # Newline to separate input from printing
         try:
@@ -61,10 +67,11 @@ def main():
             print()  # Newline to separate input from printing
             continue
 
-        try:
-            command_function(database, user_input)  # All is well, proceed to command function
+        try:  # Try block to catch InvalidCommandUsage exception
+            # Everything after the command is passed as args
+            command_function(database, context, *user_input[1:])
         except exceptions.InvalidCommandUsage as error:
-            print(f'help for {error.command} {error.subcommand} :)')
+            print(f'help for {error.command} {error.subcommand} :)')  # Placeholder
 
 
 if __name__ == '__main__':

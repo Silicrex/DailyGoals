@@ -501,7 +501,7 @@ def format_integer(value: str):
     try:  # Try an eval
         value = eval(value)
     except (SyntaxError, NameError):
-        print('Value must be an number', end='\n\n')
+        print('Value must be a number', end='\n\n')
         return False
 
     try:  # The input base value can be a float, as long as the end result is an integer
