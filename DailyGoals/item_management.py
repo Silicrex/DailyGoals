@@ -3,14 +3,13 @@ import date_logic
 import exceptions
 
 
-# Base core dict functions need to take (database, dictionary, input_info)
-# Default args for extra params to avoid exception on missing args
+# Base core dict functions need to take (database, context, dictionary, *extra_input)
 # Return False = abort, return True = sort and save
 
 # Adding items ------------------------------------------------------------------------------------------
-def add_mode(database, dictionary, input_info, *extra_input):
+def add_mode(database, context, dictionary, *extra_input):
     # ex input: daily add
-    command = input_info['command']  # Command to identify if different add type
+    command = context['command']  # Command to identify if different add type
 
     if command in {'counter', 'cycle', 'todo'}:
         special_add_function = globals()['add_' + command + '_mode']  # ie add_cycle_mode, gets corresponding func
@@ -20,7 +19,7 @@ def add_mode(database, dictionary, input_info, *extra_input):
 
     if extra_input:
         print('Unnecessary arguments!', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     objective_name = get_objective_name()
     objective_name_lower = objective_name.lower()
@@ -92,7 +91,7 @@ def add_counter_mode(_, dictionary, *extra_input):  # Doesn't need database
     return True
 
 
-def add_todo_mode(_, dictionary, *extra_input):
+def add_todo_mode(_, dictionary, *extra_input):  # Doesn't need database
     if extra_input:
         print('Unnecessary arguments!', end='\n\n')
         raise exceptions.InvalidCommandUsage('todo', 'add')
@@ -120,7 +119,7 @@ def add_todo_mode(_, dictionary, *extra_input):
     return True
 
 
-def add_note_mode(_, dictionary, *extra_input):
+def add_note_mode(_, dictionary, *extra_input):  # Doesn't need database
     # ex input: note add
     # ex input: note add 0
     if len(extra_input) > 1:
@@ -205,7 +204,7 @@ def get_denominator():
 
 
 # Updating/editing items ------------------------------------------------------------------------------------------
-def update_mode(database, dictionary, input_info, *extra_input):
+def update_mode(database, context, dictionary, *extra_input):
     # ex input: daily update wanikani 50
     # ex input: daily update clean dishes
 
@@ -213,11 +212,11 @@ def update_mode(database, dictionary, input_info, *extra_input):
     # Can have a case where obj name is something like "Do number 9". Command could potentially be
     # "daily update do number 9" to increment it by one, or "daily update do number 9 1" for specified.
 
-    command = input_info['command']  # Cycle handled differently
+    command = context['command']  # Cycle handled differently
 
     if not extra_input:
         print('Must provide an objective to update', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     full_string = ' '.join(extra_input).lower()  # Lowercase string of entire rest of input
     # Search for full string as an objective name; assuming no update value specified
@@ -227,12 +226,12 @@ def update_mode(database, dictionary, input_info, *extra_input):
         sub_string = ' '.join(extra_input[:-1]).lower()  # Last element should be update value
         if not (objective_name := dict_management.objective_search(database, dictionary, sub_string)):
             print('Objective name not found', end='\n\n')
-            raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+            raise exceptions.InvalidCommandUsage(command, context['mode'])
         update_value = extra_input[-1]
 
     # Validate/format update value from str to int
     if not (update_value := format_integer(update_value)):  # Enforces non-zero integer. Accepts extension ie 1k
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])  # Invalid update value
+        raise exceptions.InvalidCommandUsage(command, context['mode'])  # Invalid update value
 
     if command == 'cycle':  # Can't update inactive item
         if objective_name not in dict_management.get_active_cycle_list(database):
@@ -243,22 +242,22 @@ def update_mode(database, dictionary, input_info, *extra_input):
     return True
 
 
-def set_mode(database, dictionary, input_info, *extra_input):
+def set_mode(database, context, dictionary, *extra_input):
     # ex input: daily set wanikani 50
 
-    command = input_info['command']  # Cycle handled differently
+    command = context['command']  # Cycle handled differently
 
     if not extra_input:
         print('Must provide an objective to update and set value', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     input_string = ' '.join(extra_input[:-1]).lower()  # Last element should be set value
     if not (objective_name := dict_management.objective_search(database, dictionary, input_string)):
         print('Objective name not found', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     if not (set_value := format_integer(extra_input[-1])):  # Enforces non-zero integer. Accepts extension ie 1k
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     if command == 'cycle':
         if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
@@ -269,19 +268,19 @@ def set_mode(database, dictionary, input_info, *extra_input):
     return True
 
 
-def complete_mode(database, dictionary, input_info, *extra_input):
+def complete_mode(database, context, dictionary, *extra_input):
     # ex input: daily complete wanikani
 
-    command = input_info['command']
+    command = context['command']
 
     if not extra_input:
         print('Must provide an objective to set as complete', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     input_string = ' '.join(extra_input).lower()
     if not (objective_name := dict_management.objective_search(database, dictionary, input_string)):
         print('Objective name not found', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     if command == 'cycle':
         if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
@@ -299,19 +298,19 @@ def complete_mode(database, dictionary, input_info, *extra_input):
     return True
 
 
-def reset_mode(database, dictionary, input_info, *extra_input):
+def reset_mode(database, context, dictionary, *extra_input):
     # ex input: daily reset wanikani
 
-    command = input_info['command']
+    command = context['command']
 
     if not extra_input:
         print('Must provide an objective to reset', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     input_string = ' '.join(extra_input).lower()
     if not (objective_name := dict_management.objective_search(database, dictionary, input_string)):
         print('Objective name not found', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     if command == 'cycle':
         if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
@@ -327,14 +326,14 @@ def reset_mode(database, dictionary, input_info, *extra_input):
     return True
 
 
-def setall_mode(database, dictionary, input_info, *extra_input):
+def setall_mode(database, context, dictionary, *extra_input):
     # ex input: daily setall complete
 
-    command = input_info['command']
+    command = context['command']
 
     if not extra_input or len(extra_input) > 1:
         print('Must provide a setall type', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     setall_value = extra_input[0]
 
@@ -346,7 +345,7 @@ def setall_mode(database, dictionary, input_info, *extra_input):
 
     if setall_value not in {'complete', 'reset'}:
         print('Invalid parameter setall value', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     if not dictionary:
         print('That dictionary is empty', end='\n\n')
@@ -406,19 +405,19 @@ def setall_counter_mode(_, dictionary, setall_value):  # _: doesn't need databas
     return True
 
 
-def rename_mode(database, dictionary, input_info, *extra_input):
+def rename_mode(database, context, dictionary, *extra_input):
     # ex input: daily rename wanikani
 
-    command = input_info['command']
+    command = context['command']
 
     if not extra_input:
         print('Must provide an objective to rename', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     input_string = ' '.join(extra_input).lower()
     if not (objective_name := dict_management.objective_search(database, dictionary, input_string)):
         print('Objective name not found', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     new_name = get_objective_name()
     if new_name in dictionary:
@@ -429,36 +428,36 @@ def rename_mode(database, dictionary, input_info, *extra_input):
     return True
 
 
-def retask_mode(database, dictionary, input_info, *extra_input):
+def retask_mode(database, context, dictionary, *extra_input):
     # ex input: daily retask wanikani
-    command = input_info['command']
+    command = context['command']
 
     if not extra_input:
         print('Must provide an objective to retask', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     input_string = ' '.join(extra_input).lower()
     if not (objective_name := dict_management.objective_search(database, dictionary, input_string)):
         print('Objective name not found', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     new_task_string = get_task_string()
     dictionary[objective_name]['task_string'] = new_task_string
     return True
 
 
-def denominator_mode(database, dictionary, input_info, *extra_input):
+def denominator_mode(database, context, dictionary, *extra_input):
     # ex input: daily denominator wanikani
-    command = input_info['command']
+    command = context['command']
 
     if not extra_input:
         print('Must provide an objective to change the denominator of', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     input_string = ' '.join(extra_input).lower()
     if not (objective_name := dict_management.objective_search(database, dictionary, input_string)):
         print('Objective name not found', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     if not (new_denominator := get_denominator()):
         return False
@@ -467,18 +466,18 @@ def denominator_mode(database, dictionary, input_info, *extra_input):
 
 
 # Removing items ------------------------------------------------------------------------------------------
-def remove_mode(database, dictionary, input_info, *extra_input):
+def remove_mode(database, context, dictionary, *extra_input):
     # ex input: daily remove wanikani
-    command = input_info['command']
+    command = context['command']
 
     if not extra_input:
         print('Must provide an objective to remove', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     input_string = ' '.join(extra_input).lower()
     if not (objective_name := dict_management.objective_search(database, dictionary, input_string)):
         print('Objective name not found', end='\n\n')
-        raise exceptions.InvalidCommandUsage(command, input_info['mode'])
+        raise exceptions.InvalidCommandUsage(command, context['mode'])
 
     dictionary.pop(objective_name)
     return True

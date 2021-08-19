@@ -37,7 +37,7 @@ def main():
     file_management.update(database, 'data_autobackup.json')
 
     # Used to pass around non-persisted data, ie command used
-    context = {'last_printed': None, 'command': None}
+    context_template = {'last_printed': None, 'command': ''}
     # last_printed is used to tell what display to print after a command is used
 
     console_display.print_display(database)
@@ -54,6 +54,8 @@ def main():
         user_input = user_input.split()  # Split into a list of space-separated terms
         commands.alias_format(user_input)  # Reformats input list according to alias dict
         command = user_input[0]
+
+        context = context_template.copy()
         context['command'] = command
 
         print()  # Newline to separate input from printing
@@ -69,6 +71,7 @@ def main():
 
         try:  # Try block to catch InvalidCommandUsage exception
             # Everything after the command is passed as args
+            print(f'{context=}')
             command_function(database, context, *user_input[1:])
         except exceptions.InvalidCommandUsage as error:
             print(f'help for {error.command} {error.subcommand} :)')  # Placeholder

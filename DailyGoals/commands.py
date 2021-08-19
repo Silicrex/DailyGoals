@@ -10,35 +10,35 @@ import date_logic
 import console_display
 
 
-# Command functions should take arguments (database, user_input)
+# Command functions should take arguments (database, context, *extra_input)
 # Dictionary commands ------------------------------------------------------------------------------------------
 
-def daily_command(database, user_input):
-    mode_route(database, user_input)
+def daily_command(database, context, *extra_input):
+    mode_route(database, context, *extra_input)
 
 
-def optional_command(database, user_input):
-    mode_route(database, user_input)
+def optional_command(database, context, *extra_input):
+    mode_route(database, context, *extra_input)
 
 
-def todo_command(database, user_input):
-    mode_route(database, user_input)
+def todo_command(database, context, *extra_input):
+    mode_route(database, context, *extra_input)
 
 
-def cycle_command(database, user_input):
-    mode_route(database, user_input)
+def cycle_command(database, context, *extra_input):
+    mode_route(database, context, *extra_input)
 
 
-def longterm_command(database, user_input):
-    mode_route(database, user_input)
+def longterm_command(database, context, *extra_input):
+    mode_route(database, context, *extra_input)
 
 
-def counter_command(database, user_input):
-    mode_route(database, user_input)
+def counter_command(database, context, *extra_input):
+    mode_route(database, context, *extra_input)
 
 
-def note_command(database, user_input):
-    if not len(user_input) > 1:
+def note_command(database, context, *extra_input):
+    if not len(extra_input) > 1:
         print('Invalid number of parameters, expected at least 2', end='\n\n')
         return
     mode = user_input[1]
@@ -57,27 +57,24 @@ def note_command(database, user_input):
     print_mode_success(mode)
 
 
-def mode_route(database, user_input):
-    input_length = len(user_input)
-    if not input_length >= 2 and input_length < 4:  # These commands always take 2-4 inputs
-        print('Invalid number of parameters, expected 2-4', end='\n\n')
+def mode_route(database, context, *extra_input):
+    if not extra_input:  # Needs to at least have a mode specified
+        print('Mode must be given', end='\n\n')
         return
-    command = user_input[0]  # To know which dict we're working with
-    mode = user_input[1]
+    command = context['command']  # To know which dict we're working with
+    mode = extra_input[0]
+    context['mode'] = mode
+    print(f'{context=}')
     valid_modes = documentation.get_modes(command)  # Returns set of valid modes for given dict command
-    if mode in valid_modes:
+    if mode in valid_modes:  # If valid mode, retrieve corresponding function
         mode_function = getattr(item_management, mode + '_mode')  # ie 'add' goes to add_mode()
     else:
         console_display.print_display(database)
         print('Invalid mode', end='\n\n')
         return
     dictionary = database[command]  # ie 'daily' gets 'daily' dict
-    input_info = {
-        'command': command,  # Some containers need different routing within a mode function
-        'mode': mode,
-    }
-    if not mode_function(database, dictionary, input_info, *user_input[2:]):  # Expand input past mode as args (if any)
-        return  # Returns false to indicate error. Else...
+    if not mode_function(database, context, dictionary, *extra_input[1:]):  # Expand input past mode as args (if any)
+        return
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
     file_management.update(database)
