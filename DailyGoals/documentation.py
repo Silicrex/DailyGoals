@@ -13,7 +13,7 @@ def get_dictionary_list(database):
 
 
 def get_dictionary_names():
-    dictionaries = ('daily', 'optional', 'todo', 'cycle', 'longterm', 'counter', 'note')
+    dictionaries = ('daily', 'optional', 'todo', 'cycle', 'longterm', 'counter', 'note', 'history')
     return dictionaries
 
 

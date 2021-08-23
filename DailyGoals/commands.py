@@ -8,6 +8,7 @@ import settings_management
 import history_interface
 import date_logic
 import console_display
+import exceptions
 
 
 # Command functions should take arguments (database, context, *extra_input)
@@ -41,7 +42,7 @@ def note_command(database, context, *extra_input):
     if not len(extra_input) > 1:
         print('Invalid number of parameters, expected at least 2', end='\n\n')
         return
-    mode = user_input[1]
+    mode = context['mode']
     valid_modes = documentation.get_modes('note')
     if mode in valid_modes:
         mode_function = getattr(item_management, mode + '_note_mode')  # ie 'add' goes to add_note_mode()
@@ -49,7 +50,8 @@ def note_command(database, context, *extra_input):
         console_display.print_display(database)
         print('Invalid mode', end='\n\n')
         return
-    if not mode_function(database, user_input):
+    dictionary = database['note']
+    if not mode_function(database, dictionary, *extra_input):
         return
     # Save and print display
     file_management.update(database)
@@ -64,7 +66,6 @@ def mode_route(database, context, *extra_input):
     command = context['command']  # To know which dict we're working with
     mode = extra_input[0]
     context['mode'] = mode
-    print(f'{context=}')
     valid_modes = documentation.get_modes(command)  # Returns set of valid modes for given dict command
     if mode in valid_modes:  # If valid mode, retrieve corresponding function
         mode_function = getattr(item_management, mode + '_mode')  # ie 'add' goes to add_mode()
@@ -82,26 +83,29 @@ def mode_route(database, context, *extra_input):
     print_mode_success(mode)  # To leave success print after everything else
 
 
-def complete_command(database, user_input):
+def complete_command(database, context, *extra_input):
     # ex input: complete
-    if dict_management.wrong_parameter_count(len(user_input), 1):
-        return
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
     dict_management.change_all_daily_dicts(database, 'complete')
 
 
-def reset_command(database, user_input):
+def reset_command(database, context, *extra_input):
     # ex input: reset
-    if dict_management.wrong_parameter_count(len(user_input), 1):
-        return
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
     dict_management.change_all_daily_dicts(database, 'reset')
 
 
-def delete_command(database, user_input):
+def delete_command(database, context, *extra_input):
     # ex input: delete daily
     # ex input: delete all
-    if dict_management.wrong_parameter_count(len(user_input), 2):
-        return
-    delete_mode_input = user_input[1]
+    if len(extra_input) != 1:  # Only ever one valid arg
+        print('Missing argument!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
+    delete_mode_input = extra_input[0]
     if delete_mode_input not in documentation.get_dictionary_names() and delete_mode_input != 'all':
         print("Invalid delete mode. Expected a dictionary name (ie daily) or 'all'", end='\n\n')
         return
@@ -114,126 +118,143 @@ def delete_command(database, user_input):
 
 # Display ------------------------------------------------------------------------------------------
 
-def print_command(database, user_input):
-    if dict_management.wrong_parameter_count(len(user_input), 1):
-        return
+def print_command(database, context, *extra_input):
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
     os.system('cls')
     console_display.print_display(database)
 
 
-def dailies_command(database, user_input):
-    if dict_management.wrong_parameter_count(len(user_input), 1):
-        return
+def dailies_command(database, context, *extra_input):
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
     os.system('cls')
     console_display.print_dictionary(database, 'daily')
     console_display.print_dictionary(database, 'optional')
 
 
-def optionals_command(database, user_input):
-    if dict_management.wrong_parameter_count(len(user_input), 1):
-        return
+def optionals_command(database, context, *extra_input):
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
     os.system('cls')
     console_display.print_dictionary(database, 'optional')
 
 
-def todos_command(database, user_input):
-    if dict_management.wrong_parameter_count(len(user_input), 1):
-        return
+def todos_command(database, context, *extra_input):
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
     os.system('cls')
     console_display.print_dictionary(database, 'todo')
 
 
-def cycles_command(database, user_input):
-    if dict_management.wrong_parameter_count(len(user_input), 1):
-        return
+def cycles_command(database, context, *extra_input):
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
     os.system('cls')
     console_display.print_dictionary(database, 'active_cycle')
     console_display.print_dictionary(database, 'inactive_cycle')
 
 
-def longterms_command(database, user_input):
-    if dict_management.wrong_parameter_count(len(user_input), 1):
-        return
+def longterms_command(database, context, *extra_input):
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
     os.system('cls')
     console_display.print_dictionary(database, 'longterm')
 
 
-def counters_command(database, user_input):
-    if dict_management.wrong_parameter_count(len(user_input), 1):
-        return
+def counters_command(database, context, *extra_input):
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
     os.system('cls')
     console_display.print_dictionary(database, 'counter')
 
 
-def stats_command(database, user_input):
-    if dict_management.wrong_parameter_count(len(user_input), 1):
-        return
+def stats_command(database, context, *extra_input):
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
     os.system('cls')
     console_display.print_stats(database)
 
 
-def history_command(database, user_input):
-    if dict_management.wrong_parameter_count(len(user_input), 2):
-        return
+def history_command(database, context, *extra_input):
+    if len(extra_input) != 1:
+        print('Missing argument!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
     os.system('cls')
-    dict_name_input = user_input[1]
+    dict_name_input = extra_input[0]
     if dict_name_input not in documentation.get_goal_dictionary_names():
         print('Invalid mode, takes goals-based dictionary as input (ie daily)', end='\n\n')
         return
     history_interface.launch_history_interface(database, dict_name_input)
 
 
-def help_command(_, user_input):
-    if dict_management.wrong_parameter_count(len(user_input), 1):
-        return
+def help_command(_, context, *extra_input):  # Doesn't need database
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
     os.system('cls')
     documentation.print_help()
 
 
 # Settings ------------------------------------------------------------------------------------------
 
-def toggle_command(database, user_input):
+def toggle_command(database, context, *extra_input):
     # ex input: toggle
     # ex input: toggle welcome
     # ex input: toggle welcome off
     # ex input: toggle defaults
     settings = database['settings']
-    input_length = len(user_input)
-    if dict_management.wrong_parameter_count(input_length, 1, 2, 3):
-        return
-    if input_length == 1:  # Just 'toggle'
+    arg_length = len(extra_input)
+    if arg_length > 2:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
+    if arg_length == 0:  # Just 'toggle'
         documentation.print_toggle_help()
         return
 
-    toggle_input = user_input[1]
-    if input_length == 2:  # Either toggling a specific setting or setting to defaults
-        if toggle_input in settings:
-            settings_management.toggle(database, toggle_input)
-        elif toggle_input == 'defaults':
+    toggle_name = extra_input[0]
+    if arg_length == 1:  # Either toggling a specific setting or setting to defaults
+        if toggle_name in settings:
+            settings_management.toggle(database, toggle_name)
+        elif toggle_name == 'defaults':
             database['settings'] = file_management.get_template_dict()['settings']
             print('Default settings restored', end='\n\n')
         else:
             print("Invalid setting. See keywords with 'toggle'", end='\n\n')
             return
 
-    elif input_length == 3:  # Specified setting and manual value
-        if toggle_input not in settings:
+    elif arg_length == 2:  # Specified setting and manual value
+        if toggle_name not in settings:
             print("Invalid setting. See keywords with 'toggle'", end='\n\n')
             return
-        manual_value = user_input[2]
+        manual_value = extra_input[1]
         if manual_value not in {'on', 'off'}:
-            print("Invalid manual value (3rd input). Expected 'on' or 'off'", end='\n\n')
+            print("Invalid manual value. Expected 'on' or 'off'", end='\n\n')
             return
-        settings_management.toggle(database, toggle_input, manual_value)
+        settings_management.toggle(database, toggle_name, manual_value)
     file_management.update(database)
 
 
-def setdate_command(database, user_input):
+def setdate_command(database, context, *extra_input):
     # ex input: setdate 5 26
-    if dict_management.wrong_parameter_count(len(user_input), 3):
-        return
-    input_month = user_input[1]
-    input_day = user_input[2]
+    # ex input: setdate 8
+    arg_length = len(extra_input)
+    if arg_length not in {1, 2}:
+        print('Invalid number of arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
+    input_month = extra_input[0]
+    if arg_length == 1:  # Default day to 1
+        input_day = '1'  # Converted to int later
+    else:
+        input_day = extra_input[1]
 
     if not input_month.isnumeric():
         print('Invalid month. Use numbers in the form MM DD, ie 5 27', end='\n\n')
@@ -271,15 +292,17 @@ def setdate_command(database, user_input):
     print('Date successfully changed', end='\n\n')
 
 
-def setday_command(database, user_input):
+def setday_command(database, context, *extra_input):
     # ex input: setday monday
-    if dict_management.wrong_parameter_count(len(user_input), 2):
-        return
-    input_week_day = user_input[1]
+    if len(extra_input) != 1:
+        print('Invalid number of arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
+    input_week_day = extra_input[0]
     if input_week_day not in date_logic.get_week_days():
         print('Invalid day. Enter week day name (ie saturday)', end='\n\n')
         return
     if not settings_management.force_date_change_prompt(database):  # If they confirm; streak reset, cycles deleted
+        # Else just return to menu
         console_display.print_display(database)
         return
 
@@ -291,16 +314,17 @@ def setday_command(database, user_input):
     print('Week day successfully changed', end='\n\n')
 
 
-def settings_command(database, user_input):
-    if dict_management.wrong_parameter_count(len(user_input), 1):
-        return
+def settings_command(database, context, *extra_input):
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
     console_display.print_settings(database)
 
 
 # System/file ------------------------------------------------------------------------------------------
 
 
-def endday_command(database, user_input):
+def endday_command(database, context, *extra_input):
     # ex input: endday
     # deserve streak point? (check for completion across dailies)
     # increment total dailies completed
@@ -312,7 +336,7 @@ def endday_command(database, user_input):
     # Dicts: daily, optional, todo, cycle, longterm, counter, note, history
     # Streak point: daily, cycle
     # Total dailies completed: daily, optional, todo, cycle
-    def add_to_history(dict_name, obj_name, obj_value):
+    def add_to_history(dict_name, obj_value):
         obj_numerator = obj_value['numerator']
         obj_denominator = obj_value['denominator']
 
@@ -344,8 +368,9 @@ def endday_command(database, user_input):
                                                      'total_percent_completed': percent_completed,
                                                      'first_completed': str(first_completed)}})
 
-    if dict_management.wrong_parameter_count(len(user_input), 1):
-        return
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
 
     daily_dict = database['daily']
     cycle_dict = database['cycle']
@@ -360,7 +385,7 @@ def endday_command(database, user_input):
         objective_completed = value['numerator'] >= value['denominator']
         if objective_completed:
             stats['total_completed'] += 1
-            add_to_history('daily', key, value)
+            add_to_history('daily', value)
         else:
             streak_deserved = False
         value['numerator'] = 0
@@ -368,14 +393,14 @@ def endday_command(database, user_input):
         objective_completed = value['numerator'] >= value['denominator']
         if objective_completed:
             stats['total_completed'] += 1
-            add_to_history('optional', key, value)
+            add_to_history('optional', value)
         value['numerator'] = 0
     todo_delete_list = []
     for key, value in database['todo'].items():
         objective_completed = value['numerator'] >= value['denominator']
         if objective_completed:
             stats['total_completed'] += 1
-            add_to_history('todo', key, value)
+            add_to_history('todo', value)
             todo_delete_list.append(key)  # Completed to-do's are deleted
         elif value['enforced_daily']:  # If it's an enforced daily to-do, that is not completed, it breaks streak
             streak_deserved = False
@@ -387,7 +412,7 @@ def endday_command(database, user_input):
         objective_completed = value['numerator'] >= value['denominator']
         if objective_completed:
             stats['total_completed'] += 1
-            add_to_history('cycle', key, value)
+            add_to_history('cycle', value)
         else:
             streak_deserved = False
         value['numerator'] = 0
@@ -400,7 +425,7 @@ def endday_command(database, user_input):
     for key, value in database['longterm'].items():
         objective_completed = value['numerator'] >= value['denominator']
         if objective_completed:
-            add_to_history('longterm', key, value)  # Works differently; does not track stats past 'has been done'
+            add_to_history('longterm', value)  # Works differently; does not track stats past 'has been done'
 
     # Time to handle streak
     if len(daily_dict) + len(active_cycle_list) > 0:  # If there are none, then ignore streak for the day
@@ -425,18 +450,20 @@ def endday_command(database, user_input):
     print_mode_success('endday')  # To leave success print after everything else
 
 
-def backup_command(database, user_input):
+def backup_command(database, context, *extra_input):
     # ex input: backup
-    if dict_management.wrong_parameter_count(len(user_input), 1):
-        return
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
     file_management.update(database, file_name='data_manualbackup.json')
     print('Manual backup successfully created and saved to [data_manualbackup.json]', end='\n\n')
 
 
-def stop_command(_, user_input):
+def stop_command(_, context, *extra_input):  # Doesn't need database
     # ex input: stop
-    if dict_management.wrong_parameter_count(len(user_input), 1):
-        return
+    if extra_input:
+        print('Unnecessary arguments!', end='\n\n')
+        raise exceptions.InvalidCommandUsage(context['command'])
     quit('Program terminated')
 
 
