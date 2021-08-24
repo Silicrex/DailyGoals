@@ -352,7 +352,7 @@ def endday_command(database, context, *extra_input):
             else:  # First time, so create entry
                 first_completed = datetime.datetime.now().date()
                 history_dict.update({history_key_lower: {'display_name': history_key,
-                                                         'first_completed': str(first_completed)}})
+                                                         'first_completed': str(first_completed), 'tags': []}})
                 return
 
         if history_key_lower in history_dict:
@@ -366,7 +366,7 @@ def endday_command(database, context, *extra_input):
             history_dict.update({history_key_lower: {'display_name': history_key, 'times_completed': 1,
                                                      'denominator': obj_denominator,
                                                      'total_percent_completed': percent_completed,
-                                                     'first_completed': str(first_completed)}})
+                                                     'first_completed': str(first_completed), 'tags': []}})
 
     if extra_input:
         print('Unnecessary arguments!', end='\n\n')
