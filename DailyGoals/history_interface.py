@@ -1,6 +1,7 @@
 import os  # For os.system('cls')
 import documentation
 import console_display
+import dict_management  # For objective_search
 
 
 def launch_history_interface(database, dict_name):
@@ -63,7 +64,8 @@ def launch_history_interface(database, dict_name):
         print()  # Newline to separate input from print
 
         if input_length > 2:
-            print('Invalid amount of parameters (expected 1 or 2)')
+            refresh_display()
+            print('Unnecessary arguments!')
             continue
 
         if command in {'next', 'n'}:
@@ -95,9 +97,9 @@ def launch_history_interface(database, dict_name):
             refresh_display()
 
         elif command in {'page', 'pg'}:
-            if len(user_input) != 2:
+            if input_length < 2:
                 refresh_display()
-                print('Invalid # of parameters. Expected 2')
+                print('Missing required arg!')
                 continue
             second_parameter = user_input[1]
             if not second_parameter.isnumeric():
@@ -112,6 +114,10 @@ def launch_history_interface(database, dict_name):
             refresh_display()
 
         elif command in {'find', 'f'}:
+            if input_length < 2:
+                refresh_display()
+                print('Missing required arg!')
+                continue
             item_name = user_input[1]
             item_index = 0
             for key in keys:
@@ -124,6 +130,27 @@ def launch_history_interface(database, dict_name):
                 continue
             current_page = key_index_to_page(item_index)
             refresh_display()
+
+        elif command in {'tag'}:
+            # tag add
+            # tag remove
+            # tag edit
+
+            if input_length < 2:
+                refresh_display()
+                print('Missing required arg!')
+                continue
+            mode = user_input[1]
+            if mode == 'add':
+                pass
+            elif mode == 'remove':
+                pass
+            elif mode == 'edit':
+                pass
+            else:
+                refresh_display()
+                print("Invalid mode. Expected 'add', 'remove', or 'edit'")
+                continue
 
         elif command == 'help':
             refresh_display()

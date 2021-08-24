@@ -191,6 +191,7 @@ def history_command(database, context, *extra_input):
     os.system('cls')
     dict_name_input = extra_input[0]
     if dict_name_input not in documentation.get_goal_dictionary_names():
+        console_display.print_display(database)
         print('Invalid mode, takes goals-based dictionary as input (ie daily)', end='\n\n')
         return
     history_interface.launch_history_interface(database, dict_name_input)
@@ -366,7 +367,7 @@ def endday_command(database, context, *extra_input):
             history_dict.update({history_key_lower: {'display_name': history_key, 'times_completed': 1,
                                                      'denominator': obj_denominator,
                                                      'total_percent_completed': percent_completed,
-                                                     'first_completed': str(first_completed), 'tags': []}})
+                                                     'first_completed': str(first_completed), 'tags': []}}) #format this
 
     if extra_input:
         print('Unnecessary arguments!', end='\n\n')

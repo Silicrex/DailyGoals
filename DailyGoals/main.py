@@ -71,7 +71,6 @@ def main():
 
         try:  # Try block to catch InvalidCommandUsage exception
             # Everything after the command is passed as args
-            print(f'{context=}')
             command_function(database, context, *user_input[1:])
         except exceptions.InvalidCommandUsage as error:
             print(f'help for {error.command} {error.subcommand} :)')  # Placeholder
