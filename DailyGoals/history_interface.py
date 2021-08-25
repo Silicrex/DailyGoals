@@ -2,12 +2,13 @@ import os  # For os.system('cls')
 import documentation
 import console_display
 import dict_management  # For objective_search
+import file_management  # For saving
 
 
 def launch_history_interface(database, dict_name):
     def print_current_page():
-        print(f'Page {console_display.print_commas(current_page)}/{console_display.print_commas(total_pages)} '
-              f'({console_display.print_commas(total_keys)} items total):', end='\n\n')
+        # Header
+        print(f'Page {current_page:,}/{total_pages:,} ({total_keys:,} items total):', end='\n\n')
 
         index_offset = (current_page - 1) * keys_per_page  # Skip past prior pages
         keys_left_on_page = total_keys - (current_page - 1) * keys_per_page
@@ -65,7 +66,7 @@ def launch_history_interface(database, dict_name):
 
         if input_length > 2:
             refresh_display()
-            print('Unnecessary arguments!')
+            print('Unnecessary arguments!', end='\n\n')
             continue
 
         if command in {'next', 'n'}:
@@ -74,7 +75,7 @@ def launch_history_interface(database, dict_name):
                 second_parameter = user_input[1]
                 if not second_parameter.isnumeric():
                     refresh_display()
-                    print('Invalid parameter. Only allows positive integers')
+                    print('Invalid parameter. Only allows positive integers', end='\n\n')
                     continue
                 pages_to_next = eval(second_parameter)
             current_page += pages_to_next
@@ -88,7 +89,7 @@ def launch_history_interface(database, dict_name):
                 second_parameter = user_input[1]
                 if not second_parameter.isnumeric():
                     refresh_display()
-                    print('Invalid parameter. Only allows positive integers')
+                    print('Invalid parameter. Only allows positive integers', end='\n\n')
                     continue
                 pages_to_previous = eval(second_parameter)
             current_page -= pages_to_previous
@@ -99,24 +100,34 @@ def launch_history_interface(database, dict_name):
         elif command in {'page', 'pg'}:
             if input_length < 2:
                 refresh_display()
-                print('Missing required arg!')
+                print('Missing required arg!', end='\n\n')
                 continue
-            second_parameter = user_input[1]
-            if not second_parameter.isnumeric():
+            page_index = user_input[1]
+            try:
+                page_index = eval(page_index)
+            except (NameError, SyntaxError):
                 refresh_display()
-                print('Invalid parameter. Only allows positive integers')
+                print('Invalid page, must be an integer', end='\n\n')
                 continue
-            current_page = eval(second_parameter)
+            if not isinstance(page_index, int):
+                refresh_display()
+                print('Invalid page, must be an integer', end='\n\n')
+                continue
+
+            if page_index < 0:
+                page_index += total_pages - 1  # ie 5 pages and -1 index.. -1 + 5 + 1 = 5th page.
+                # -1 at the end because negative indexing starts at -1, not -0; so an offset correction is needed
+            current_page = page_index
             if current_page > total_pages:
                 current_page = total_pages
-            elif current_page < 1:
+            elif current_page < 1:  # If 0 was given or a negative index exceeding total keys
                 current_page = 1
             refresh_display()
 
         elif command in {'find', 'f'}:
             if input_length < 2:
                 refresh_display()
-                print('Missing required arg!')
+                print('Missing required arg!', end='\n\n')
                 continue
             item_name = user_input[1]
             item_index = 0
@@ -126,7 +137,7 @@ def launch_history_interface(database, dict_name):
                 item_index += 1
             if item_index == total_keys:  # If loop went through all and found nothing, they will be equal
                 refresh_display()
-                print('Item not found')
+                print('Item not found', end='\n\n')
                 continue
             current_page = key_index_to_page(item_index)
             refresh_display()
@@ -138,28 +149,105 @@ def launch_history_interface(database, dict_name):
 
             if input_length < 2:
                 refresh_display()
-                print('Missing required arg!')
+                print('Missing required arg!', end='\n\n')
                 continue
             mode = user_input[1]
-            if mode == 'add':
-                pass
-            elif mode == 'remove':
-                pass
-            elif mode == 'edit':
-                pass
-            else:
+            if not mode in {'add', 'remove', 'edit'}:
                 refresh_display()
-                print("Invalid mode. Expected 'add', 'remove', or 'edit'")
+                print("Invalid mode. Expected 'add', 'remove', or 'edit'", end='\n\n')
                 continue
+            
+            print('Enter item name', end='\n\n')
+            item_name = input().lower()
+            if not (item_value := dict_management.objective_search(database, dictionary, item_name)):
+                refresh_display()
+                print('Item could not be found', end='\n\n')
+                continue
+            item_tags = dictionary[item_name]['tags']
+            tags_length = len(item_tags)
+
+            if mode == 'add':
+                print('At what index should the tag be inserted? (Starts at 0) (Blank = put at end)', end='\n\n')
+                item_index = input()
+                if not item_index:
+                    item_index = tags_length
+                elif item_index.isnumeric():
+                    item_index = eval(item_index)
+                else:
+                    refresh_display()
+                    print('Index must be a positive integer', end='\n\n')
+                    continue
+                print('Enter tag text (Blank to cancel)', end='\n\n')
+                tag_text = input()
+                if not tag_text:
+                    refresh_display()
+                    print('Cancelled tag add', end='\n\n')
+                    continue
+                item_tags.insert(item_index, tag_text)
+                file_management.update(database)
+                refresh_display()
+                print('Successfully added tag', end='\n\n')
+                
+            elif mode == 'remove':
+                print('What index should be deleted? (Starts at 0) (Blank = cancel)', end='\n\n')
+                item_index = input()
+                if not item_index:
+                    refresh_display()
+                    print('Cancelled tag remove', end='\n\n')
+                    continue
+                elif item_index.isnumeric():
+                    item_index = eval(item_index)
+                else:
+                    refresh_display()
+                    print('Index must be a positive integer', end='\n\n')
+                    continue
+                while True:
+                    print(f'Remove tag {item_index}? (y/n) [{item_tags[item_index]}]', end='\n\n')
+                    user_response = input().lower()
+                    if user_response in {'yes', 'y', 'no', 'n'}:
+                        break
+                if user_response in {'no', 'n'}:
+                    refresh_display()
+                    print('Cancelled tag remove', end='\n\n')
+                    continue
+                item_tags.pop(item_index)
+                file_management.update(database)
+                refresh_display()
+                print('Successfully removed tag', end='\n\n')
+
+            elif mode == 'edit':
+                print('What index should be edited? (Starts at 0) (Blank = cancel)', end='\n\n')
+                item_index = input()
+                if not item_index:
+                    refresh_display()
+                    print('Cancelled tag edit', end='\n\n')
+                    continue
+                elif item_index.isnumeric():
+                    item_index = eval(item_index)
+                else:
+                    refresh_display()
+                    print('Index must be a positive integer', end='\n\n')
+                    continue
+                print('Enter tag text (Blank to cancel)', end='\n\n')
+                tag_text = input()
+                if not tag_text:
+                    refresh_display()
+                    print('Cancelled tag edit', end='\n\n')
+                    continue
+                item_tags[item_index] = tag_text
+                file_management.update(database)
+                refresh_display()
+                print('Successfully edited tag', end='\n\n')
 
         elif command == 'help':
             refresh_display()
             documentation.print_history_commands()
 
         elif command in {'exit', 'e'}:
-            print('Returning to menu')
+            console_display.print_display(database)
+            print('Returned to menu', end='\n\n')
             return
         else:
             refresh_display()
-            print("Invalid command ('exit' or enter blank to return to normal menu)")
+            print("Invalid command ('exit' or enter blank to return to normal menu)", end='\n\n')
         print()  # Newline to separate input from print
