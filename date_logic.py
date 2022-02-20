@@ -1,3 +1,6 @@
+import console_display  # For confirm()
+
+
 def valid_date(month, day):
     # Given month 1-12, day 1-31
     if month in {1, 3, 5, 7, 8, 10, 12}:  # 31
@@ -34,12 +37,7 @@ def next_day(month, day):
         if day < 28:
             day += 1
         elif day == 28:  # Day is 28
-            while True:
-                print('Is it a leap year (is tomorrow the 29th)? (y/n)')
-                user_response = input().lower()
-                if user_response in {'yes', 'y', 'no', 'n'}:
-                    break
-            if user_response in {'yes', 'y'}:
+            if console_display.confirm('Is it a leap year (is tomorrow the 29th)? (y/n)'):
                 day += 1
             else:  # Not a leap year, so set to March 1st
                 month = 3

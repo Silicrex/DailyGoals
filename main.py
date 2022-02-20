@@ -1,7 +1,7 @@
 # Set to enforce ASCII just because it's what Windows cmd can display. Can be avoided if this is interfaced
 # If interfaced; could definitely use containers. Group objectives within a dictionary,
 # complete with collapsing/minimizing.
-# TODO: Help dialog, tutorial dialog, mention bakcup when running program, mention case sensitviity
+# TODO: Help dialog, tutorial dialog, mention backup when running program, mention case sensitivity
 # TODO: Error handling/polishing
 
 # TODO: Finish cycles (need to work around endday, fix for active vs inactive)
@@ -14,15 +14,15 @@
 # TODO: Notes
 # TODO: warn about clearing
 # TODO: print help on the command for commands not being used right?
-# TODO: reset data comandd
+# TODO: reset data command
 # TODO: setting for sorting counter by counter val instead of name
-# TODO: Note groups (have naems and load different configs). Notes that autoload on certain days?
+# TODO: Note groups (have names and load different configs). Notes that autoload on certain days?
 # TODO: Counter groups in the same fashion
-# TODO: Audo date switching setting
+# TODO: Auto date switching setting
 import file_management  # For loading/saving
 import commands  # Command functions, alias_format()
 import console_display  # To print the initial console display
-import exceptions
+import errors
 
 # main gets input
 # -> checks for validity and matching command. If found, pass to commands.py
@@ -36,16 +36,16 @@ def main():
     # Update backup right after loading (to save state before user performs any actions)
     file_management.update(database, 'data_autobackup.json')
 
-    # Used to pass around non-persisted data, ie command used
+    # Used to pass around non-persisted/contextual data, ie command used,
     context_template = {'last_printed': None, 'command': ''}
     # last_printed is used to tell what display to print after a command is used
 
-    console_display.print_display(database)
+    console_display.print_display(database)  # Initial main screen print
 
-    while True:
+    while True:  # Main loop
         user_input = input().lower()  # Lower for string comparisons
         if not user_input:  # It's possible to enter nothing- continue loop
-            console_display.print_display(database)
+            console_display.print_display(database)  # Remove the newline from blank input by refreshing
             continue
         if not user_input.isascii():
             print('Please only use ASCII characters')  # Limitation from lack of interfacing
@@ -72,7 +72,7 @@ def main():
         try:  # Try block to catch InvalidCommandUsage exception
             # Everything after the command is passed as args
             command_function(database, context, *user_input[1:])
-        except exceptions.InvalidCommandUsage as error:
+        except errors.InvalidCommandUsage as error:
             print(f'help for {error.command} {error.subcommand} :)')  # Placeholder
 
 

@@ -56,7 +56,7 @@ def load_data():
                 database = load_backup()  # Either gets data or aborts program if failed
     else:  # If data.json doesn't exist, create new one
         database = get_template_dict()
-        database['welcome_message'] = welcome_messages.get_welcome()  # Used to persist a welcome msg per day
+        database['welcome_message'] = welcome_messages.get_welcome()  # First-time-user welcome text
         update(database)
     return database
 

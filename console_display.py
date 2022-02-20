@@ -143,7 +143,7 @@ def print_todo_objectives(database, todo_dict):
             print('({:.2%})'.format(numerator / denominator))
 
     print('>>> To-dos:')
-    enforced_daily_list = dict_management.get_enforced_dailys_list(database)
+    enforced_daily_list = dict_management.get_enforced_dailies_list(database)
     if enforced_daily_list:
         print("* '>' signifies enforced to-do; required for streak today", end='\n\n')
         for key in enforced_daily_list:
@@ -238,8 +238,12 @@ def print_settings(database):
           f"Objective search auto-match (skip confirmation): {settings['auto_match']}", end='\n\n')
 
 
-def print_commas(value, percent=False):  # Prints comma-separated number, %'s rounded to 2 decimals
-    if percent:
-        return f'{value:,.2%}'
-    else:
-        return f'{value:,}'
+def confirm(text):  # Take print statement, get yes or no
+    while True:
+        print(text, end='\n\n')  # Asks the question
+        user_response = input().lower()
+        print()  # Newline to separate input from print
+        if user_response in {'yes', 'y'}:
+            return True
+        elif user_response in {'no', 'n'}:
+            return False

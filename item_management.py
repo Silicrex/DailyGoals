@@ -1,5 +1,6 @@
 import dict_management
 import date_logic
+import console_display  # For confirm():
 import exceptions
 
 
@@ -103,16 +104,10 @@ def add_todo_mode(_, dictionary, *extra_input):  # Doesn't need database
         return False
     task_string = get_task_string()
     denominator = get_denominator()
-    while True:
-        print('Should this todo objective count towards daily requirement? (y/n)', end='\n\n')
-        user_response = input().lower()
-        print()  # Newline
-        if user_response in {'yes', 'y'}:
-            enforced_daily = True
-            break
-        elif user_response in {'no', 'n'}:
-            enforced_daily = False
-            break
+    if console_display.confirm('Should this todo objective count towards daily requirement? (y/n)'):
+        enforced_daily = True
+    else:
+        enforced_daily = False
     dictionary.update({objective_name_lower: {'display_name': objective_name, 'task_string': task_string,
                                               'denominator': denominator, 'numerator': 0,
                                               'enforced_daily': enforced_daily}})

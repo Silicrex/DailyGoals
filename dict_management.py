@@ -19,7 +19,7 @@ def name_to_container(database, name):
     elif name == 'inactive_cycle':
         return get_inactive_cycle_list(database)
     elif name == 'enforced_todo':
-        return get_enforced_dailys_list(database)
+        return get_enforced_dailies_list(database)
     elif name == 'unenforced_todo':
         return get_unenforced_cycle_list(database)
     else:
@@ -98,15 +98,11 @@ def change_all_daily_dicts(database, mode):
         return
 
     # Get confirmation
-    while True:
-        if mode == 'complete':  # If 'complete', print 'complete', else print '0%' for 'reset'
-            print('Set all daily, optional, and active cycle objectives to complete? (y/n)', end='\n\n')
-        elif mode == 'reset':
-            print('Set all daily, optional, and active cycle objectives to 0%? (y/n)', end='\n\n')
-        user_input = input().lower()
-        if user_input in {'yes', 'y'}:
-            break
-        elif user_input in {'no', 'n'}:
+    if mode == 'complete':  # If 'complete', print 'complete', else print '0%' for 'reset'
+        if not console_display.confirm('Set all daily-enforced objectives to complete? (y/n)'):
+            return
+    elif mode == 'reset':
+        if not console_display.confirm('Set all daily-enforced objectives to 0%? (y/n)'):
             return
 
     if mode == 'complete':
@@ -154,31 +150,18 @@ def change_all_daily_dicts(database, mode):
 
 
 def delete_dictionary(database, mode):
-    def get_confirmation():
-        while True:
-            if mode == 'all':
-                print(f"Are you sure you'd like to delete ALL objectives"
-                      f" ({total_objectives_to_remove})? (y/n)", end='\n\n')
-            else:
-                print(f"Are you sure you'd like to delete ALL {mode} items"
-                      f" ({total_objectives_to_remove})? (y/n)", end='\n\n')
-            user_response = input().lower()
-            if user_response == 'y':
-                return True
-            elif user_response == 'n':
-                return False
-
     if mode == 'all':
         dict_list = documentation.get_dictionary_list(database)
-
         total_objectives_to_remove = 0
         for dict_name in dict_list:
             total_objectives_to_remove += len(dict_name)
         if not total_objectives_to_remove:  # If there are none
             print('There are no objectives to delete', end='\n\n')
             return False
-        if not get_confirmation():
+        if not console_display.confirm(f"Are you sure you'd like to delete ALL objectives "
+                                       f"({total_objectives_to_remove})? (y/n)"):
             console_display.print_display(database)
+            print('Cancelled', end='\n\n')
             return False
         for dictionary in dict_list:
             dictionary.clear()
@@ -190,26 +173,28 @@ def delete_dictionary(database, mode):
         if not total_objectives_to_remove:  # If there are none
             print('That container has no items', end='\n\n')
             return False
-        if not get_confirmation():
+        if not console_display.confirm(f"Are you sure you'd like to delete ALL {mode} items"
+                                       f" ({total_objectives_to_remove})? (y/n)"):
             console_display.print_display(database)
+            print('Cancelled', end='\n\n')
             return False
         dictionary.clear()
         return True
 
 
-def get_enforced_dailys_list(database):
-    enforced_dailys_list = []
+def get_enforced_dailies_list(database):
+    enforced_dailies_list = []
     for key, value in database['todo'].items():
         if value['enforced_daily']:
-            enforced_dailys_list.append(key)
+            enforced_dailies_list.append(key)
         else:  # Sorted for all enforced to-do's to be first, so once you encounter one that's not, that's the end
             break
-    return enforced_dailys_list
+    return enforced_dailies_list
 
 
 def get_unenforced_cycle_list(database):
     unenforced_list = list(database['todo'].keys())
-    enforced_list = get_enforced_dailys_list(database)
+    enforced_list = get_enforced_dailies_list(database)
     for key in enforced_list:
         unenforced_list.remove(key)
     return unenforced_list  # Remove enforced keys to get unenforced keys

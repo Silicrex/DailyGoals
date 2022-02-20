@@ -26,13 +26,6 @@ def toggle(database, toggle_item, manual_value=None):
                 disable_item()
 
 
-def force_date_change_prompt(database):  # If week day or date is changed, need to clear streak/cycles
-    while True:
-        print('WARNING: Resets streak and *DELETES* ALL CYCLE OBJECTIVES. Proceed? (y/n)')
-        user_input = input().lower()
-        if user_input in {'yes', 'y'}:
-            database['streak'] = 0
-            database['cycle'].clear()
-            return True
-        elif user_input in {'no', 'n'}:
-            return False
+def date_change_adjust(database):  # If week day or date is changed, need to clear streak/cycles
+    database['streak'] = 0
+    database['cycle'].clear()

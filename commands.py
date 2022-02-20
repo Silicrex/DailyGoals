@@ -186,7 +186,7 @@ def stats_command(database, context, *extra_input):
 
 def history_command(database, context, *extra_input):
     if len(extra_input) != 1:
-        print('Missing argument!', end='\n\n')
+        print('Missing required argument!', end='\n\n')
         raise exceptions.InvalidCommandUsage(context['command'])
     os.system('cls')
     dict_name_input = extra_input[0]
@@ -281,9 +281,11 @@ def setdate_command(database, context, *extra_input):
         print('Invalid day for that month', end='\n\n')
         return
 
-    if not settings_management.force_date_change_prompt(database):  # If they confirm; streak reset, cycles deleted
+    if not console_display.confirm('WARNING: Resets streak and *DELETES* ALL CYCLE OBJECTIVES. Proceed? (y/n)'):
         console_display.print_display(database)
+        print('Cancelled', end='\n\n')
         return
+    settings_management.date_change_adjust(database)  # Streak reset, cycles deleted
 
     database['settings']['calendar_date']['month'] = input_month
     database['settings']['calendar_date']['day'] = input_day
@@ -302,10 +304,11 @@ def setday_command(database, context, *extra_input):
     if input_week_day not in date_logic.get_week_days():
         print('Invalid day. Enter week day name (ie saturday)', end='\n\n')
         return
-    if not settings_management.force_date_change_prompt(database):  # If they confirm; streak reset, cycles deleted
-        # Else just return to menu
+    if not console_display.confirm('WARNING: Resets streak and *DELETES* ALL CYCLE OBJECTIVES. Proceed? (y/n)'):
         console_display.print_display(database)
+        print('Cancelled', end='\n\n')
         return
+    settings_management.date_change_adjust(database)  # Streak reset, cycles deleted
 
     week_day_number = date_logic.convert_day(input_week_day)  # Convert to #, ie Sunday = 1
     database['settings']['calendar_date']['week_day'] = week_day_number
@@ -362,12 +365,17 @@ def endday_command(database, context, *extra_input):
             history_value['total_percent_completed'] += percent_completed
             history_value['times_completed'] += 1
         else:  # First time, so create entry
-            percent_completed = round(obj_numerator/obj_denominator, 2)  # Tracks >100% completion
+            percent_completed = round(obj_numerator / obj_denominator, 2)  # Tracks >100% completion
             first_completed = datetime.datetime.now().date()
-            history_dict.update({history_key_lower: {'display_name': history_key, 'times_completed': 1,
-                                                     'denominator': obj_denominator,
-                                                     'total_percent_completed': percent_completed,
-                                                     'first_completed': str(first_completed), 'tags': []}}) #format this
+            history_dict.update({
+                history_key_lower: {
+                    'display_name': history_key,
+                    'times_completed': 1,
+                    'denominator': obj_denominator,
+                    'total_percent_completed': percent_completed,
+                    'first_completed': str(first_completed),
+                    'tags': []
+                }})
 
     if extra_input:
         print('Unnecessary arguments!', end='\n\n')
@@ -473,20 +481,24 @@ def stop_command(_, context, *extra_input):  # Doesn't need database
 def alias_format(user_input):
     # Command alias
     command_alias_dict = documentation.get_command_alias()
-    if user_input[0] in command_alias_dict:
-        user_input[0] = command_alias_dict[user_input[0]]
+    command = user_input[0]
+    if command in command_alias_dict:
+        user_input[0] = command_alias_dict[command]  # Put full command back into input list
     # Mode alias
     if not len(user_input) > 1:
         return
     mode_alias_dict = documentation.get_mode_alias()
-    if user_input[1] in mode_alias_dict:  # Replace alias with corresponding mode
-        user_input[1] = mode_alias_dict[user_input[1]]
-    # Update shorthand; format of dict +x
-    elif user_input[1].startswith('+') and len(user_input[1]) > 1:  # 2nd input starts with + and is more than 1 char
-        # ie daily +wanikani; daily +wanikani 5 should be daily update wanikani 5
+    mode = user_input[1]
+    if mode in mode_alias_dict:
+        user_input[1] = mode_alias_dict[mode]  # Put full mode back into input list
+    # Update shorthand
+    elif mode.startswith('+') and len(user_input[1]) > 1:  # 2nd input starts with + and is more than just +
+        # ie `daily +wanikani` and `daily +wanikani 5` are the same as `daily update wanikani 5`
         # End result: replace + with 'update' and push everything else further. Works with spaced names
-        user_input.insert(2, user_input[1][1:])  # Splice after the + symbol, put at index 2
-        user_input[1] = 'update'  # Make like daily update <name>, which defaults to +1
+        user_input.insert(2, user_input[1][1:])  # Slice name connected to the + symbol, put at index 2
+        # daily +wanikani 5 -> daily +wanikani wanikani 5
+        user_input[1] = 'update'  # Format like full command
+        # daily +wanikani wanikani 5 -> daily update wanikani 5
 
 
 def print_mode_success(mode):
