@@ -7,7 +7,7 @@ def get_template_dict():  # Database structure
     template_dict = {
         # Welcome
         'welcome_message': None,
-        # Containers
+        # Main data
         'daily': {},  # Dailies dictionary
         'optional': {},  # Optional dailies dictionary
         'todo': {},  # To-do dictionary
@@ -15,6 +15,14 @@ def get_template_dict():  # Database structure
         'longterm': {},  # Long-term dictionary
         'counter': {},  # Counter dictionary
         'note': [],  # Notes list
+        'containers': {  # Organizational display structure
+            'daily': {},
+            'optional': {},
+            'todo': {},
+            'cycle': {},
+            'longterm': {}, 
+            'counter': {},
+            'note': {} },
         'history': {  # Completed objectives
             'daily': {},
             'optional': {},

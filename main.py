@@ -20,7 +20,7 @@
 # TODO: Counter groups in the same fashion
 # TODO: Auto date switching setting
 import file_management  # For loading/saving
-import commands  # Command functions, alias_format()
+import commands  # Command functions and formatting
 import console_display  # To print the initial console display
 import errors
 
