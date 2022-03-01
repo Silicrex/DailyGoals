@@ -52,6 +52,11 @@ def print_display(database):
         print_dictionary(database, dict_name)
 
 
+def refresh_and_print(database, message):  # Refresh display then print message
+    print_display(database)
+    print(message, end='\n\n')
+
+
 def print_dictionary(database, dict_name):
     if dict_name == 'daily':
         daily_dict = database['daily']

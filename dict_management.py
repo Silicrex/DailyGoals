@@ -26,48 +26,56 @@ def name_to_container(database, name):
         return database[name]
 
 
-def objective_search(database, dictionary, input_objective_string):  # Returns objective name str if found, else False
-    # Search by in, then startswith, then substring
-    if input_objective_string in dictionary:  # If the search term is an objective name, just return it back
-        return input_objective_string
-        
-    auto_match = database['settings']['auto_match']
-    objective_keys = list(dictionary.keys())
-    objective_keys.sort()  # Alphabetize list of keys
-    objectives_seen = set()  # Track objectives already seen/suggested
-    for objective in objective_keys:  # Search for via startswith()
-        if objective.startswith(input_objective_string):
-            if auto_match:  # If auto_match, don't ask, just return that
-                return objective
+def key_search(database, dictionary, input_string):
+    """Take an input string and find a dict key resembling it.
+    Key must itself be a dict and have the value 'display_name'
 
-            objectives_seen.add(objective)
-            display_name = dictionary[objective]['display_name']
-            print(f"Could not find '{input_objective_string}', but found '{display_name}'\n")
+    :param dict database:
+    :param dict dictionary: Dictionary to search in
+    :param str input_string: Input string to try matching
+    :return str | bool: Returns found key str, else False.
+    """
+    # Search by in, then startswith, then substring
+    if input_string in dictionary:  # If the search term is a key, just return it back
+        return input_string
+        
+    auto_match = database['settings']['auto_match']  # Bool
+    keys = list(dictionary.keys())
+    keys.sort()  # Alphabetize list of keys
+    keys_seen = set()  # Track keys already suggested
+    for key in keys:  # Search for via startswith()
+        if key.startswith(input_string):
+            if auto_match:  # If auto_match, don't ask, just return that
+                return key
+
+            keys_seen.add(key)
+            display_name = dictionary[key]['display_name']
+            print(f"Could not find '{input_string}', but found '{display_name}'\n")
             while True:
                 print('Is this what you meant? (y/n/cancel)')
                 user_response = input().lower()
                 if user_response in {'y', 'n', 'cancel'}:
                     break
             if user_response == 'y':
-                return objective
+                return key
             elif user_response == 'n':
                 continue
             elif user_response == 'cancel':
                 return False
-    for objective in objective_keys:  # Search for via find()
-        if objective not in objectives_seen and objective.find(input_objective_string) != -1:
+    for key in keys:  # Search for via find()
+        if key not in keys_seen and key.find(input_string) != -1:
             if auto_match:  # If auto_match, don't ask, just return that
-                return objective
+                return key
 
-            display_name = dictionary[objective]['display_name']
-            print(f"Could not find '{input_objective_string}', but found '{display_name}'\n")
+            display_name = dictionary[key]['display_name']
+            print(f"Could not find '{input_string}', but found '{display_name}'\n")
             while True:
                 print('Is this what you meant? (y/n/cancel)')
                 user_response = input().lower()
                 if user_response in {'y', 'n', 'cancel'}:
                     break
             if user_response == 'y':
-                return objective
+                return key
             elif user_response == 'n':
                 continue
             elif user_response == 'cancel':

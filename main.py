@@ -19,6 +19,8 @@
 # TODO: Note groups (have names and load different configs). Notes that autoload on certain days?
 # TODO: Counter groups in the same fashion
 # TODO: Auto date switching setting
+# TODO: 7-day preview for upcoming
+# TODO: Add year to avoid needing to ask about leap year
 import file_management  # For loading/saving
 import commands  # Command functions and formatting
 import console_display  # To print the initial console display
@@ -48,7 +50,7 @@ def main():
             console_display.print_display(database)  # Remove the newline from blank input by refreshing
             continue
         if not user_input.isascii():
-            print('Please only use ASCII characters')  # Limitation from lack of interfacing
+            console_display.refresh_and_print(database, 'Please only use ASCII characters')
             continue
 
         user_input = user_input.split()  # Split into a list of space-separated terms
@@ -64,16 +66,14 @@ def main():
             # Command functions have '_command' appended to name, ie daily_command
             command_function = getattr(commands, command + '_command')
         except AttributeError:  # If function is not found
-            console_display.print_display(database)
-            print('Invalid command')
-            print()  # Newline to separate input from printing
+            console_display.refresh_and_print(database, "Invalid command! Use 'help' for help!")
             continue
 
-        try:  # Try block to catch InvalidCommandUsage exception
-            # Everything after the command is passed as args
-            command_function(database, context, *user_input[1:])
+        # Continue to command execution
+        try:
+            command_function(database, context, user_input[1:])  # (database, context, args)
         except errors.InvalidCommandUsage as error:
-            print(f'help for {error.command} {error.subcommand} :)')  # Placeholder
+            print(f'help for {error.command} {error.subcommand} :)')  # Placeholder, will implement info lookup
 
 
 if __name__ == '__main__':

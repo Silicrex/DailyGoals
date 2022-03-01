@@ -1,5 +1,7 @@
 import os  # To check if json file exists yet
 import json  # For dumping/loading database
+
+import console_display
 import welcome_messages
 
 
@@ -16,13 +18,20 @@ def get_template_dict():  # Database structure
         'counter': {},  # Counter dictionary
         'note': [],  # Notes list
         'containers': {  # Organizational display structure
-            'daily': {},
-            'optional': {},
-            'todo': {},
-            'cycle': {},
-            'longterm': {}, 
-            'counter': {},
-            'note': {} },
+            'daily': {
+                '_default': {'display_name': None, 'visible': True, 'expanded': True, 'items': []}},
+            'optional': {
+                '_default': {'display_name': None, 'visible': True, 'expanded': True, 'items': []}},
+            'todo': {
+                '_default': {'display_name': None, 'visible': True, 'expanded': True, 'items': []}},
+            'cycle': {
+                '_default': {'display_name': None, 'visible': True, 'expanded': True, 'items': []}},
+            'longterm': {
+                '_default': {'display_name': None, 'visible': True, 'expanded': True, 'items': []}},
+            'counter': {
+                '_default': {'display_name': None, 'visible': True, 'expanded': True, 'items': []}},
+            'note': {
+                '_default': {'display_name': None, 'visible': True, 'expanded': True, 'items': []}}, },
         'history': {  # Completed objectives
             'daily': {},
             'optional': {},

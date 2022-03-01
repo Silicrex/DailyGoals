@@ -1,7 +1,7 @@
 import os  # For os.system('cls')
 import documentation
 import console_display
-import dict_management  # For objective_search
+import dict_management  # For key_search
 import file_management  # For saving
 
 
@@ -197,7 +197,7 @@ def launch_history_interface(database, dict_name):
             print('Enter item name', end='\n\n')
             item_name = input().lower()
             print()  # Newline to separate input from print
-            if not (item_name := dict_management.objective_search(database, dictionary, item_name)):
+            if not (item_name := dict_management.key_search(database, dictionary, item_name)):
                 print_display()
                 print('Item could not be found', end='\n\n')
                 continue
