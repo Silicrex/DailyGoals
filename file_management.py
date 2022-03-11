@@ -19,19 +19,19 @@ def get_template_dict():  # Database structure
         'note': [],  # Notes list
         'containers': {  # Organizational display structure
             'daily': {
-                '_default': {'display_name': None, 'visible': True, 'expanded': True, 'items': []}},
+                '_default': {'display_name': None, 'expanded': True, 'items': []}},
             'optional': {
-                '_default': {'display_name': None, 'visible': True, 'expanded': True, 'items': []}},
+                '_default': {'display_name': None, 'expanded': True, 'items': []}},
             'todo': {
-                '_default': {'display_name': None, 'visible': True, 'expanded': True, 'items': []}},
+                '_default': {'display_name': None, 'expanded': True, 'items': []}},
             'cycle': {
-                '_default': {'display_name': None, 'visible': True, 'expanded': True, 'items': []}},
+                '_default': {'display_name': None, 'expanded': True, 'items': []}},
             'longterm': {
-                '_default': {'display_name': None, 'visible': True, 'expanded': True, 'items': []}},
+                '_default': {'display_name': None, 'expanded': True, 'items': []}},
             'counter': {
-                '_default': {'display_name': None, 'visible': True, 'expanded': True, 'items': []}},
+                '_default': {'display_name': None, 'expanded': True, 'items': []}},
             'note': {
-                '_default': {'display_name': None, 'visible': True, 'expanded': True, 'items': []}}, },
+                '_default': {'display_name': None, 'expanded': True, 'items': []}}, },
         'history': {  # Completed objectives
             'daily': {},
             'optional': {},

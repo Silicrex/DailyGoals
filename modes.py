@@ -543,12 +543,32 @@ def containercreate_mode(database, context, args):
     if container_key in command_containers:
         console_display.refresh_and_print(database, 'Container by that name already exists. Returning to menu')
         return
-    command_containers.update({container_key: {'display_name': container_name, 'visible': True,
-                                               'expanded': True, 'items': []}})
+    command_containers.update({container_key: {'display_name': container_name, 'expanded': True, 'items': []}})
     # Save and print display
     file_management.update(database)
     console_display.refresh_and_print(database, f'[{command.capitalize()}] container successfully created!')
 
+def containerdelete_mode(database, context, args):
+    # ex input: daily containerdelete
+    command = context['command']
+    command_containers = database['containers'][command]  # Corresponding containers dict
+
+    if args:
+        console_display.refresh_and_print(database, 'Unnecessary arguments!')
+        raise errors.InvalidCommandUsage(command, context['mode'])
+
+    input_string = input('What container would you like to delete?\n\n').lower()
+    if not (container_key := dict_management.key_search(database, command_containers, input_string)):
+        console_display.refresh_and_print(database, 'Container name not found')
+        raise errors.InvalidCommandUsage(command, context['mode'])
+
+    for objective_key in command_containers[container_key].items():
+        command_containers['_default'].append(objective_key)
+    command_containers.remove(container_key)
+    # Save and print display
+    file_management.update(database)
+    console_display.refresh_and_print(database, f'Successfully deleted [{container_key}]'
+                                                f'and moved objectives back to default!')
 
 def containeredit_mode(database, context, args):
     # ex input: daily containeradd
@@ -560,13 +580,13 @@ def containeredit_mode(database, context, args):
         console_display.refresh_and_print(database, 'Unnecessary arguments!')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
-    input_string = input('What item would you like to change the container of?\n\n')
+    input_string = input('What item would you like to change the container of?\n\n').lower()
     if not (objective_key := dict_management.key_search(database, dictionary, input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
     input_string = input('What container would you like to move this item to? '
-                         '(BLANK INPUT = REMOVE FROM CONTAINER)\n\n')
+                         '(BLANK INPUT = REMOVE FROM CONTAINER)\n\n').lower()
     if input_string == '':  # Then remove
         remove_from_container(database, command, objective_key)
         return
@@ -584,7 +604,71 @@ def containeredit_mode(database, context, args):
         return
     command_containers[container_key]['items'].append(objective_key)
     command_containers[current_container]['items'].remove(objective_key)
+    # Save and print display
+    file_management.update(database)
     console_display.refresh_and_print(database, f'Successfully moved [{objective_key}] to [{container_key}]!')
+
+
+def containermove_mode(database, context, args):
+    # ex input: daily containermove
+
+    command = context['command']
+    command_containers = database['containers'][command]  # Corresponding containers dict
+
+    if args:
+        console_display.refresh_and_print(database, 'Unnecessary arguments!')
+        raise errors.InvalidCommandUsage(command, context['mode'])
+
+    input_string = input('What container would you like to reposition?\n\n').lower()
+    if not (container_key := dict_management.key_search(database, command_containers, input_string)):
+        console_display.refresh_and_print(database, 'Container name not found')
+        raise errors.InvalidCommandUsage(command, context['mode'])
+    if container_key == '_default':
+        console_display.refresh_and_print(database, 'Cannot move the default container. Returning to menu')
+        return
+    current_index = command_containers.index(container_key)
+
+    input_string = input("'up' to move 1 up, 'down' to move 1 down. Can specify number like: up 2\n"
+                         "'set <number>' ie 'set 5' for manually setting index (1 = first container below defaults)\n"
+                         "Out-of-range values automatically adjusted to boundaries\n\n").lower()
+    input_list = input_string.split()
+    input_length = len(input_list)
+    if input_length == 2:
+        if not input_list[1].isnumeric():
+            console_display.refresh_and_print(database, 'Invalid second arg; should be an integer. '
+                                                        'Returning to menu')
+            raise errors.InvalidCommandUsage(command, context['mode'])
+    elif input_list != 1:
+        console_display.refresh_and_print(database, 'Invalid number of args. Returning to menu')
+        raise errors.InvalidCommandUsage(command, context['mode'])
+    arg1 = input_list[0]
+    if arg1 in {'up', 'u', 'down', 'd'}:
+        move_amount = 1  # Default to 1
+        if len(input_list) == 2:
+            move_amount = input_list[1]
+        if arg1 in {'up', 'u'}:
+            move_amount *= -1  # Up = lower index
+        new_index = current_index + move_amount
+    elif arg1 in {'set', 's'}:
+        if len(input_list) != 2:
+            console_display.refresh_and_print(database, 'Invalid number of args. Returning to menu')
+            raise errors.InvalidCommandUsage(command, context['mode'])
+        new_index = input_list[1]
+    else:
+        console_display.refresh_and_print(database, 'Invalid first arg. Returning to menu')
+        raise errors.InvalidCommandUsage(command, context['mode'])
+
+    if new_index <= 0:
+        new_index = 1
+    elif new_index >= len(command_containers):
+        new_index = len(command_containers) - 1
+
+    container_copy = command_containers[current_index].copy()
+    command_containers.remove(container_key)
+    command_containers.insert(container_copy, new_index)
+    # Save and print display
+    file_management.update(database)
+    console_display.refresh_and_print(database, f'Successfully repositioned [{container_key}]!')
 
 
 # Misc utility ------------------------------------------------------------------------------------------
