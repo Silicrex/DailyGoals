@@ -22,7 +22,6 @@ def mode_route(database, context, args):
     else:
         console_display.refresh_and_print(database, 'Invalid mode')
         raise errors.InvalidCommandUsage(command)
-    context['dictionary'] = database[command]  # ie 'daily' gets 'daily' dict
     mode_function(database, context, args[1:])  # Mode was args[0]
 
 
@@ -30,7 +29,7 @@ def mode_route(database, context, args):
 def add_mode(database, context, args):
     # ex input: daily add
     command = context['command']
-    dictionary = context['dictionary']
+    dictionary = database[command]
 
     if args:
         console_display.refresh_and_print(database, 'Unnecessary arguments!')
@@ -141,7 +140,7 @@ def add_note_mode(database, context, args):
         print('Unnecessary arguments!', end='\n\n')
         raise errors.InvalidCommandUsage('note', 'add')
 
-    dictionary = context['dictionary']
+    dictionary = database[context['command']]
     note_count = len(dictionary)
     if args:
         note_index = args[0]
@@ -222,7 +221,7 @@ def get_denominator():
 
 
 # Updating/editing items ------------------------------------------------------------------------------------------
-def update_mode(database, context, dictionary, args):
+def update_mode(database, context, args):
     # ex input: daily update wanikani 50
     # ex input: daily update clean dishes
 
@@ -231,9 +230,10 @@ def update_mode(database, context, dictionary, args):
     # "daily update do number 9" to increment it by one, or "daily update do number 9 1" for specified.
 
     command = context['command']  # Cycle handled differently
+    dictionary = database[command]
 
     if not args:
-        print('Must provide an objective to update', end='\n\n')
+        console_display.refresh_and_print(database, 'Must provide an objective to update')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
     full_string = ' '.join(args).lower()  # Lowercase string of entire rest of input
@@ -243,67 +243,77 @@ def update_mode(database, context, dictionary, args):
     else:  # Objective wasn't found. Assume update value was specified
         sub_string = ' '.join(args[:-1]).lower()  # Last element should be update value
         if not (objective_name := dict_management.key_search(database, dictionary, sub_string)):
-            print('Objective name not found', end='\n\n')
+            console_display.refresh_and_print(database, 'Objective name not found')
             raise errors.InvalidCommandUsage(command, context['mode'])
         update_value = args[-1]
 
     # Validate/format update value from str to int
     if not (update_value := format_integer(update_value)):  # Enforces non-zero integer. Accepts extension ie 1k
+        console_display.refresh_and_print(database, 'Invalid update value')
         raise errors.InvalidCommandUsage(command, context['mode'])  # Invalid update value
 
     if command == 'cycle':  # Can't update inactive item
         if objective_name not in dict_management.get_active_cycle_list(database):
-            print('Cannot update progress for inactive cycle objectives', end='\n\n')
-            return False
+            console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
+            return
 
     dictionary[objective_name]['numerator'] += update_value
-    return True
+    # Save, sort, and print display
+    dict_management.sort_dictionary(database, command)
+    file_management.update(database)
+    console_display.refresh_and_print(database, f'{command.capitalize()} item successfully updated!')
 
 
-def set_mode(database, context, dictionary, args):
+def set_mode(database, context, args):
     # ex input: daily set wanikani 50
 
     command = context['command']  # Cycle handled differently
+    dictionary = database[command]
 
     if not args:
-        print('Must provide an objective to update and set value', end='\n\n')
+        console_display.refresh_and_print(database, 'Must provide an objective to update and set value')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
     input_string = ' '.join(args[:-1]).lower()  # Last element should be set value
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
-        print('Objective name not found', end='\n\n')
+        console_display.refresh_and_print(database, 'Objective name not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
     if not (set_value := format_integer(args[-1])):  # Enforces non-zero integer. Accepts extension ie 1k
+        console_display.refresh_and_print(database, 'Invalid set value')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
     if command == 'cycle':
         if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
-            print('Cannot update progress for inactive cycle objectives', end='\n\n')
-            return False
+            console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
+            return
 
     dictionary[objective_name]['numerator'] = set_value
-    return True
+    # Save, sort, and print display
+    dict_management.sort_dictionary(database, command)
+    file_management.update(database)
+    console_display.refresh_and_print(database, f'{command.capitalize()} item successfully updated!')
 
 
-def complete_mode(database, context, dictionary, args):
+def complete_mode(database, context, args):
     # ex input: daily complete wanikani
 
     command = context['command']
+    dictionary = database[command]
 
     if not args:
-        print('Must provide an objective to set as complete', end='\n\n')
+        console_display.refresh_and_print(database, 'Must provide an objective to set as complete')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
     input_string = ' '.join(args).lower()
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
-        print('Objective name not found', end='\n\n')
+        console_display.refresh_and_print(database, 'Objective name not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
     if command == 'cycle':
         if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
-            print('Cannot update progress for inactive cycle objectives', end='\n\n')
-            return False
+            console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
+            return
 
     value = dictionary[objective_name]
     # If numerator < denominator
@@ -312,62 +322,69 @@ def complete_mode(database, context, dictionary, args):
         value['numerator'] = value['denominator']
     else:
         print('That objective is already marked as at least 100% complete', end='\n\n')
-        return False
-    return True
+        console_display.refresh_and_print(database, 'That objective is already marked as at least 100% complete')
+        return
+    # Save, sort, and print display
+    dict_management.sort_dictionary(database, command)
+    file_management.update(database)
+    console_display.refresh_and_print(database, f'{command.capitalize()} item successfully updated!')
 
 
-def reset_mode(database, context, dictionary, args):
+def reset_mode(database, context, args):
     # ex input: daily reset wanikani
 
     command = context['command']
+    dictionary = database[command]
 
     if not args:
-        print('Must provide an objective to reset', end='\n\n')
+        console_display.refresh_and_print(database, 'Must provide an objective to reset')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
     input_string = ' '.join(args).lower()
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
-        print('Objective name not found', end='\n\n')
+        console_display.refresh_and_print(database, 'Objective name not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
     if command == 'cycle':
         if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
-            print('Cannot update progress for inactive cycle objectives', end='\n\n')
-            return False
+            console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
+            return
 
     value = dictionary[objective_name]
     if value['numerator'] != 0:
         value['numerator'] = 0
     else:
-        print('That item already has no progress', end='\n\n')
-        return False
-    return True
+        console_display.refresh_and_print(database, 'That item already has no progress')
+        return
+    # Save, sort, and print display
+    dict_management.sort_dictionary(database, command)
+    file_management.update(database)
+    console_display.refresh_and_print(database, f'{command.capitalize()} item successfully updated!')
 
 
-def setall_mode(database, context, dictionary, args):
+def setall_mode(database, context, args):
     # ex input: daily setall complete
 
     command = context['command']
+    dictionary = database[command]
 
     if not args or len(args) > 1:
-        print('Must provide a setall type', end='\n\n')
+        console_display.refresh_and_print(database, 'Must provide a setall type')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
     setall_value = args[0]
 
     if command in {'counter', 'cycle'}:
         special_setall_function = globals()['setall_' + command + '_mode']  # ie setall_cycle_mode, gets func
-        if not special_setall_function(database, dictionary, setall_value):
-            return False
-        return True
+        special_setall_function(database, dictionary, setall_value)
 
     if setall_value not in {'complete', 'reset'}:
-        print('Invalid parameter setall value', end='\n\n')
+        console_display.refresh_and_print(database, 'Invalid parameter setall value')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
     if not dictionary:
-        print('That dictionary is empty', end='\n\n')
-        return False
+        console_display.refresh_and_print(database, 'That dictionary is empty')
+        return
 
     if setall_value == 'complete':
         for key, value in dictionary.items():
@@ -376,19 +393,22 @@ def setall_mode(database, context, dictionary, args):
     elif setall_value == 'reset':
         for key, value in dictionary.items():
             value['numerator'] = 0
-    return True
+    # Save, sort, and print display
+    dict_management.sort_dictionary(database, command)
+    file_management.update(database)
+    console_display.refresh_and_print(database, f'{command.capitalize()} items successfully updated!')
 
 
 def setall_cycle_mode(database, dictionary, setall_value):
     active_cycle_list = dict_management.get_active_cycle_list(database)
 
     if setall_value not in {'complete', 'reset'}:
-        print('Invalid parameter setall value', end='\n\n')
+        console_display.refresh_and_print(database, 'Invalid parameter setall value')
         raise errors.InvalidCommandUsage('cycle', 'setall')
 
     if not active_cycle_list:
-        print('There are no active cycle objectives', end='\n\n')
-        return False
+        console_display.refresh_and_print(database, 'There are no active cycle objectives')
+        return
 
     if setall_value == 'complete':
         for objective in active_cycle_list:
@@ -399,16 +419,19 @@ def setall_cycle_mode(database, dictionary, setall_value):
         for objective in active_cycle_list:
             value = dictionary[objective]
             value['numerator'] = 0
-    return True
+    # Save, sort, and print display
+    dict_management.sort_dictionary(database, 'cycle')
+    file_management.update(database)
+    console_display.refresh_and_print(database, f'Cycle items successfully updated!')
 
 
-def setall_counter_mode(_, dictionary, setall_value):  # _: doesn't need database
+def setall_counter_mode(database, dictionary, setall_value):  # _: doesn't need database
     if not (setall_value := format_integer(setall_value)):  # Enforces non-zero integer. Accepts extension ie 1k
         raise errors.InvalidCommandUsage('counter', 'setall')
 
     if not dictionary:
-        print('There are no counters', end='\n\n')
-        return False
+        console_display.refresh_and_print(database, 'There are no counters')
+        return
 
     while True:
         print(f'Change ALL counters to a value of {setall_value}? (y/n)', end='\n\n')
@@ -420,13 +443,18 @@ def setall_counter_mode(_, dictionary, setall_value):  # _: doesn't need databas
 
     for counter in dictionary:
         dictionary[counter]['numerator'] = setall_value
-    return True
+
+    # Save, sort, and print display
+    dict_management.sort_dictionary(database, 'counter')
+    file_management.update(database)
+    console_display.refresh_and_print(database, f'Counter items successfully updated!')
 
 
-def rename_mode(database, context, dictionary, args):
+def rename_mode(database, context, args):
     # ex input: daily rename wanikani
 
     command = context['command']
+    dictionary = database[command]
 
     if not args:  # arg = name of objective to rename
         console_display.refresh_and_print(database, 'Must provide an objective to rename')
@@ -454,9 +482,10 @@ def rename_mode(database, context, dictionary, args):
     console_display.refresh_and_print(database, f'{command.capitalize()} item successfully renamed!')
 
 
-def retask_mode(database, context, dictionary, args):
+def retask_mode(database, context, args):
     # ex input: daily retask wanikani
     command = context['command']
+    dictionary = database[command]
 
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to give a new task string for')
@@ -475,9 +504,10 @@ def retask_mode(database, context, dictionary, args):
     console_display.refresh_and_print(database, f"{command.capitalize()} item's task string successfully updated!")
 
 
-def denominator_mode(database, context, dictionary, args):
+def denominator_mode(database, context, args):
     # ex input: daily denominator wanikani
     command = context['command']
+    dictionary = database[command]
 
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to change the denominator of')
@@ -491,13 +521,17 @@ def denominator_mode(database, context, dictionary, args):
     if not (new_denominator := get_denominator()):
         return
     dictionary[objective_name]['denominator'] = new_denominator
-    return True
+    # Save, sort, and print display
+    dict_management.sort_dictionary(database, command)
+    file_management.update(database)
+    console_display.refresh_and_print(database, f'{command.capitalize()} item successfully updated!')
 
 
 # Removing items ------------------------------------------------------------------------------------------
-def remove_mode(database, context, dictionary, args):
+def remove_mode(database, context, args):
     # ex input: daily remove wanikani
     command = context['command']
+    dictionary = database[command]
 
     if not args:
         print('Must provide an objective to remove', end='\n\n')
@@ -509,7 +543,9 @@ def remove_mode(database, context, dictionary, args):
         raise errors.InvalidCommandUsage(command, context['mode'])
 
     dictionary.pop(objective_name)
-    return True
+    # Save and print display
+    file_management.update(database)
+    console_display.refresh_and_print(database, f'{command.capitalize()} item successfully removed!')
 
 
 # Containers ------------------------------------------------------------------------------------------
@@ -548,6 +584,7 @@ def containercreate_mode(database, context, args):
     file_management.update(database)
     console_display.refresh_and_print(database, f'[{command.capitalize()}] container successfully created!')
 
+
 def containerdelete_mode(database, context, args):
     # ex input: daily containerdelete
     command = context['command']
@@ -569,6 +606,7 @@ def containerdelete_mode(database, context, args):
     file_management.update(database)
     console_display.refresh_and_print(database, f'Successfully deleted [{container_key}]'
                                                 f'and moved objectives back to default!')
+
 
 def containeredit_mode(database, context, args):
     # ex input: daily containeradd
