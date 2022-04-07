@@ -58,6 +58,7 @@ def get_template_dict():  # Database structure
             'counter': True,  # Always display counters
             'note': True,  # Always display notes
             'auto_match': False,  # Automatically match first objective when searching
+            'history_auto_match': False,  # auto_match but for history interface
             'track_history': True, }  # Tracks completed objectives
     }
     return template_dict

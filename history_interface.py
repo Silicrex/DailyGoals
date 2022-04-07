@@ -177,7 +177,9 @@ def launch_history_interface(database, dict_name):
 
             print()  # Newline to separate input from print
             item_name = ' '.join(user_input[1:])
-            if not (item_name := dict_management.key_search(database, dictionary, item_name)):
+            history_auto_match = database['settings']['history_auto_match']
+            if not (item_name := dict_management.key_search(database, dictionary, item_name,
+                                                            force_manual_match=history_auto_match)):
                 print_display()
                 print('Item could not be found', end='\n\n')
                 continue
@@ -186,7 +188,7 @@ def launch_history_interface(database, dict_name):
             print_item(keys.index(item_name))  # print_item() goes by index, not by name
             print(f'Tags: {len(tags)}', end='\n\n')
             for tag in tags:
-                print(f'{tag[0]}: {tag[1]}')  # Date: tag
+                print(f'{tag[0]}: {tag[1]}', end='\n\n')  # Date: tag
 
 # Misc commands/not found ------------------------------------------------------------------------------------------
         elif command == 'help':

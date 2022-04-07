@@ -26,20 +26,20 @@ def name_to_container(database, name):
         return database[name]
 
 
-def key_search(database, dictionary, input_string):
+def key_search(database, dictionary, input_string, *, force_manual_match=False):
     """Take an input string and find a dict key resembling it.
     Key must itself be a dict and have the value 'display_name'
 
     :param dict database:
     :param dict dictionary: Dictionary to search in
     :param str input_string: Input string to try matching
+    :param bool force_manual_match: Override setting and force manual matching instead of auto matching.
     :return str | bool: Returns found key str, else False.
     """
     # Search by in, then startswith, then substring
     if input_string in dictionary:  # If the search term is a key, just return it back
         return input_string
-        
-    auto_match = database['settings']['auto_match']  # Bool
+    auto_match = database['settings']['auto_match'] if not force_manual_match else False  # Bool
     keys = list(dictionary.keys())
     keys.sort()  # Alphabetize list of keys
     keys_seen = set()  # Track keys already suggested
