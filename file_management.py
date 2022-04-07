@@ -45,7 +45,7 @@ def get_template_dict():  # Database structure
             'streak': 0,  # Current streak integer
             'best_streak': 0, },  # Best streak integer
         'settings': {
-            'calendar_date': {'month': 1, 'day': 1, 'week_day': 1},
+            'calendar_date': {'month': 1, 'day': 1, 'year': 2022, 'week_day': 1},
             'date_switch': False,  # Switch MM/DD to DD/MM
             'welcome': True,  # Toggle welcome messages
             'display_total': True,  # Always display total completed dailies in header

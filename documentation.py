@@ -32,7 +32,7 @@ def get_modes(command):
         command = 'goal'  # For if it's any of the normal goal dictionaries (which have the same modes)
     modes_dict = {
         'goal': {'add', 'complete', 'reset', 'remove', 'retask', 'set', 'setall', 'update', 'rename', 'denominator',
-                 'containercreate', 'containeradd', 'containeredit'},
+                 'containercreate', 'containeradd', 'containeredit', 'tag'},
         'counter': {'add', 'reset', 'remove', 'retask', 'set', 'setall', 'update', 'rename'},
         'note': {'add', 'remove', 'edit', 'position', 'swap'}
     }

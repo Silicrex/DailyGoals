@@ -217,45 +217,38 @@ def toggle_command(database, context, args):
 
 
 def setdate_command(database, context, args):
-    # ex input: setdate 5 26
-    # ex input: setdate 8
-    arg_length = len(args)
-    if arg_length not in {1, 2}:
-        print('Invalid number of arguments!', end='\n\n')
+    # ex input: setdate 5 26 2021
+    if len(args) != 3:
+        console_display.refresh_and_print(database, 'Invalid number of arguments, expected M D YYYY')
         raise errors.InvalidCommandUsage(context['command'])
     input_month = args[0]
-    if arg_length == 1:  # Default day to 1
-        input_day = '1'  # Converted to int later
-    else:
-        input_day = args[1]
+    input_day = args[1]
+    input_year = args[2]
 
-    if not input_month.isnumeric():
-        print('Invalid month. Use numbers in the form MM DD, ie 5 27', end='\n\n')
-        return
-    if not input_day.isnumeric():
-        print('Invalid day. Use numbers in the form MM DD, ie 5 27', end='\n\n')
+    if not (input_month.isnumeric() and input_day.isnumeric() and input_year.isnumeric()):
+        console_display.refresh_and_print(database, 'Invalid arg. Use numbers in the form M D YYYY, ie 3 17 2022')
         return
 
-    input_month = int(input_month)
-    input_day = int(input_day)
+    month = int(input_month)
+    day = int(input_day)
+    year = int(input_year)
 
-    calendar_date = database['settings']['calendar_date']
-    if input_month == calendar_date['month'] and input_day == calendar_date['day']:
-        print('That date is already set', end='\n\n')
+    # calendar_date = database['settings']['calendar_date']
+    # if input_month == calendar_date['month'] and input_day == calendar_date['day']:
+    #     print('That date is already set', end='\n\n')
+    #     return
+    if not (1 <= month <= 12):
+        console_display.refresh_and_print(database, 'Invalid month. Expected 1-12 range')
         return
-    if input_month > 12 or input_month < 1:
-        print('Invalid input. Expected 1-12 range for month', end='\n\n')
+    if not (1 <= day <= 31):
+        console_display.refresh_and_print(database, 'Invalid day. Expected 1-31 range')
         return
-    if input_day > 31 or input_day < 1:
-        print('Invalid input. Expected 1-31 range for day', end='\n\n')
-        return
-    if not date_logic.valid_date(input_month, input_day):
-        print('Invalid day for that month', end='\n\n')
+    if not date_logic.valid_date(month, day, year):
+        console_display.refresh_and_print(database, 'Invalid day for that month/year')
         return
 
     if not console_display.confirm('WARNING: Resets streak and *DELETES* ALL CYCLE OBJECTIVES. Proceed? (y/n)'):
-        console_display.print_display(database)
-        print('Cancelled', end='\n\n')
+        console_display.refresh_and_print(database, 'Cancelled')
         return
     settings_management.date_change_adjust(database)  # Streak reset, cycles deleted
 
@@ -313,44 +306,47 @@ def endday_command(database, context, args):
     # Streak point: daily, cycle
     # Total dailies completed: daily, optional, todo, cycle
     def add_to_history(dict_name, obj_value):
-        obj_numerator = obj_value['numerator']
-        obj_denominator = obj_value['denominator']
+        numerator = obj_value['numerator']
+        denominator = obj_value['denominator']
 
         history_dict = database['history'][dict_name]
         task_string = f" ({obj_value['task_string']})" if obj_value['task_string'] else ''
-        denominator_string = '{:,}'.format(obj_denominator)
-        history_key = f"{obj_value['display_name']}{task_string} (/{denominator_string})"
-        history_key_lower = history_key.lower()
+        denominator_string = '{:,}'.format(denominator)
+        history_name = f"{obj_value['display_name']}{task_string} (/{denominator_string})"
+        history_key = history_name.lower()
 
         if dict_name == 'longterm':  # Longterm is a one-and-done structure
-            if history_key_lower in history_dict:
+            if history_key in history_dict:
                 return
             else:  # First time, so create entry
-                first_completed = datetime.datetime.now().date()
-                history_dict.update({history_key_lower: {'display_name': history_key,
-                                                         'first_completed': str(first_completed), 'tags': []}})
+                date = datetime.datetime.now().date()
+                history_dict.update({history_key: {'display_name': history_name,
+                                                   'first_completed': str(date),
+                                                   'tags': []}})
+                if obj_value['tag']:
+                    history_dict[history_key]['tags'].append((date, obj_value['tag']))
                 return
 
-        if history_key_lower in history_dict:
-            history_value = history_dict[history_key_lower]
-            percent_completed = round(obj_numerator / obj_denominator, 2)  # Tracks >100% comp
+        if history_key in history_dict:
+            history_value = history_dict[history_key]
+            percent_completed = round(numerator / denominator, 2)  # Tracks >100% comp
             history_value['total_percent_completed'] += percent_completed
             history_value['times_completed'] += 1
         else:  # First time, so create entry
-            percent_completed = round(obj_numerator / obj_denominator, 2)  # Tracks >100% completion
+            percent_completed = round(numerator / denominator, 2)  # Tracks >100% completion
             first_completed = datetime.datetime.now().date()
             history_dict.update({
-                history_key_lower: {
-                    'display_name': history_key,
+                history_key: {
+                    'display_name': history_name,
                     'times_completed': 1,
-                    'denominator': obj_denominator,
+                    'denominator': denominator,
                     'total_percent_completed': percent_completed,
                     'first_completed': str(first_completed),
                     'tags': []
                 }})
 
     if args:
-        print('Unnecessary arguments!', end='\n\n')
+        console_display.refresh_and_print('Unnecessary args!')
         raise errors.InvalidCommandUsage(context['command'])
 
     daily_dict = database['daily']
@@ -427,8 +423,7 @@ def endday_command(database, context, args):
 
     # Save, sort, and print display
     file_management.update(database)
-    console_display.print_display(database)
-    print_mode_success('endday')  # To leave success print after everything else
+    console_display.refresh_and_print(database, 'See you tomorrow! :D')
 
 
 def backup_command(database, context, args):

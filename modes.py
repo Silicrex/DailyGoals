@@ -47,7 +47,7 @@ def add_mode(database, context, args):
     task_string = get_task_string()
     denominator = get_denominator()
     dictionary.update({objective_key: {'display_name': objective_name, 'task_string': task_string,
-                                       'denominator': denominator, 'numerator': 0}})
+                                       'denominator': denominator, 'numerator': 0, 'tag': None}})
     add_to_container(database, command, objective_key)  # Add to default container
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
@@ -87,7 +87,8 @@ def add_cycle_mode(database, dictionary):
 
     dictionary.update({objective_key: {'display_name': objective_name, 'task_string': task_string,
                                        'denominator': denominator, 'numerator': 0,
-                                       'cycle_frequency': cycle_frequency, 'current_offset': current_offset}})
+                                       'cycle_frequency': cycle_frequency, 'current_offset': current_offset,
+                                       'tag': None}})
     add_to_container(database, 'cycle', objective_key)
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'cycle')
@@ -125,7 +126,7 @@ def add_todo_mode(database, dictionary):
         enforced_daily = False
     dictionary.update({objective_key: {'display_name': objective_name, 'task_string': task_string,
                                        'denominator': denominator, 'numerator': 0,
-                                       'enforced_daily': enforced_daily}})
+                                       'enforced_daily': enforced_daily, 'tag': None}})
     add_to_container(database, 'todo', objective_key)
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'todo')
@@ -468,7 +469,7 @@ def rename_mode(database, context, args):
     new_name = get_name()
     if new_name in dictionary:
         console_display.refresh_and_print(database, f'That name is already in use for [{context["mode"]}]. '
-                                                     'Returning to menu')
+                                                    'Returning to menu')
         return
     dictionary[new_name] = dictionary[objective_name].copy()
     dictionary.pop(objective_name)
@@ -525,6 +526,30 @@ def denominator_mode(database, context, args):
     dict_management.sort_dictionary(database, command)
     file_management.update(database)
     console_display.refresh_and_print(database, f'{command.capitalize()} item successfully updated!')
+
+
+def tag_mode(database, context, args):
+    # ex input: daily tag wanikani
+    command = context['command']
+    dictionary = database[command]
+
+    if not args:
+        console_display.refresh_and_print(database, 'Must provide an objective to tag')
+        raise errors.InvalidCommandUsage(command, context['mode'])
+
+    input_string = ' '.join(args).lower()
+    if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
+        console_display.refresh_and_print(database, 'Objective name not found')
+        raise errors.InvalidCommandUsage(command, context['mode'])
+    objective_completed = objective_name['numerator'] >= objective_name['denominator']
+    if not objective_completed:
+        console_display.refresh_and_print(database, 'Objective must be completed to be tagged')
+        return
+    tag = get_name('Enter a tag')
+    objective_name['tag'] = tag
+    # Save and print display
+    file_management.update(database)
+    console_display.refresh_and_print(database, f'[{objective_name}] successfully tagged!')
 
 
 # Removing items ------------------------------------------------------------------------------------------

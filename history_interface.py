@@ -20,26 +20,19 @@ def launch_history_interface(database, dict_name):
             index = index_offset + n
             print_item(index)
 
-    def print_item(index, tag_indexes=False):
-        item_value = dictionary[keys[index]]
-        tags_container = item_value['tags']
-        times_completed = item_value['times_completed']
-        total_percent_completed = item_value['total_percent_completed']
+    def print_item(index):
+        history_value = dictionary[keys[index]]
+        tags_container = history_value['tags']
+        times_completed = history_value['times_completed']
+        total_percent_completed = history_value['total_percent_completed']
 
-        print(f"#{index + 1:,}: {item_value['display_name']}\n"
+        print(f"#{index + 1:,}: {history_value['display_name']}\n"
               f"-----------------------------------\n"
               f">>> Times completed: {times_completed:,}\n"
-              f">>> Denominator sum: {times_completed * item_value['denominator']:,}\n"
+              f">>> Denominator sum: {times_completed * history_value['denominator']:,}\n"
               f">>> Total % completed: {total_percent_completed:,.2%}\n"
-              f">>> Average % completed: "
-              f"{total_percent_completed / times_completed:,.2%}")
-        if tags_container:
-            print('Tags:')
-            for index, tag in enumerate(tags_container):
-                if tag_indexes:
-                    print(f'{[index]} {tag}', end='\n\n')
-                else:
-                    print(f'--- {tag}')
+              f">>> Average % completed: {total_percent_completed / times_completed:,.2%}"
+              f">>> Tags: {len(history_value['tags'])}")
         print()  # Newline
 
     def print_header():
@@ -179,76 +172,21 @@ def launch_history_interface(database, dict_name):
             print_display()
 
 # Tags ------------------------------------------------------------------------------------------
-        elif command in {'tag'}:
-            # tag add
-            # tag remove
-            # tag edit
+        elif command in {'tags', 'tag'}:
+            # ex input: tags wanikani
 
-            if input_length < 2:
-                print_display()
-                print('Missing required arg!', end='\n\n')
-                continue
-            mode = user_input[1]
-            if mode not in {'add', 'remove', 'edit'}:
-                print_display()
-                print("Invalid mode. Expected 'add', 'remove', or 'edit'", end='\n\n')
-                continue
-            
-            print('Enter item name', end='\n\n')
-            item_name = input().lower()
             print()  # Newline to separate input from print
+            item_name = ' '.join(user_input[1:])
             if not (item_name := dict_management.key_search(database, dictionary, item_name)):
                 print_display()
                 print('Item could not be found', end='\n\n')
                 continue
-            item_tags = dictionary[item_name]['tags']
-            tags_length = len(item_tags)
+            tags = dictionary[item_name]['tags']
             os.system('cls')
-            print_item(keys.index(item_name), tag_indexes=True)  # print_item() goes by index, not by name
-
-            if mode == 'add':
-                print('At what index should the tag be inserted? (Starts at 0) (Blank = put at end)', end='\n\n')
-                item_index = input()
-                print()  # Newline to separate input from print
-                if not item_index:
-                    item_index = tags_length
-                    print('Defaulted to end', end='\n\n')
-                elif item_index.isnumeric():
-                    item_index = eval(item_index)
-                else:
-                    print_display()
-                    print('Index must be a positive integer', end='\n\n')
-                    continue
-                if not (tag_text := get_tag_text()):
-                    continue  # Cancelled
-                item_tags.insert(item_index, tag_text)
-                file_management.update(database)
-                print_display()
-                print('Successfully added tag', end='\n\n')
-                
-            elif mode == 'remove':
-                print('What index should be deleted? (Starts at 0) (Blank = cancel)', end='\n\n')
-                if not (item_index := get_pos_index()):  # >= 0 index
-                    continue  # Cancelled or invalid input
-                if not console_display.confirm(f'Remove tag {item_index}? (y/n) [{item_tags[item_index]}]'):
-                    print_display()
-                    print('Cancelled tag remove', end='\n\n')
-                    continue
-                item_tags.pop(item_index)
-                file_management.update(database)
-                print_display()
-                print('Successfully removed tag', end='\n\n')
-
-            elif mode == 'edit':
-                print('What index should be edited? (Starts at 0) (Blank = cancel)', end='\n\n')
-                if not (item_index := get_pos_index()):  # >= 0 index
-                    continue  # Cancelled or invalid input
-                if not (tag_text := get_tag_text()):
-                    continue  # Cancelled
-                item_tags[item_index] = tag_text
-                file_management.update(database)
-                print_display()
-                print('Successfully edited tag', end='\n\n')
+            print_item(keys.index(item_name))  # print_item() goes by index, not by name
+            print(f'Tags: {len(tags)}', end='\n\n')
+            for tag in tags:
+                print(f'{tag[0]}: {tag[1]}')  # Date: tag
 
 # Misc commands/not found ------------------------------------------------------------------------------------------
         elif command == 'help':
