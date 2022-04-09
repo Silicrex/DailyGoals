@@ -1,18 +1,27 @@
 import console_display  # For confirm()
 
 
-def valid_date(month, day):
+def valid_date(month, day, year):
     # Given month 1-12, day 1-31
-    if month in {1, 3, 5, 7, 8, 10, 12}:  # 31
+    if month in {1, 3, 5, 7, 8, 10, 12}:  # 31 days
         return True  # We already know day is in the range [1, 31]
-    elif month in {4, 6, 9, 11}:  # 30
-        if day < 31:
+    elif month in {4, 6, 9, 11}:  # 30 days
+        if day <= 30:
             return True
-    elif month == 2:  # 28/29
+    elif month == 2:  # 28/29 days based on leap year
+        if day <= 28:
+            return True
+        elif day == 29:
+            leap_year = False
+            if year % 4 == 0:
+                if year % 100 == 0:
+                    leap_year = True if year % 400 == 0 else False
+                else:
+                    leap_year = True
+            return leap_year
+        else:
+            return False
         
-        if day < 30:
-            return True
-    return False
 
 
 def next_day(month, day):
@@ -93,17 +102,3 @@ def convert_day(day):
         return 6
     elif day == 'saturday':
         return 7
-
-
-def format_month_text(month_number):  # Takes number input
-    if month_number < 10:  # If it's single-digit, add a leading 0
-        return '0' + str(month_number)
-    else:
-        return str(month_number)
-
-
-def format_day_text(day_number):  # Takes number input
-    if day_number < 10:  # If it's single-digit, add a leading 0
-        return '0' + str(day_number)
-    else:
-        return str(day_number)

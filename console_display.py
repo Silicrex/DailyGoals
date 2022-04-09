@@ -17,23 +17,23 @@ def print_display(database):
         print(database['welcome_message'])
     print()  # Extra newline
 
-    # Print date: - 01/01 Sunday -
+    # Print date: - 01/01/2022 Sunday -
     calendar_date = database['settings']['calendar_date']  # Date dictionary
-    month_text = date_logic.format_month_text(calendar_date['month'])
-    day_text = date_logic.format_day_text(calendar_date['day'])
-    week_day_text = date_logic.convert_day_number(calendar_date['week_day'])
-    if not settings['date_switch']:
-        print(f"- {month_text}/{day_text} {week_day_text} -")
-    else:
-        print(f"- {day_text}/{month_text} {week_day_text} -")
-    print()  # Extra newline
+    date1 = calendar_date['month']
+    date2 = calendar_date['day']
+    year = calendar_date['year']
+    week_day = date_logic.convert_day_number(calendar_date['week_day'])
+    if settings['date_switch']:
+        date1, date2 = date2, date1
+    print(f"- {date1:01}/{date2:01}/{year} {week_day} -", end='\n\n')
 
-    # Streak/total header: Streak: 0
+    # Streak/total header
     print(f"Streak: {stats['streak']}")
     if settings['display_total']:
         print('Total dailies completed:', stats['total_completed'])
-    print(end='\n\n')  # Extra newlines
+    print('\n')  # Extra two newlines
 
+    # Print dicts
     display_list = dict_management.get_display_list(database)
     if 'inactive_cycle' in display_list:  # If active cycles are toggled off, don't show inactives
         if not settings['cycle']:

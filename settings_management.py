@@ -24,8 +24,3 @@ def toggle(database, toggle_item, manual_value=None):
                 print(f'[{toggle_item}] is already disabled', end='\n\n')
             else:  # It's not off, so turn it off
                 disable_item()
-
-
-def date_change_adjust(database):  # If week day or date is changed, need to clear streak/cycles
-    database['streak'] = 0
-    database['cycle'].clear()

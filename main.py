@@ -1,16 +1,9 @@
 # Set to enforce ASCII just because it's what Windows cmd can display. Can be avoided if this is interfaced
-# If interfaced; could definitely use containers. Group objectives within a dictionary,
-# complete with collapsing/minimizing.
 # TODO: Help dialog, tutorial dialog, mention backup when running program, mention case sensitivity
 # TODO: Error handling/polishing
-
 # TODO: Finish cycles (need to work around endday, fix for active vs inactive)
 # TODO: uhhhh END DAY Cycles etc. count for streak, todo for total etc
 #       Make the stats increment, make sure auto toggle actually does something
-# TODO: history dict toggle. {'dict_type': {obj_name + task_string: {count: #, tag: str}}}
-#       Long-term one doesn't need a count
-#       Pages
-#       History combine command to sum up different objects that refer to the same exact thing
 # TODO: Notes
 # TODO: warn about clearing
 # TODO: print help on the command for commands not being used right?
@@ -18,9 +11,9 @@
 # TODO: setting for sorting counter by counter val instead of name
 # TODO: Note groups (have names and load different configs). Notes that autoload on certain days?
 # TODO: Counter groups in the same fashion
-# TODO: Auto date switching setting
+# TODO: Auto date switching setting (endday alternative)
 # TODO: 7-day preview for upcoming
-# TODO: Add year to avoid needing to ask about leap year
+# TODO: setdate considers switch_date setting
 import file_management  # For loading/saving
 import commands  # Command functions and formatting
 import console_display  # To print the initial console display
@@ -63,7 +56,7 @@ def main():
         print()  # Newline to separate input from printing
         try:
             # Try to get corresponding function from commands.py
-            # Command functions have '_command' appended to name, ie daily_command
+            # Command functions have '_command' appended to name, ie daily_command()
             command_function = getattr(commands, command + '_command')
         except AttributeError:  # If function is not found
             console_display.refresh_and_print(database, "Invalid command! Use 'help' for help!")

@@ -250,14 +250,15 @@ def setdate_command(database, context, args):
     if not console_display.confirm('WARNING: Resets streak and *DELETES* ALL CYCLE OBJECTIVES. Proceed? (y/n)'):
         console_display.refresh_and_print(database, 'Cancelled')
         return
-    settings_management.date_change_adjust(database)  # Streak reset, cycles deleted
+    database['streak'] = 0
+    database['cycle'].clear()
 
-    database['settings']['calendar_date']['month'] = input_month
-    database['settings']['calendar_date']['day'] = input_day
+    database['settings']['calendar_date']['month'] = month
+    database['settings']['calendar_date']['day'] = day
+    database['settings']['calendar_date']['year'] = year
 
     file_management.update(database)
-    console_display.print_display(database)
-    print('Date successfully changed', end='\n\n')
+    console_display.refresh_and_print(database, 'Date successfully changed')
 
 
 def setday_command(database, context, args):
@@ -273,14 +274,14 @@ def setday_command(database, context, args):
         console_display.print_display(database)
         print('Cancelled', end='\n\n')
         return
-    settings_management.date_change_adjust(database)  # Streak reset, cycles deleted
+    database['streak'] = 0
+    database['cycle'].clear()
 
     week_day_number = date_logic.convert_day(input_week_day)  # Convert to #, ie Sunday = 1
     database['settings']['calendar_date']['week_day'] = week_day_number
 
     file_management.update(database)
-    console_display.print_display(database)
-    print('Week day successfully changed', end='\n\n')
+    console_display.refresh_and_print(database, 'Week day successfully changed')
 
 
 def settings_command(database, context, args):
