@@ -201,11 +201,11 @@ def get_enforced_dailies_list(database):
 
 
 def get_unenforced_cycle_list(database):
-    unenforced_list = list(database['todo'].keys())
+    todo_keys = list(database['todo'].keys())
     enforced_list = get_enforced_dailies_list(database)
-    for key in enforced_list:
-        unenforced_list.remove(key)
-    return unenforced_list  # Remove enforced keys to get unenforced keys
+    for key in enforced_list:  # Remove enforced keys to get unenforced keys
+        todo_keys.remove(key)
+    return todo_keys
 
 
 def get_active_cycle_list(database):
