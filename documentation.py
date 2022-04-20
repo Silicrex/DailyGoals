@@ -28,11 +28,13 @@ def get_daily_container_names():
 
 
 def get_modes(command):
-    if command in get_goal_dictionary_names():
-        command = 'goal'  # For if it's any of the normal goal dictionaries (which have the same modes)
+    if command != 'daily' and command in get_goal_dictionary_names():
+        command = 'goal'  # For any of the normal goal dictionaries other than daily (which have the same modes)
     modes_dict = {
         'goal': {'add', 'complete', 'reset', 'remove', 'retask', 'set', 'setall', 'update', 'rename', 'denominator',
                  'containercreate', 'containeradd', 'containeredit', 'tag'},
+        'daily': {'add', 'complete', 'reset', 'remove', 'retask', 'set', 'setall', 'update', 'rename', 'denominator',
+                  'containercreate', 'containeradd', 'containeredit', 'tag', 'link', 'unlink'},
         'counter': {'add', 'reset', 'remove', 'retask', 'set', 'setall', 'update', 'rename'},
         'note': {'add', 'remove', 'edit', 'position', 'swap'}
     }

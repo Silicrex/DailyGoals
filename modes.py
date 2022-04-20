@@ -552,6 +552,50 @@ def tag_mode(database, context, args):
     console_display.refresh_and_print(database, f'[{objective_name}] successfully tagged!')
 
 
+def link_mode(database, context, args):
+    # ex input: daily link wanikani
+    command = context['command']
+    dictionary = database[command]
+
+    if not args:
+        console_display.refresh_and_print(database, 'Must provide an objective to link')
+        raise errors.InvalidCommandUsage(command, context['mode'])
+    input_string = ' '.join(args).lower()
+    if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
+        console_display.refresh_and_print(database, 'Objective name not found')
+        raise errors.InvalidCommandUsage(command, context['mode'])
+    input_string = input('What to-do objective would you like to link this objective to?\n\n').lower()
+    if not (linked_objective_name := dict_management.key_search(database, database['todo'], input_string)):
+        console_display.refresh_and_print(database, 'Objective not found')
+        raise errors.InvalidCommandUsage(command, context['mode'])
+    dictionary[objective_name]['link'] = linked_objective_name
+    # Save and print display
+    file_management.update(database)
+    console_display.refresh_and_print(database, f'[{objective_name}] successfully linked to [{linked_objective_name}]!')
+
+
+def unlink_mode(database, context, args):
+    # ex input: daily unlink wanikani
+    command = context['command']
+    dictionary = database[command]
+
+    if not args:
+        console_display.refresh_and_print(database, 'Must provide an objective to unlink')
+        raise errors.InvalidCommandUsage(command, context['mode'])
+    input_string = ' '.join(args).lower()
+    if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
+        console_display.refresh_and_print(database, 'Objective name not found')
+        raise errors.InvalidCommandUsage(command, context['mode'])
+    if 'link' not in dictionary[objective_name]:
+        console_display.refresh_and_print(database, 'Objective is not linked')
+        return
+    linked_objective_name = dictionary[objective_name].pop('link')  # Remove from daily objective
+    database['todo'][linked_objective_name].pop('link')  # Remove from to-do objective
+    # Save and print display
+    file_management.update(database)
+    console_display.refresh_and_print(database, f'[{objective_name}] successfully unlinked!')
+
+
 # Removing items ------------------------------------------------------------------------------------------
 def remove_mode(database, context, args):
     # ex input: daily remove wanikani

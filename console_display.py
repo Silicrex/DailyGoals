@@ -61,39 +61,54 @@ def print_dictionary(database, dict_name):
     globals()['print_' + dict_name + '_objectives'](database)
 
 
-def print_base_dictionary(dictionary, *, item_prefix='', item_suffix='', task_string_exec=None):
+def print_base_dictionary(dictionary, containers, *, item_prefix='', item_suffix='', task_string_exec=None):
     """Given a dictionary of objectives, print them out with detailed information.
 
     :param dict dictionary: The dictionary of objectives
+    :param dict containers: The dictionary of containers for the above dict type
     :param str item_prefix: String printed before each item
     :param str item_suffix: String printed after each time
     :param function task_string_exec: Function that takes a dict and returns a string.
     Passed the value of each item and returns a string to append to the task string
     :return:
     """
-    for key, value in dictionary.items():
-        display_name = value['display_name']
-        task_string = value['task_string']
-        formatted_task_string = ''
-        if task_string:  # If it's not blank
-            formatted_task_string = f' ({task_string})'
-        if task_string_exec:
-            formatted_task_string += task_string_exec(value)
-        denominator = value['denominator']
-        numerator = value['numerator']
-        box = '[ ] '
-        text = f'{display_name}{formatted_task_string}: {numerator:,}/{denominator:,} ({numerator / denominator:.2%})'
-        if numerator >= denominator:  # Complete
-            box = '[x] '
-            text += ' DONE!!'
-        print(item_prefix + box + text + item_suffix)
+    def print_items(items_dict):
+        for key, value in items_dict.items():
+            display_name = value['display_name']
+            task_string = value['task_string']
+            formatted_task_string = ''
+            if task_string:  # If it's not blank
+                formatted_task_string = f' ({task_string})'
+            if task_string_exec:
+                formatted_task_string += task_string_exec(value)
+            denominator = value['denominator']
+            numerator = value['numerator']
+            box = '[ ] '
+            text = (f'{display_name}{formatted_task_string}: '
+                    f'{numerator:,}/{denominator:,} ({numerator / denominator:.2%})')
+            if numerator >= denominator:  # Complete
+                box = '[x] '
+                text += ' DONE!!'
+            print(item_prefix + box + text + item_suffix)
+
+    for container in containers:
+        container_items = {k: dictionary[k] for k in container['items'] if k in dictionary}
+        if container != '_default':
+            print(f"[{container['display_name']}] ({len(container['items'])} items)", end='')
+            if container['expanded']:
+                print()
+            else:
+                print(' (Minimized)')
+                continue
+        print_items(container_items)
+        print()
 
 
 def print_daily_objectives(database):
     dictionary = database['daily']
     if dictionary:
         print('>>> Daily objectives:', end='\n\n')
-        print_base_dictionary(dictionary)
+        print_base_dictionary(dictionary, database['containers']['daily'])
         print()  # Extra newline
 
 
@@ -101,7 +116,7 @@ def print_optional_objectives(database):
     dictionary = database['optional']
     if dictionary:
         print('(Optional)', end='\n\n')
-        print_base_dictionary(dictionary)
+        print_base_dictionary(dictionary, database['containers']['optional'])
         print()  # Extra newline
 
 
@@ -111,11 +126,13 @@ def print_todo_objectives(database):
         print('>>> To-dos:')
         enforced_daily_list = dict_management.get_enforced_dailies_list(database)
         if enforced_daily_list:
+            items = {k: dictionary[k] for k in enforced_daily_list}
             print("* '>' signifies enforced to-do; required for streak today", end='\n\n')
-            print_base_dictionary({k: dictionary[k] for k in enforced_daily_list}, item_prefix='> ')
+            print_base_dictionary(items, database['containers']['todo'], item_prefix='> ')
         else:
             print()  # Newline to make up for lack of enforced newline print
-        print_base_dictionary({k: dictionary[k] for k in dict_management.get_unenforced_cycle_list(database)})
+        items = {k: dictionary[k] for k in dict_management.get_unenforced_cycle_list(database)}
+        print_base_dictionary(items, database['containers']['todo'])
         print()  # Extra newline
 
 
@@ -125,7 +142,8 @@ def print_active_cycle_objectives(database):
     dictionary = {k: cycle_dict[k] for k in active_cycle_list}
     if dictionary:
         print('>>> Active cycles', end='\n\n')
-        print_base_dictionary(dictionary, task_string_exec=lambda value: f" (every {value['cycle_frequency']}d)")
+        print_base_dictionary(dictionary, database['containers']['cycle'],
+                              task_string_exec=lambda value: f" (every {value['cycle_frequency']}d)")
         print()  # Extra newline
 
 
@@ -151,7 +169,7 @@ def print_longterm_objectives(database):
     dictionary = database['longterm']
     if dictionary:
         print('>>> Long-term goals:', end='\n\n')
-        print_base_dictionary(dictionary)
+        print_base_dictionary(dictionary, database['containers']['longterm'])
         print()  # Extra newline
 
 
