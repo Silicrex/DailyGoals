@@ -259,6 +259,12 @@ def update_mode(database, context, args):
             return
 
     dictionary[objective_name]['numerator'] += update_value
+
+    # Handle link
+    if command == 'daily' and 'link' in dictionary[objective_name]:
+        linked_objective_name = dictionary[objective_name]['link']
+        database['todo'][linked_objective_name]['numerator'] += update_value
+
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
     file_management.update(database)
@@ -289,7 +295,15 @@ def set_mode(database, context, args):
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
+    current_value = dictionary[objective_name]['numerator']
     dictionary[objective_name]['numerator'] = set_value
+
+    # Handle link
+    if command == 'daily' and 'link' in dictionary[objective_name]:
+        difference = set_value - current_value
+        linked_objective_name = dictionary[objective_name]['link']
+        database['todo'][linked_objective_name]['numerator'] += difference
+
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
     file_management.update(database)

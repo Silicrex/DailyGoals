@@ -293,7 +293,6 @@ def settings_command(database, context, args):
 
 # System/file ------------------------------------------------------------------------------------------
 
-
 def endday_command(database, context, args):
     # ex input: endday
     # deserve streak point? (check for completion across dailies)
@@ -347,7 +346,7 @@ def endday_command(database, context, args):
                 }})
 
     if args:
-        console_display.refresh_and_print('Unnecessary args!')
+        console_display.refresh_and_print(database, 'Unnecessary args!')
         raise errors.InvalidCommandUsage(context['command'])
 
     daily_dict = database['daily']
