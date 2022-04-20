@@ -83,19 +83,6 @@ def key_search(database, dictionary, input_string, *, force_manual_match=False):
     return False
 
 
-def wrong_parameter_count(parameter_length, *expected):
-    # Convert to list of len # instead of parameter #'s. List for pop() and list comprehension convenience
-    expected = list(expected)
-    if parameter_length not in expected:  # -1 so it's by parameter count instead of by length
-        print(f'Invalid amount of parameters (expected {expected.pop(0)}', end='')  # Pop to check for more
-        if expected:  # If there are more term numbers left after popping the first one
-            for value in expected:
-                print(' or', value, end='')  # Print 'or x' for them all
-        print(')', end='\n\n')  # Print the close-parenthesis and extra newline
-        return True  # Return True, as in to say there were a wrong # of terms
-    return False  # Else return False, as in not wrong #
-
-
 def change_all_daily_dicts(database, mode):
     daily_container_names = documentation.get_daily_container_names()
     daily_dict_item_length = 0
@@ -120,7 +107,7 @@ def change_all_daily_dicts(database, mode):
                 # Set the numerator to the denominator (100%). value is the key's dictionary value
                 value['numerator'] = value['denominator']
             sort_dictionary(database, dict_name)
-        enforced_todos =  name_to_container(database, 'enforced_todo')
+        enforced_todos = name_to_container(database, 'enforced_todo')
         todo_dict = database['todo']
         active_cycles = name_to_container(database, 'active_cycle')
         cycle_dict = database['cycle']
@@ -134,7 +121,7 @@ def change_all_daily_dicts(database, mode):
         sort_dictionary(database, 'cycle')
 
     elif mode == 'reset':
-        for dict_name in daily_container_names[:-2]: # Exclude last two, enforced_todo and active_cycles (lists)
+        for dict_name in daily_container_names[:-2]:  # Exclude last two, enforced_todo and active_cycles (lists)
             dictionary = name_to_container(database, dict_name)
             for key, value in dictionary.items():
                 value['numerator'] = 0
