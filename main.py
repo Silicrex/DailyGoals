@@ -14,6 +14,7 @@
 # TODO: Auto date switching setting (endday alternative)
 # TODO: 7-day preview for upcoming
 # TODO: setdate considers switch_date setting
+# TODO: Add ability to attach a url?
 import file_management  # For loading/saving
 import commands  # Command functions and formatting
 import console_display  # To print the initial console display

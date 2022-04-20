@@ -91,11 +91,11 @@ def print_base_dictionary(dictionary, containers, *, item_prefix='', item_suffix
                 text += ' DONE!!'
             print(item_prefix + box + text + item_suffix)
 
-    for container in containers:
-        container_items = {k: dictionary[k] for k in container['items'] if k in dictionary}
-        if container != '_default':
-            print(f"[{container['display_name']}] ({len(container['items'])} items)", end='')
-            if container['expanded']:
+    for container_name, container_value in containers.items():
+        container_items = {k: dictionary[k] for k in container_value['items'] if k in dictionary}
+        if container_name != '_default':
+            print(f"[{container_value['display_name']}] ({len(container_value['items'])} items)", end='')
+            if container_value['expanded']:
                 print()
             else:
                 print(' (Minimized)')

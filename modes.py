@@ -175,7 +175,7 @@ def add_note_mode(database, context, args):
     console_display.refresh_and_print(database, 'Note item successfully added!')
 
 
-def get_name(prompt='Enter a name for the objective (must be unique to goal type)'):
+def get_name(prompt='> Enter a name for the objective (must be unique to goal type)'):
     while True:
         print(prompt, end='\n\n')
         name = input().strip()  # Get input and remove leading/trailing spaces
@@ -191,8 +191,7 @@ def get_name(prompt='Enter a name for the objective (must be unique to goal type
 
 def get_task_string():
     while True:
-        print('Enter a brief task description/couple keywords '
-              '(looks like: goal_name (task string), can be blank)', end='\n\n')
+        print('> Enter a brief task description/couple keywords; can be blank', end='\n\n')
         task_string = input()
 
         if not task_string:  # If it's empty, that's fine, but print something to signify
