@@ -12,28 +12,25 @@ def valid_date(month, day, year):
         if day <= 28:
             return True
         elif day == 29:
-            leap_year = False
-            if year % 4 == 0:
-                if year % 100 == 0:
-                    leap_year = True if year % 400 == 0 else False
-                else:
-                    leap_year = True
-            return leap_year
+            return check_leap_year(year)  # 29 only valid in Feb for leap years
         else:
             return False
-        
 
 
-def next_day(month, day):
+def increment_date(database):
+    day = database['settings']['calendar_date']['day']
+    month = database['settings']['calendar_date']['month']
+    year = database['settings']['calendar_date']['year']
     if day < 28:
         day += 1
     # Else, month matters
     elif month in {1, 3, 5, 7, 8, 10, 12}:  # 31 days
         if day < 31:
             day += 1
-        elif month == 12:  # Day is 31, meaning month changes. Is it December?
+        elif month == 12:  # Day is 31, meaning month/year changes. Is it December?
             month = 1  # It's December 31st, reset date to Jan 1st
             day = 1
+            year += 1
         else:
             month += 1  # Not December, just increase month by 1 and reset day
             day = 1
@@ -46,16 +43,24 @@ def next_day(month, day):
     else:  # month == 2
         if day < 28:
             day += 1
-        elif day == 28:  # Day is 28
-            if console_display.confirm('Is it a leap year (is tomorrow the 29th)? (y/n)'):
-                day += 1
-            else:  # Not a leap year, so set to March 1st
-                month = 3
-                day = 1
-        else:  # It was a leap year and it was the 29th
-            month = 3
+        elif day == 28 and check_leap_year(year):  # Day is 28 on a leap year
+            day += 1
+        else:  # It was either the 28th on a non-leap-year or it was the 29th on a leap year
+            month += 1
             day = 1
-    return month, day
+    database['settings']['calendar_date']['day'] = day
+    database['settings']['calendar_date']['month'] = month
+    database['settings']['calendar_date']['year'] = year
+
+
+def check_leap_year(year):
+    leap_year = False
+    if year % 4 == 0:
+        if year % 100 == 0:
+            leap_year = True if year % 400 == 0 else False
+        else:
+            leap_year = True
+    return leap_year
 
 
 def next_week_day(week_day):

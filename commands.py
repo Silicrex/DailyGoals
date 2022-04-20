@@ -416,8 +416,8 @@ def endday_command(database, context, args):
 
     # Time to handle date
     calendar_date = database['settings']['calendar_date']
-    # Increment month/day properly
-    calendar_date['month'], calendar_date['day'] = date_logic.next_day(calendar_date['month'], calendar_date['day'])
+    # Increment month/day/year properly
+    date_logic.increment_date(database)
     # Increment week day
     calendar_date['week_day'] = date_logic.next_week_day(calendar_date['week_day'])
 
