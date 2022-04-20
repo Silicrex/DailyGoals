@@ -309,41 +309,42 @@ def endday_command(database, context, args):
         numerator = obj_value['numerator']
         denominator = obj_value['denominator']
 
-        history_dict = database['history'][dict_name]
+        command_history_dict = database['history'][dict_name]
         task_string = f" ({obj_value['task_string']})" if obj_value['task_string'] else ''
         denominator_string = '{:,}'.format(denominator)
         history_name = f"{obj_value['display_name']}{task_string} (/{denominator_string})"
         history_key = history_name.lower()
 
+        date = datetime.datetime.now().date()
         if dict_name == 'longterm':  # Longterm is a one-and-done structure
-            if history_key in history_dict:
+            if history_key in command_history_dict:
                 return
             else:  # First time, so create entry
-                date = datetime.datetime.now().date()
-                history_dict.update({history_key: {'display_name': history_name,
-                                                   'first_completed': str(date),
-                                                   'tags': []}})
+                command_history_dict.update({history_key: {'display_name': history_name,
+                                                           'first_completed': str(date),
+                                                           'tags': []}})
                 if obj_value['tag']:
-                    history_dict[history_key]['tags'].append((date, obj_value['tag']))
+                    command_history_dict[history_key]['tags'].append((date, obj_value['tag']))
                 return
 
-        if history_key in history_dict:
-            history_value = history_dict[history_key]
+        if history_key in command_history_dict:
+            history_value = command_history_dict[history_key]
             percent_completed = round(numerator / denominator, 2)  # Tracks >100% comp
             history_value['total_percent_completed'] += percent_completed
             history_value['times_completed'] += 1
         else:  # First time, so create entry
             percent_completed = round(numerator / denominator, 2)  # Tracks >100% completion
-            first_completed = datetime.datetime.now().date()
-            history_dict.update({
+            command_history_dict.update({
                 history_key: {
                     'display_name': history_name,
                     'times_completed': 1,
                     'denominator': denominator,
                     'total_percent_completed': percent_completed,
-                    'first_completed': str(first_completed),
+                    'first_completed': str(date),
                     'tags': []
                 }})
+        if obj_value['tag']:
+            command_history_dict[history_key]['tags'].append((date, obj_value['tag']))
 
     if args:
         console_display.refresh_and_print(database, 'Unnecessary args!')
@@ -357,7 +358,6 @@ def endday_command(database, context, args):
     streak_deserved = True
 
     # key represents lowercase objective name
-    # value is a dict with {display_name, task_string, denominator, numerator}, unless specified otherwise
     for key, value in daily_dict.items():
         objective_completed = value['numerator'] >= value['denominator']
         if objective_completed:
