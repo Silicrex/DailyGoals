@@ -38,6 +38,7 @@ def add_mode(database, context, args):
     if command in {'counter', 'cycle', 'todo'}:  # Different processes
         special_add_function = globals()['add_' + command + '_mode']  # ie add_cycle_mode, gets corresponding func
         special_add_function(database, dictionary)
+        return
 
     objective_name = get_name()
     objective_key = objective_name.lower()
@@ -131,7 +132,7 @@ def add_todo_mode(database, dictionary):
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'todo')
     file_management.update(database)
-    console_display.refresh_and_print(database, 'Counter item successfully added!')
+    console_display.refresh_and_print(database, 'Todo item successfully added!')
 
 
 def add_note_mode(database, context, args):
@@ -206,7 +207,7 @@ def get_task_string():
 
 def get_denominator():
     while True:
-        print('Enter a progress denominator (ie 2 becomes 0/2) (blank defaults to 1)', end='\n\n')
+        print('> Enter a progress denominator (ie 2 becomes 0/2) (blank defaults to 1)', end='\n\n')
         denominator = input()
         print()  # Extra newline
 
@@ -391,6 +392,7 @@ def setall_mode(database, context, args):
     if command in {'counter', 'cycle'}:
         special_setall_function = globals()['setall_' + command + '_mode']  # ie setall_cycle_mode, gets func
         special_setall_function(database, dictionary, setall_value)
+        return
 
     if setall_value not in {'complete', 'reset'}:
         console_display.refresh_and_print(database, 'Invalid parameter setall value')
