@@ -19,9 +19,9 @@ def name_to_container(database, name):
     elif name == 'inactive_cycle':
         return get_inactive_cycle_list(database)
     elif name == 'enforced_todo':
-        return get_enforced_dailies_list(database)
+        return get_enforced_todo_list(database)
     elif name == 'unenforced_todo':
-        return get_unenforced_cycle_list(database)
+        return get_unenforced_todo_list(database)
     else:
         return database[name]
 
@@ -83,6 +83,36 @@ def key_search(database, dictionary, input_string, *, force_manual_match=False):
     return False
 
 
+def complete_item(database, context, objective_name):
+    command = context['command']
+    dictionary = context['dictionary']
+    objective = dictionary[objective_name]
+    if objective['numerator'] < objective['denominator']:
+        current_value = objective['numerator']
+        objective['numerator'] = objective['denominator']
+
+        # Handle link
+        if command == 'daily' and 'link' in objective:
+            difference = objective['denominator'] - current_value
+            linked_objective_name = dictionary[objective_name]['link']
+            database['todo'][linked_objective_name]['numerator'] += difference
+
+
+def reset_item(database, context, objective_name):
+    command = context['command']
+    dictionary = context['dictionary']
+    objective = dictionary[objective_name]
+    if objective['numerator'] != 0:
+        current_value = objective['numerator']
+        objective['numerator'] = 0
+
+        # Handle link
+        if command == 'daily' and 'link' in objective:
+            difference = 0 - current_value
+            linked_objective_name = dictionary[objective_name]['link']
+            database['todo'][linked_objective_name]['numerator'] += difference
+
+
 def change_all_daily_dicts(database, mode):
     daily_container_names = documentation.get_daily_container_names()
     daily_dict_item_length = 0
@@ -101,16 +131,15 @@ def change_all_daily_dicts(database, mode):
             return
 
     if mode == 'complete':
-        for dict_name in daily_container_names[:-2]:  # Exclude last two, enforced_todo and active_cycles (lists)
-            dictionary = name_to_container(database, dict_name)
-            for key, value in dictionary.items():
-                # Set the numerator to the denominator (100%). value is the key's dictionary value
-                value['numerator'] = value['denominator']
-            sort_dictionary(database, dict_name)
+        daily_dict = database['daily']
         enforced_todos = name_to_container(database, 'enforced_todo')
         todo_dict = database['todo']
         active_cycles = name_to_container(database, 'active_cycle')
         cycle_dict = database['cycle']
+        for key, value in daily_dict.items():
+            # Set the numerator to the denominator (100%). value is the key's dictionary value
+            value['numerator'] = value['denominator']
+        sort_dictionary(database, 'daily')
         for key in enforced_todos:
             value = todo_dict[key]
             value['numerator'] = value['denominator']
@@ -121,15 +150,14 @@ def change_all_daily_dicts(database, mode):
         sort_dictionary(database, 'cycle')
 
     elif mode == 'reset':
-        for dict_name in daily_container_names[:-2]:  # Exclude last two, enforced_todo and active_cycles (lists)
-            dictionary = name_to_container(database, dict_name)
-            for key, value in dictionary.items():
-                value['numerator'] = 0
-            sort_dictionary(database, dict_name)
+        daily_dict = database['daily']
         enforced_todos = name_to_container(database, 'enforced_todo')
         todo_dict = database['todo']
         active_cycles = name_to_container(database, 'active_cycle')
         cycle_dict = database['cycle']
+        for key, value in daily_dict.items():
+            value['numerator'] = 0
+        sort_dictionary(database, 'daily')
         for key in enforced_todos:
             value = todo_dict[key]
             value['numerator'] = 0
@@ -177,40 +205,29 @@ def delete_dictionary(database, mode):
         return True
 
 
-def get_enforced_dailies_list(database):
-    enforced_dailies_list = []
-    for key, value in database['todo'].items():
-        if value['enforced_daily']:
-            enforced_dailies_list.append(key)
-        else:  # Sorted for all enforced to-do's to be first, so once you encounter one that's not, that's the end
-            break
-    return enforced_dailies_list
+def get_enforced_todo_list(database):
+    todo_dict = database['todo']
+    return [x for x in todo_dict if todo_dict[x]['enforced_todo']]
 
 
-def get_unenforced_cycle_list(database):
-    todo_keys = list(database['todo'].keys())
-    enforced_list = get_enforced_dailies_list(database)
-    for key in enforced_list:  # Remove enforced keys to get unenforced keys
-        todo_keys.remove(key)
-    return todo_keys
+def get_unenforced_todo_list(database):
+    todo_dict = database['todo']
+    return [x for x in todo_dict if not todo_dict[x]['enforced_todo']]
 
 
 def get_active_cycle_list(database):
-    active_cycle_list = []
-    for key, value in database['cycle'].items():
-        if value['current_offset'] == 0:
-            active_cycle_list.append(key)
-        else:  # Sorted for 0's to be on top, so once you exit the 0 range, it's all 1+
-            break
-    return active_cycle_list
+    cycle_dict = database['cycle']
+    return [x for x in cycle_dict if cycle_dict[x]['current_offset'] == 0]
+
+
+def get_active_cycle_dict(database):
+    cycle_dict = database['cycle']
+    return [cycle_dict[x] for x in cycle_dict if cycle_dict[x]['current_offset'] == 0]
 
 
 def get_inactive_cycle_list(database):
-    cycle_objective_keys = list(database['cycle'].keys())
-    active_cycle_list = get_active_cycle_list(database)
-    for key in active_cycle_list:
-        cycle_objective_keys.remove(key)
-    return cycle_objective_keys  # Remove active keys to get inactive keys
+    cycle_dict = database['cycle']
+    return [x for x in cycle_dict if cycle_dict[x]['current_offset'] != 0]
 
 
 def sort_dictionary(database, command):
@@ -227,8 +244,8 @@ def sort_dictionary(database, command):
 
     def todo_sort(obj):
         # Puts enforced daily to-do objectives on top (False sorts before True, so invert with not)
-        # enforced_daily -> completed or not -> name
-        return not obj[1]['enforced_daily'], obj[1]['numerator'] >= obj[1]['denominator'], obj[0]
+        # enforced_todo -> completed or not -> name
+        return not obj[1]['enforced_todo'], obj[1]['numerator'] >= obj[1]['denominator'], obj[0]
 
     def alpha_sort(obj):
         return obj[0]  # Just by the name

@@ -122,12 +122,12 @@ def add_todo_mode(database, dictionary):
     task_string = get_task_string()
     denominator = get_denominator()
     if console_display.confirm('Should this todo objective count towards daily requirement? (y/n)'):
-        enforced_daily = True
+        enforced_todo = True
     else:
-        enforced_daily = False
+        enforced_todo = False
     dictionary.update({objective_key: {'display_name': objective_name, 'task_string': task_string,
                                        'denominator': denominator, 'numerator': 0,
-                                       'enforced_daily': enforced_daily, 'tag': None}})
+                                       'enforced_todo': enforced_todo, 'tag': None}})
     add_to_container(database, 'todo', objective_key)
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'todo')
@@ -314,7 +314,7 @@ def complete_mode(database, context, args):
     # ex input: daily complete wanikani
 
     command = context['command']
-    dictionary = database[command]
+    context['dictionary'] = dictionary = database[command]
 
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to set as complete')
@@ -326,30 +326,22 @@ def complete_mode(database, context, args):
         raise errors.InvalidCommandUsage(command, context['mode'])
 
     if command == 'cycle':
-        if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
+        if objective_name not in dict_management.get_active_cycle_dict(database):  # Can't update inactive item
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
-    value = dictionary[objective_name]
-    # If numerator < denominator
-    if value['numerator'] < value['denominator']:
-        # Then make it 100%
-        value['numerator'] = value['denominator']
-    else:
-        print('That objective is already marked as at least 100% complete', end='\n\n')
-        console_display.refresh_and_print(database, 'That objective is already marked as at least 100% complete')
-        return
+    dict_management.complete_item(database, context, objective_name)
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
     file_management.update(database)
-    console_display.refresh_and_print(database, f'{command.capitalize()} item successfully updated!')
+    console_display.refresh_and_print(database, f'{command.capitalize()} item marked as complete!')
 
 
 def reset_mode(database, context, args):
     # ex input: daily reset wanikani
 
     command = context['command']
-    dictionary = database[command]
+    context['dictionary'] = dictionary = database[command]
 
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to reset')
@@ -365,12 +357,7 @@ def reset_mode(database, context, args):
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
-    value = dictionary[objective_name]
-    if value['numerator'] != 0:
-        value['numerator'] = 0
-    else:
-        console_display.refresh_and_print(database, 'That item already has no progress')
-        return
+    dict_management.reset_item(database, context, objective_name)
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
     file_management.update(database)
@@ -381,7 +368,7 @@ def setall_mode(database, context, args):
     # ex input: daily setall complete
 
     command = context['command']
-    dictionary = database[command]
+    context['dictionary'] = dictionary = database[command]
 
     if not args or len(args) > 1:
         console_display.refresh_and_print(database, 'Must provide a setall type')
@@ -389,9 +376,10 @@ def setall_mode(database, context, args):
 
     setall_value = args[0]
 
-    if command in {'counter', 'cycle'}:
-        special_setall_function = globals()['setall_' + command + '_mode']  # ie setall_cycle_mode, gets func
-        special_setall_function(database, dictionary, setall_value)
+    if command == 'cycle':
+        context['dictionary'] = dictionary = dict_management.get_active_cycle_dict(database)
+    elif command == 'counter':
+        setall_counter_mode(database, dictionary, setall_value)
         return
 
     if setall_value not in {'complete', 'reset'}:
@@ -403,42 +391,15 @@ def setall_mode(database, context, args):
         return
 
     if setall_value == 'complete':
-        for key, value in dictionary.items():
-            # Set the numerator to the denominator (100%). value is the key's dictionary value
-            value['numerator'] = value['denominator']
+        for key in dictionary:
+            dict_management.complete_item(database, context, key)
     elif setall_value == 'reset':
-        for key, value in dictionary.items():
-            value['numerator'] = 0
+        for key in dictionary:
+            dict_management.reset_item(database, context, key)
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
     file_management.update(database)
     console_display.refresh_and_print(database, f'{command.capitalize()} items successfully updated!')
-
-
-def setall_cycle_mode(database, dictionary, setall_value):
-    active_cycle_list = dict_management.get_active_cycle_list(database)
-
-    if setall_value not in {'complete', 'reset'}:
-        console_display.refresh_and_print(database, 'Invalid parameter setall value')
-        raise errors.InvalidCommandUsage('cycle', 'setall')
-
-    if not active_cycle_list:
-        console_display.refresh_and_print(database, 'There are no active cycle objectives')
-        return
-
-    if setall_value == 'complete':
-        for objective in active_cycle_list:
-            # Set the numerator to the denominator (100%). value is the key's dictionary value
-            value = dictionary[objective]
-            value['numerator'] = value['denominator']
-    elif setall_value == 'reset':
-        for objective in active_cycle_list:
-            value = dictionary[objective]
-            value['numerator'] = 0
-    # Save, sort, and print display
-    dict_management.sort_dictionary(database, 'cycle')
-    file_management.update(database)
-    console_display.refresh_and_print(database, f'Cycle items successfully updated!')
 
 
 def setall_counter_mode(database, dictionary, setall_value):  # _: doesn't need database

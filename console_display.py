@@ -124,14 +124,14 @@ def print_todo_objectives(database):
     dictionary = database['todo']
     if dictionary:
         print('>>> To-dos:')
-        enforced_daily_list = dict_management.get_enforced_dailies_list(database)
-        if enforced_daily_list:
-            items = {k: dictionary[k] for k in enforced_daily_list}
+        enforced_todo_list = dict_management.get_enforced_todo_list(database)
+        if enforced_todo_list:
+            items = {k: dictionary[k] for k in enforced_todo_list}
             print("* '>' signifies enforced to-do; required for streak today", end='\n\n')
             print_base_dictionary(items, database['containers']['todo'], item_prefix='> ')
         else:
             print()  # Newline to make up for lack of enforced newline print
-        items = {k: dictionary[k] for k in dict_management.get_unenforced_cycle_list(database)}
+        items = {k: dictionary[k] for k in dict_management.get_unenforced_todo_list(database)}
         print_base_dictionary(items, database['containers']['todo'])
         print()  # Extra newline
 
