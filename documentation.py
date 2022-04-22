@@ -22,9 +22,9 @@ def get_goal_dictionary_names():
     return goal_dictionaries
 
 
-def get_daily_container_names():
-    goal_dictionaries = ('daily', 'enforced_todo', 'active_cycle')
-    return goal_dictionaries
+def get_enforced_dict_names():
+    enforced_dictionaries = ('daily', 'enforced_todo', 'active_cycle')
+    return enforced_dictionaries
 
 
 def get_modes(command):

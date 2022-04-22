@@ -16,6 +16,8 @@
 # TODO: setdate considers switch_date setting
 # TODO: Add ability to attach a url?
 # TODO: Remove setdate warning when nothing is lost
+# TODO: Setting for sorting counter by numerator
+# TODO: Option to combine history entries
 import file_management  # For loading/saving
 import commands  # Command functions and formatting
 import console_display  # To print the initial console display

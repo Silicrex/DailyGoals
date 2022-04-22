@@ -254,7 +254,7 @@ def update_mode(database, context, args):
         raise errors.InvalidCommandUsage(command, context['mode'])  # Invalid update value
 
     if command == 'cycle':  # Can't update inactive item
-        if objective_name not in dict_management.get_active_cycle_list(database):
+        if objective_name not in dict_management.get_active_cycle_dict(database):
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
@@ -291,7 +291,7 @@ def set_mode(database, context, args):
         raise errors.InvalidCommandUsage(command, context['mode'])
 
     if command == 'cycle':
-        if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
+        if objective_name not in dict_management.get_active_cycle_dict(database):  # Can't update inactive item
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
@@ -353,7 +353,7 @@ def reset_mode(database, context, args):
         raise errors.InvalidCommandUsage(command, context['mode'])
 
     if command == 'cycle':
-        if objective_name not in dict_management.get_active_cycle_list(database):  # Can't update inactive item
+        if objective_name not in dict_management.get_active_cycle_dict(database):  # Can't update inactive item
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 

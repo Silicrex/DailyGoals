@@ -60,7 +60,7 @@ def complete_command(database, context, args):
     if args:
         print('Unnecessary arguments!', end='\n\n')
         raise errors.InvalidCommandUsage(context['command'])
-    dict_management.change_all_daily_dicts(database, 'complete')
+    dict_management.change_all_daily_dicts(database, context, 'complete')
 
 
 def reset_command(database, context, args):
@@ -68,7 +68,7 @@ def reset_command(database, context, args):
     if args:
         print('Unnecessary arguments!', end='\n\n')
         raise errors.InvalidCommandUsage(context['command'])
-    dict_management.change_all_daily_dicts(database, 'reset')
+    dict_management.change_all_daily_dicts(database, context, 'reset')
 
 
 def delete_command(database, context, args):
@@ -352,7 +352,7 @@ def endday_command(database, context, args):
 
     daily_dict = database['daily']
     cycle_dict = database['cycle']
-    active_cycle_list = dict_management.get_active_cycle_list(database)
+    active_cycle_dict = dict_management.get_active_cycle_dict(database)
     stats = database['stats']
 
     streak_deserved = True
@@ -383,9 +383,8 @@ def endday_command(database, context, args):
             streak_deserved = False
     for key in todo_delete_list:
         database['todo'].pop(key)
-    for key in active_cycle_list:
+    for key, value in active_cycle_dict.items():
         # value has {display_name, task_string, denominator, numerator, cycle_frequency, current_offset}
-        value = cycle_dict[key]
         objective_completed = value['numerator'] >= value['denominator']
         if objective_completed:
             stats['total_completed'] += 1

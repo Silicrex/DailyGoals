@@ -41,7 +41,7 @@ def print_display(database):
     if not display_list:  # If display_list is empty
         overall_item_length = 0
         for dictionary in documentation.get_dictionary_names():
-            overall_item_length += len(dict_management.name_to_container(database, dictionary))
+            overall_item_length += len(database[dictionary])
         if overall_item_length == 0:
             print("No items exist! Create some with '<type> add' (ex: daily add)!", end='\n\n')
         else:
@@ -124,22 +124,19 @@ def print_todo_objectives(database):
     dictionary = database['todo']
     if dictionary:
         print('>>> To-dos:')
-        enforced_todo_list = dict_management.get_enforced_todo_list(database)
-        if enforced_todo_list:
-            items = {k: dictionary[k] for k in enforced_todo_list}
+        enforced_todo_dict = dict_management.get_enforced_todo_dict(database)
+        if enforced_todo_dict:
             print("* '>' signifies enforced to-do; required for streak today", end='\n\n')
-            print_base_dictionary(items, database['containers']['todo'], item_prefix='> ')
+            print_base_dictionary(enforced_todo_dict, database['containers']['todo'], item_prefix='> ')
         else:
             print()  # Newline to make up for lack of enforced newline print
-        items = {k: dictionary[k] for k in dict_management.get_unenforced_todo_list(database)}
-        print_base_dictionary(items, database['containers']['todo'])
+        unenforced_todo_dict = dict_management.get_unenforced_todo_dict(database)
+        print_base_dictionary(unenforced_todo_dict, database['containers']['todo'])
         print()  # Extra newline
 
 
 def print_active_cycle_objectives(database):
-    cycle_dict = database['cycle']
-    active_cycle_list = dict_management.get_active_cycle_list(database)
-    dictionary = {k: cycle_dict[k] for k in active_cycle_list}
+    dictionary = dict_management.get_active_cycle_dict(database)
     if dictionary:
         print('>>> Active cycles', end='\n\n')
         print_base_dictionary(dictionary, database['containers']['cycle'],
@@ -148,13 +145,11 @@ def print_active_cycle_objectives(database):
 
 
 def print_inactive_cycle_objectives(database):
-    inactive_cycle_list = dict_management.get_inactive_cycle_list(database)
-    if inactive_cycle_list:
+    dictionary = dict_management.get_inactive_cycle_dict(database)
+    if dictionary:
         print('(Inactive cycles)', end='\n\n')
-        cycle_objectives = database['cycle']
         # {display_name, task_string, denominator, progress numerator, cycle_length, current_offset}
-        for key in inactive_cycle_list:
-            value = cycle_objectives[key]
+        for key, value in dictionary.items():
             display_name = value['display_name']
             task_string = value['task_string']
             cycle_frequency = value['cycle_frequency']
