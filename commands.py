@@ -353,6 +353,7 @@ def endday_command(database, context, args):
     daily_dict = database['daily']
     cycle_dict = database['cycle']
     active_cycle_dict = dict_management.get_active_cycle_dict(database)
+    enforced_todo = dict_management.get_enforced_todo_dict(database)
     stats = database['stats']
 
     streak_deserved = True
@@ -404,7 +405,8 @@ def endday_command(database, context, args):
             add_to_history('longterm', value)  # Works differently; does not track stats past 'has been done'
 
     # Time to handle streak
-    if len(daily_dict) + len(active_cycle_list) > 0:  # If there are none, then ignore streak for the day
+    # First, If there are no enforced objectives, then ignore streak for the day
+    if len(daily_dict) + len(enforced_todo) + len(active_cycle_dict) > 0:
         if streak_deserved:
             stats['days_completed'] += 1
             stats['streak'] += 1  # Increment current streak
