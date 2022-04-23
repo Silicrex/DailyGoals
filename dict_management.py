@@ -83,9 +83,8 @@ def key_search(database, dictionary, input_string, *, force_manual_match=False):
     return False
 
 
-def complete_item(database, context, objective_name):
+def complete_item(database, context, dictionary, objective_name):
     command = context['command']
-    dictionary = context['dictionary']
     objective = dictionary[objective_name]
     if objective['numerator'] < objective['denominator']:
         current_value = objective['numerator']
@@ -98,9 +97,8 @@ def complete_item(database, context, objective_name):
             database['todo'][linked_objective_name]['numerator'] += difference
 
 
-def reset_item(database, context, objective_name):
+def reset_item(database, context, dictionary, objective_name):
     command = context['command']
-    dictionary = context['dictionary']
     objective = dictionary[objective_name]
     if objective['numerator'] != 0:
         current_value = objective['numerator']
@@ -132,12 +130,12 @@ def change_all_daily_dicts(database, context, mode):
     
     for dict_name in enforced_dictionary_names:
         context['command'] = dict_name
-        context['dictionary'] = dictionary = name_to_container(database, dict_name)
+        dictionary = name_to_container(database, dict_name)
         for key in dictionary:
             if mode == 'complete':
-                complete_item(database, context, key)
+                complete_item(database, context, dictionary, key)
             else:
-                reset_item(database, context, key)
+                reset_item(database, context, dictionary, key)
         sort_dictionary(database, dict_name)
 
     file_management.update(database)

@@ -314,7 +314,7 @@ def complete_mode(database, context, args):
     # ex input: daily complete wanikani
 
     command = context['command']
-    context['dictionary'] = dictionary = database[command]
+    dictionary = database[command]
 
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to set as complete')
@@ -330,7 +330,7 @@ def complete_mode(database, context, args):
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
-    dict_management.complete_item(database, context, objective_name)
+    dict_management.complete_item(database, context, dictionary, objective_name)
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
     file_management.update(database)
@@ -341,7 +341,7 @@ def reset_mode(database, context, args):
     # ex input: daily reset wanikani
 
     command = context['command']
-    context['dictionary'] = dictionary = database[command]
+    dictionary = database[command]
 
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to reset')
@@ -357,7 +357,7 @@ def reset_mode(database, context, args):
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
-    dict_management.reset_item(database, context, objective_name)
+    dict_management.reset_item(database, context, dictionary, objective_name)
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
     file_management.update(database)
@@ -368,7 +368,7 @@ def setall_mode(database, context, args):
     # ex input: daily setall complete
 
     command = context['command']
-    context['dictionary'] = dictionary = database[command]
+    dictionary = database[command]
 
     if not args or len(args) > 1:
         console_display.refresh_and_print(database, 'Must provide a setall type')
@@ -392,10 +392,10 @@ def setall_mode(database, context, args):
 
     if setall_value == 'complete':
         for key in dictionary:
-            dict_management.complete_item(database, context, key)
+            dict_management.complete_item(database, context, dictionary, key)
     elif setall_value == 'reset':
         for key in dictionary:
-            dict_management.reset_item(database, context, key)
+            dict_management.reset_item(database, context, dictionary, key)
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
     file_management.update(database)
