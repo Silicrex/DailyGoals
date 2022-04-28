@@ -37,7 +37,7 @@ def get_modes(command):
         command = 'goal'  # For any of the normal goal dictionaries other than daily (which have the same modes)
     modes_dict = {
         'goal': {'add', 'complete', 'reset', 'remove', 'retask', 'set', 'setall', 'update', 'rename', 'denominator',
-                 'containercreate', 'containerdelete', 'containeredit', 'containermove', 'tag', 'link', 'unlink'},
+                 'containeradd', 'containerdelete', 'containeredit', 'containermove', 'tag', 'link', 'unlink'},
         'counter': {'add', 'reset', 'remove', 'retask', 'set', 'setall', 'update', 'rename', 'containercreate',
                     'containerdelete', 'containeredit', 'containermove', 'tag', 'link', 'unlink'},
         'note': {'add', 'remove', 'edit', 'position', 'swap'}

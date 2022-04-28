@@ -610,7 +610,7 @@ def remove_mode(database, context, args):
 
 # Containers ------------------------------------------------------------------------------------------
 
-def containercreate_mode(database, context, args):
+def containeradd_mode(database, context, args):
     # ex input: daily containercreate
     command = context['command']
     command_containers = database['containers'][command]  # Corresponding containers dict
@@ -656,7 +656,7 @@ def containerdelete_mode(database, context, args):
 def containeredit_mode(database, context, args):
     # ex input: daily containeradd
     command = context['command']
-    dictionary = context['dictionary']
+    dictionary = database[command]
     command_containers = database['containers'][command]  # Corresponding containers dict
 
     if args:
