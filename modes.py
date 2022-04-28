@@ -539,6 +539,7 @@ def link_mode(database, context, args):
     if type_input_string not in documentation.get_linkable_dictionary_names():
         console_display.refresh_and_print(database, 'Invalid objective type')
         raise errors.InvalidCommandUsage(command, context['mode'])
+    print()  # Extra newline
     link_input_string = input('> What objective would you like to link this objective to?\n\n').lower()
     if not (linked_objective_name := dict_management.key_search(database, database[type_input_string],
                                                                 link_input_string)):
@@ -668,6 +669,7 @@ def containeredit_mode(database, context, args):
         console_display.refresh_and_print(database, 'Objective name not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
+    print()  # Extra newline
     input_string = input('> What container would you like to move this item to? '
                          '(BLANK INPUT = REMOVE FROM CONTAINER)\n\n').lower()
     if input_string == '':  # Then put back into _default

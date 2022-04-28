@@ -92,7 +92,7 @@ def update_item(database, dictionary, objective_name, update_value):
     if linked_to:
         linked_dict = database[linked_to[0]]
         linked_objective_name = linked_to[1]
-        assert linked_objective_name not in linked_dict  # Shouldn't be possible
+        assert linked_objective_name in linked_dict  # Shouldn't be possible to return false
         update_item(database, linked_dict, linked_objective_name, update_value)
 
 
