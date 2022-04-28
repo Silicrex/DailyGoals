@@ -234,22 +234,22 @@ def delete_dictionary(database, mode):
 
 def get_enforced_todo_dict(database):
     todo_dict = database['todo']
-    return [x for x in todo_dict if todo_dict[x]['enforced_todo']]
+    return {k: todo_dict[k] for k in todo_dict if todo_dict[k]['enforced_todo']}
 
 
 def get_unenforced_todo_dict(database):
     todo_dict = database['todo']
-    return [x for x in todo_dict if not todo_dict[x]['enforced_todo']]
+    return {k: todo_dict[k] for k in todo_dict if not todo_dict[k]['enforced_todo']}
 
 
 def get_active_cycle_dict(database):
     cycle_dict = database['cycle']
-    return [cycle_dict[x] for x in cycle_dict if cycle_dict[x]['current_offset'] == 0]
+    return {k: cycle_dict[k] for k in cycle_dict if cycle_dict[k]['current_offset'] == 0}
 
 
 def get_inactive_cycle_dict(database):
     cycle_dict = database['cycle']
-    return [cycle_dict[x] for x in cycle_dict if cycle_dict[x]['current_offset'] != 0]
+    return {k: cycle_dict[k] for k in cycle_dict if cycle_dict[k]['current_offset'] != 0}
 
 
 def sort_dictionary(database, dict_name):

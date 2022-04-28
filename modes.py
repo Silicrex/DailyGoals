@@ -91,7 +91,7 @@ def add_cycle_mode(database, dictionary):
                                        'denominator': denominator, 'numerator': 0,
                                        'cycle_frequency': cycle_frequency, 'current_offset': current_offset,
                                        'link': [[], []], 'tag': None}})
-    add_to_container(database, 'cycle', objective_key)
+    add_to_container(database, 'cycle', objective_key)  # Add to default container
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'cycle')
     file_management.update(database)
@@ -107,7 +107,7 @@ def add_counter_mode(database, dictionary):
     task_string = get_task_string()
     dictionary.update({objective_key: {'display_name': objective_name, 'task_string': task_string,
                                        'numerator': 0, 'link': [[], []]}})
-    add_to_container(database, 'counter', objective_key)
+    add_to_container(database, 'counter', objective_key)  # Add to default container
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'counter')
     file_management.update(database)
@@ -129,7 +129,7 @@ def add_todo_mode(database, dictionary):
     dictionary.update({objective_key: {'display_name': objective_name, 'task_string': task_string,
                                        'denominator': denominator, 'numerator': 0,
                                        'enforced_todo': enforced_todo, 'link': [[], []], 'tag': None}})
-    add_to_container(database, 'todo', objective_key)
+    add_to_container(database, 'todo', objective_key)  # Add to default container
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'todo')
     file_management.update(database)
@@ -609,15 +609,29 @@ def remove_mode(database, context, args):
 
 # Containers ------------------------------------------------------------------------------------------
 def add_to_container(database, dict_name, objective_key, container_name='_default'):
-    container = database['containers'][dict_name][container_name]
-    container['items'].append(objective_key)
-    
-    
+    database['containers'][dict_name][container_name]['items'].append(objective_key)
+
+
+def move_to_container(database, dict_name, objective_key, destination_name):
+    command_containers = database['containers'][dict_name]
+    current_container = None  # Placeholder value
+    for container in command_containers:
+        if objective_key in container['items']:
+            current_container = container
+            break
+    if current_container == destination_name:
+        console_display.refresh_and_print(database, 'Item is already in that container!')
+        return
+    command_containers[destination_name]['items'].append(objective_key)
+    command_containers[current_container]['items'].remove(objective_key)
+
+
 def remove_from_container(database, dict_name, objective_key):
     command_containers = database['containers'][dict_name]
     for container in command_containers:
         if objective_key in container['items']:
             container['items'].remove(objective_key)
+            break
 
 
 def containercreate_mode(database, context, args):
@@ -629,11 +643,7 @@ def containercreate_mode(database, context, args):
         console_display.refresh_and_print(database, 'Unnecessary arguments!')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
-    # if command in {}:  # Different processes
-    #     special_add_function = globals()['add_' + command + '_mode']  # ie add_cycle_mode, gets corresponding func
-    #     special_add_function(database, context, args)
-
-    container_name = get_name('Enter a name for the container (must be unique to goal type)')
+    container_name = get_name('> Enter a name for the container (must be unique to goal type)')
     container_key = container_name.lower()
     if container_key in command_containers:
         console_display.refresh_and_print(database, 'Container by that name already exists. Returning to menu')
@@ -653,7 +663,7 @@ def containerdelete_mode(database, context, args):
         console_display.refresh_and_print(database, 'Unnecessary arguments!')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
-    input_string = input('What container would you like to delete?\n\n').lower()
+    input_string = input('> What container would you like to delete?\n\n').lower()
     if not (container_key := dict_management.key_search(database, command_containers, input_string)):
         console_display.refresh_and_print(database, 'Container name not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
@@ -677,33 +687,23 @@ def containeredit_mode(database, context, args):
         console_display.refresh_and_print(database, 'Unnecessary arguments!')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
-    input_string = input('What item would you like to change the container of?\n\n').lower()
+    input_string = input('> What item would you like to change the container of?\n\n').lower()
     if not (objective_key := dict_management.key_search(database, dictionary, input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
-    input_string = input('What container would you like to move this item to? '
+    input_string = input('> What container would you like to move this item to? '
                          '(BLANK INPUT = REMOVE FROM CONTAINER)\n\n').lower()
-    if input_string == '':  # Then remove
-        remove_from_container(database, command, objective_key)
-        return
-    elif not (container_key := dict_management.key_search(database, command_containers, input_string)):
+    if input_string == '':  # Then put back into _default
+        destination_name = '_default'
+    elif not (destination_name := dict_management.key_search(database, command_containers, input_string)):
         console_display.refresh_and_print(database, 'Container name not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
-    current_container = None  # Placeholder value
-    for container in command_containers:
-        if objective_key in container['items']:
-            current_container = container
-            break
-    if current_container == container_key:
-        console_display.refresh_and_print(database, 'Item is already in that container!')
-        return
-    command_containers[container_key]['items'].append(objective_key)
-    command_containers[current_container]['items'].remove(objective_key)
+    move_to_container(database, command, objective_key, destination_name)
     # Save and print display
     file_management.update(database)
-    console_display.refresh_and_print(database, f'Successfully moved [{objective_key}] to [{container_key}]!')
+    console_display.refresh_and_print(database, f'Successfully moved [{objective_key}] to [{destination_name}]!')
 
 
 def containermove_mode(database, context, args):
