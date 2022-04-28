@@ -122,14 +122,19 @@ def remove_item(database, dict_name, objective_name):
     linked_to = objective['link'][0]
     linked_from = objective['link'][1]
 
-    # Handle link first
+    # Handle links
     if linked_to:  # Remove from linked item's linked_from
         remove_from_linked_from(database, dict_name, objective_name)
     if linked_from:  # If any objectives link to this one, remove it from their linked_to
         remove_from_linked_to(database, dict_name, objective_name)
 
+    # Handle containers
+    remove_from_container(database, dict_name, objective_name)
+
     dictionary.pop(objective_name)
 
+
+# Links ------------------------------------------------------------------------------------------
 
 def remove_from_linked_to(database, dict_name, objective_name, *, rename_value=False):
     """For a given objective with a link, remove it from the linked_to section of the objectives which link to it
@@ -167,6 +172,36 @@ def remove_from_linked_from(database, dict_name, objective_name, *, rename_value
                 foreign_linked_from.remove(pair)
             break
 
+
+# Containers ------------------------------------------------------------------------------------------
+
+def add_to_container(database, dict_name, objective_key, container_name='_default'):
+    database['containers'][dict_name][container_name]['items'].append(objective_key)
+
+
+def find_current_container(command_containers, objective_key):
+    for container_name, container_value in command_containers.items():
+        if objective_key in container_value['items']:
+            return container_name
+
+
+def move_to_container(database, dict_name, objective_key, destination_name):
+    command_containers = database['containers'][dict_name]
+    current_container = find_current_container(command_containers, objective_key)
+    if current_container == destination_name:
+        console_display.refresh_and_print(database, 'Item is already in that container!')
+        return
+    command_containers[destination_name]['items'].append(objective_key)
+    command_containers[current_container]['items'].remove(objective_key)
+
+
+def remove_from_container(database, dict_name, objective_key):
+    command_containers = database['containers'][dict_name]
+    current_container = find_current_container(command_containers, objective_key)
+    command_containers[current_container]['items'].remove(objective_key)
+
+
+# ------------------------------------------------------------------------------------------
 
 def change_all_daily_dicts(database, context, mode):
     enforced_dictionary_names = documentation.get_enforced_dict_names()

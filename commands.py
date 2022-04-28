@@ -383,7 +383,7 @@ def endday_command(database, context, args):
         elif value['enforced_todo']:  # If it's an enforced daily to-do, that is not completed, it breaks streak
             streak_deserved = False
     for key in todo_delete_list:
-        database['todo'].pop(key)
+        dict_management.remove_item(database, 'todo', key)
     for key, value in active_cycle_dict.items():
         # value has {display_name, task_string, denominator, numerator, cycle_frequency, current_offset}
         objective_completed = value['numerator'] >= value['denominator']

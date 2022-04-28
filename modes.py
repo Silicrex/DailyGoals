@@ -50,7 +50,7 @@ def add_mode(database, context, args):
     dictionary.update({objective_key: {'display_name': objective_name, 'task_string': task_string,
                                        'denominator': denominator, 'numerator': 0, 'link': [[], []],
                                        'tag': None}})
-    add_to_container(database, command, objective_key)  # Add to default container
+    dict_management.add_to_container(database, command, objective_key)  # Add to default container
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
     file_management.update(database)
@@ -91,7 +91,7 @@ def add_cycle_mode(database, dictionary):
                                        'denominator': denominator, 'numerator': 0,
                                        'cycle_frequency': cycle_frequency, 'current_offset': current_offset,
                                        'link': [[], []], 'tag': None}})
-    add_to_container(database, 'cycle', objective_key)  # Add to default container
+    dict_management.add_to_container(database, 'cycle', objective_key)  # Add to default container
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'cycle')
     file_management.update(database)
@@ -107,7 +107,7 @@ def add_counter_mode(database, dictionary):
     task_string = get_task_string()
     dictionary.update({objective_key: {'display_name': objective_name, 'task_string': task_string,
                                        'numerator': 0, 'link': [[], []]}})
-    add_to_container(database, 'counter', objective_key)  # Add to default container
+    dict_management.add_to_container(database, 'counter', objective_key)  # Add to default container
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'counter')
     file_management.update(database)
@@ -129,7 +129,7 @@ def add_todo_mode(database, dictionary):
     dictionary.update({objective_key: {'display_name': objective_name, 'task_string': task_string,
                                        'denominator': denominator, 'numerator': 0,
                                        'enforced_todo': enforced_todo, 'link': [[], []], 'tag': None}})
-    add_to_container(database, 'todo', objective_key)  # Add to default container
+    dict_management.add_to_container(database, 'todo', objective_key)  # Add to default container
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'todo')
     file_management.update(database)
@@ -249,7 +249,6 @@ def update_mode(database, context, args):
             raise errors.InvalidCommandUsage(command, context['mode'])
         update_value = args[-1]  # Worked out this way, proceed
 
-    objective = dictionary[objective_name]
     # Validate/format update value from str to int
     if not (update_value := format_integer(update_value)):  # Enforces non-zero integer. Accepts extension ie 1k
         console_display.refresh_and_print(database, 'Invalid update value')
@@ -437,15 +436,17 @@ def rename_mode(database, context, args):
                                                     'Returning to menu')
         return
     dictionary[new_name] = dictionary.pop(objective_name)
-    for container in database['containers'][command]:
-        if objective_name in container['items']:  # List of names
-            container['items'].remove(objective_name)
-            container['items'].append(new_name)
-            break
 
     # Handle links
     dict_management.remove_from_linked_from(database, command, objective_name, rename_value=new_name)
     dict_management.remove_from_linked_to(database, command, objective_name, rename_value=new_name)
+
+    # Handle containers
+    command_containers = database['containers'][command]
+    current_container = dict_management.find_current_container(command_containers, objective_name)
+    container_items = command_containers[current_container]['items']
+    container_items.remove(objective_name)
+    container_items.append(new_name)
 
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
@@ -608,31 +609,6 @@ def remove_mode(database, context, args):
 
 
 # Containers ------------------------------------------------------------------------------------------
-def add_to_container(database, dict_name, objective_key, container_name='_default'):
-    database['containers'][dict_name][container_name]['items'].append(objective_key)
-
-
-def move_to_container(database, dict_name, objective_key, destination_name):
-    command_containers = database['containers'][dict_name]
-    current_container = None  # Placeholder value
-    for container in command_containers:
-        if objective_key in container['items']:
-            current_container = container
-            break
-    if current_container == destination_name:
-        console_display.refresh_and_print(database, 'Item is already in that container!')
-        return
-    command_containers[destination_name]['items'].append(objective_key)
-    command_containers[current_container]['items'].remove(objective_key)
-
-
-def remove_from_container(database, dict_name, objective_key):
-    command_containers = database['containers'][dict_name]
-    for container in command_containers:
-        if objective_key in container['items']:
-            container['items'].remove(objective_key)
-            break
-
 
 def containercreate_mode(database, context, args):
     # ex input: daily containercreate
@@ -700,7 +676,7 @@ def containeredit_mode(database, context, args):
         console_display.refresh_and_print(database, 'Container name not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
-    move_to_container(database, command, objective_key, destination_name)
+    dict_management.move_to_container(database, command, objective_key, destination_name)
     # Save and print display
     file_management.update(database)
     console_display.refresh_and_print(database, f'Successfully moved [{objective_key}] to [{destination_name}]!')
