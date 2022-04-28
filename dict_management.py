@@ -83,32 +83,89 @@ def key_search(database, dictionary, input_string, *, force_manual_match=False):
     return False
 
 
-def complete_item(database, context, dictionary, objective_name):
-    command = context['command']
+def update_item(database, dictionary, objective_name, update_value):
     objective = dictionary[objective_name]
-    if objective['numerator'] < objective['denominator']:
-        current_value = objective['numerator']
-        objective['numerator'] = objective['denominator']
+    objective['numerator'] += update_value
 
-        # Handle link
-        if command == 'daily' and 'link' in objective:
-            difference = objective['denominator'] - current_value
-            linked_objective_name = dictionary[objective_name]['link']
-            database['todo'][linked_objective_name]['numerator'] += difference
+    # Handle link
+    linked_to = objective['link'][0]
+    if linked_to:
+        linked_dict = database[linked_to[0]]
+        linked_objective_name = linked_to[1]
+        assert linked_objective_name not in linked_dict  # Shouldn't be possible
+        update_item(database, linked_dict, linked_objective_name, update_value)
 
 
-def reset_item(database, context, dictionary, objective_name):
-    command = context['command']
+def complete_item(database, dictionary, objective_name):
     objective = dictionary[objective_name]
-    if objective['numerator'] != 0:
-        current_value = objective['numerator']
-        objective['numerator'] = 0
+    current_value = objective['numerator']
+    difference = objective['denominator'] - current_value  # Used to make handling links easier
+    if difference <= 0:  # Should not be decreasing anything
+        console_display.refresh_and_print(database, 'Item is already marked as complete!')
+        return
+    update_item(database, dictionary, objective_name, difference)
 
-        # Handle link
-        if command == 'daily' and 'link' in objective:
-            difference = 0 - current_value
-            linked_objective_name = dictionary[objective_name]['link']
-            database['todo'][linked_objective_name]['numerator'] += difference
+
+def reset_item(database, dictionary, objective_name):
+    objective = dictionary[objective_name]
+    current_value = objective['numerator']
+    difference = 0 - current_value  # Used to make handling links easier
+    if difference == 0:
+        console_display.refresh_and_print(database, 'Item already has no progress!')
+        return
+    update_item(database, dictionary, objective_name, difference)
+
+
+def remove_item(database, dict_name, objective_name):
+    dictionary = database[dict_name]
+    objective = dictionary[objective_name]
+    linked_to = objective['link'][0]
+    linked_from = objective['link'][1]
+
+    # Handle link first
+    if linked_to:  # Remove from linked item's linked_from
+        remove_from_linked_from(database, dict_name, objective_name)
+    if linked_from:  # If any objectives link to this one, remove it from their linked_to
+        remove_from_linked_to(database, dict_name, objective_name)
+
+    dictionary.pop(objective_name)
+
+
+def remove_from_linked_to(database, dict_name, objective_name, *, rename_value=False):
+    """For a given objective with a link, remove it from the linked_to section of the objectives which link to it
+
+    :param database:
+    :param dict_name: Dict name of the objective being removed
+    :param objective_name: Name of the objective being removed
+    :param rename_value: (Optional) Instead of deleting, rename objective name to this value in link's data
+    :return:
+    """
+    linked_from = database[dict_name][objective_name]['link'][1]
+    for pair in linked_from:  # pair = [linked_dict_name, linked_objective_name]
+        if rename_value:
+            pair[1] = rename_value
+        else:
+            database[pair[0]][pair[1]]['link'][0] = []
+
+
+def remove_from_linked_from(database, dict_name, objective_name, *, rename_value=False):
+    """For a given objective with a link, remove it from the linked_from section of the objective it links to
+
+    :param database:
+    :param dict_name: Dict name of the objective being removed
+    :param objective_name: Name of the objective being removed
+    :param rename_value: (Optional) Instead of deleting, rename objective name to this value in link's data
+    :return:
+    """
+    linked_to = database[dict_name][objective_name]['link'][0]
+    foreign_linked_from = database[linked_to[0]][linked_to[1]]['link'][1]
+    for pair in foreign_linked_from:
+        if pair == [dict_name, objective_name]:
+            if rename_value:
+                pair[1] = rename_value
+            else:
+                foreign_linked_from.remove(pair)
+            break
 
 
 def change_all_daily_dicts(database, context, mode):
@@ -133,9 +190,9 @@ def change_all_daily_dicts(database, context, mode):
         dictionary = name_to_container(database, dict_name)
         for key in dictionary:
             if mode == 'complete':
-                complete_item(database, context, dictionary, key)
+                complete_item(database, dictionary, key)
             else:
-                reset_item(database, context, dictionary, key)
+                reset_item(database, dictionary, key)
         sort_dictionary(database, dict_name)
 
     file_management.update(database)
@@ -152,10 +209,9 @@ def delete_dictionary(database, mode):
         if not total_objectives_to_remove:  # If there are none
             print('There are no objectives to delete', end='\n\n')
             return False
-        if not console_display.confirm(f"Are you sure you'd like to delete ALL objectives "
+        if not console_display.confirm(f"> Are you sure you'd like to delete ALL objectives/notes "
                                        f"({total_objectives_to_remove})? (y/n)"):
-            console_display.print_display(database)
-            print('Cancelled', end='\n\n')
+            console_display.refresh_and_print(database, 'Cancelled')
             return False
         for dictionary in dict_list:
             dictionary.clear()
@@ -165,14 +221,14 @@ def delete_dictionary(database, mode):
         dictionary = database[mode]
         total_objectives_to_remove = len(dictionary)
         if not total_objectives_to_remove:  # If there are none
-            print('That container has no items', end='\n\n')
+            console_display.refresh_and_print(database, 'That container has no items')
             return False
-        if not console_display.confirm(f"Are you sure you'd like to delete ALL {mode} items"
+        if not console_display.confirm(f"> Are you sure you'd like to delete ALL {mode} items"
                                        f" ({total_objectives_to_remove})? (y/n)"):
-            console_display.print_display(database)
-            print('Cancelled', end='\n\n')
+            console_display.refresh_and_print(database, 'Cancelled')
             return False
-        dictionary.clear()
+        for objective_name in dictionary:
+            remove_item(database, mode, objective_name)
         return True
 
 

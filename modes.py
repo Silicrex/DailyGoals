@@ -48,7 +48,8 @@ def add_mode(database, context, args):
     task_string = get_task_string()
     denominator = get_denominator()
     dictionary.update({objective_key: {'display_name': objective_name, 'task_string': task_string,
-                                       'denominator': denominator, 'numerator': 0, 'tag': None}})
+                                       'denominator': denominator, 'numerator': 0, 'link': [[], []],
+                                       'tag': None}})
     add_to_container(database, command, objective_key)  # Add to default container
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
@@ -65,7 +66,7 @@ def add_cycle_mode(database, dictionary):
     task_string = get_task_string()
     denominator = get_denominator()
 
-    print('Enter a frequency (every x days) or a week day name', end='\n\n')
+    print('> Enter a frequency (every x days) or a week day name', end='\n\n')
     frequency = input().lower()
     print()  # Newline
     # Going by day name automatically fills day frequency and offset
@@ -79,7 +80,7 @@ def add_cycle_mode(database, dictionary):
         if cycle_frequency == 0:
             console_display.refresh_and_print(database, 'Item frequency cannot be 0. Returning to menu')
             return
-        print('Enter offset until next occurrence (ie 0 if today, 1 if tomorrow)', end='\n\n')
+        print('> Enter offset until next occurrence (ie 0 if today, 1 if tomorrow)', end='\n\n')
         current_offset = eval(input())
     else:  # Neither a weekday nor integer were given
         console_display.refresh_and_print(database, 'Invalid input. Expected day name or day offset integer. '
@@ -89,7 +90,7 @@ def add_cycle_mode(database, dictionary):
     dictionary.update({objective_key: {'display_name': objective_name, 'task_string': task_string,
                                        'denominator': denominator, 'numerator': 0,
                                        'cycle_frequency': cycle_frequency, 'current_offset': current_offset,
-                                       'tag': None}})
+                                       'link': [[], []], 'tag': None}})
     add_to_container(database, 'cycle', objective_key)
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'cycle')
@@ -105,7 +106,7 @@ def add_counter_mode(database, dictionary):
         return
     task_string = get_task_string()
     dictionary.update({objective_key: {'display_name': objective_name, 'task_string': task_string,
-                                       'numerator': 0}})
+                                       'numerator': 0, 'link': [[], []]}})
     add_to_container(database, 'counter', objective_key)
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'counter')
@@ -121,13 +122,13 @@ def add_todo_mode(database, dictionary):
         return
     task_string = get_task_string()
     denominator = get_denominator()
-    if console_display.confirm('Should this todo objective count towards daily requirement? (y/n)'):
+    if console_display.confirm('> Should this todo objective count towards daily requirement? (y/n)'):
         enforced_todo = True
     else:
         enforced_todo = False
     dictionary.update({objective_key: {'display_name': objective_name, 'task_string': task_string,
                                        'denominator': denominator, 'numerator': 0,
-                                       'enforced_todo': enforced_todo, 'tag': None}})
+                                       'enforced_todo': enforced_todo, 'link': [[], []], 'tag': None}})
     add_to_container(database, 'todo', objective_key)
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'todo')
@@ -246,8 +247,9 @@ def update_mode(database, context, args):
         if not (objective_name := dict_management.key_search(database, dictionary, sub_string)):
             console_display.refresh_and_print(database, 'Objective name not found')
             raise errors.InvalidCommandUsage(command, context['mode'])
-        update_value = args[-1]
+        update_value = args[-1]  # Worked out this way, proceed
 
+    objective = dictionary[objective_name]
     # Validate/format update value from str to int
     if not (update_value := format_integer(update_value)):  # Enforces non-zero integer. Accepts extension ie 1k
         console_display.refresh_and_print(database, 'Invalid update value')
@@ -258,12 +260,7 @@ def update_mode(database, context, args):
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
-    dictionary[objective_name]['numerator'] += update_value
-
-    # Handle link
-    if command == 'daily' and 'link' in dictionary[objective_name]:
-        linked_objective_name = dictionary[objective_name]['link']
-        database['todo'][linked_objective_name]['numerator'] += update_value
+    dict_management.update_item(database, dictionary, objective_name, update_value)
 
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
@@ -296,13 +293,8 @@ def set_mode(database, context, args):
             return
 
     current_value = dictionary[objective_name]['numerator']
-    dictionary[objective_name]['numerator'] = set_value
-
-    # Handle link
-    if command == 'daily' and 'link' in dictionary[objective_name]:
-        difference = set_value - current_value
-        linked_objective_name = dictionary[objective_name]['link']
-        database['todo'][linked_objective_name]['numerator'] += difference
+    difference = set_value - current_value  # Used to make handling links easier
+    dict_management.update_item(database, dictionary, objective_name, difference)
 
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
@@ -330,7 +322,7 @@ def complete_mode(database, context, args):
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
-    dict_management.complete_item(database, context, dictionary, objective_name)
+    dict_management.complete_item(database, dictionary, objective_name)
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
     file_management.update(database)
@@ -357,7 +349,7 @@ def reset_mode(database, context, args):
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
-    dict_management.reset_item(database, context, dictionary, objective_name)
+    dict_management.reset_item(database, dictionary, objective_name)
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
     file_management.update(database)
@@ -392,17 +384,17 @@ def setall_mode(database, context, args):
 
     if setall_value == 'complete':
         for key in dictionary:
-            dict_management.complete_item(database, context, dictionary, key)
+            dict_management.complete_item(database, dictionary, key)
     elif setall_value == 'reset':
         for key in dictionary:
-            dict_management.reset_item(database, context, dictionary, key)
+            dict_management.reset_item(database, dictionary, key)
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
     file_management.update(database)
     console_display.refresh_and_print(database, f'{command.capitalize()} items successfully updated!')
 
 
-def setall_counter_mode(database, dictionary, setall_value):  # _: doesn't need database
+def setall_counter_mode(database, dictionary, setall_value):
     if not (setall_value := format_integer(setall_value)):  # Enforces non-zero integer. Accepts extension ie 1k
         raise errors.InvalidCommandUsage('counter', 'setall')
 
@@ -410,16 +402,13 @@ def setall_counter_mode(database, dictionary, setall_value):  # _: doesn't need 
         console_display.refresh_and_print(database, 'There are no counters')
         return
 
-    while True:
-        print(f'Change ALL counters to a value of {setall_value}? (y/n)', end='\n\n')
-        user_response = input().lower()
-        if user_response == 'y':
-            break
-        elif user_response == 'n':
-            return False
+    if not console_display.confirm(f'> Change ALL counters to a value of {setall_value}? (y/n)'):
+        return
 
-    for counter in dictionary:
-        dictionary[counter]['numerator'] = setall_value
+    for counter, value in dictionary.items():
+        current_value = value['numerator']
+        difference = setall_value - current_value  # Used to make handling links easier
+        dict_management.update_item(database, dictionary, counter, difference)
 
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'counter')
@@ -447,12 +436,17 @@ def rename_mode(database, context, args):
         console_display.refresh_and_print(database, f'That name is already in use for [{context["mode"]}]. '
                                                     'Returning to menu')
         return
-    dictionary[new_name] = dictionary[objective_name].copy()
-    dictionary.pop(objective_name)
+    dictionary[new_name] = dictionary.pop(objective_name)
     for container in database['containers'][command]:
         if objective_name in container['items']:  # List of names
             container['items'].remove(objective_name)
             container['items'].append(new_name)
+            break
+
+    # Handle links
+    dict_management.remove_from_linked_from(database, command, objective_name, rename_value=new_name)
+    dict_management.remove_from_linked_to(database, command, objective_name, rename_value=new_name)
+
     # Save, sort, and print display
     dict_management.sort_dictionary(database, command)
     file_management.update(database)
@@ -521,7 +515,7 @@ def tag_mode(database, context, args):
     if not objective_completed:
         console_display.refresh_and_print(database, 'Objective must be completed to be tagged')
         return
-    tag = get_name('Enter a tag')
+    tag = get_name('> Enter a tag')
     objective_name['tag'] = tag
     # Save and print display
     file_management.update(database)
@@ -536,15 +530,33 @@ def link_mode(database, context, args):
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to link')
         raise errors.InvalidCommandUsage(command, context['mode'])
-    input_string = ' '.join(args).lower()
-    if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
+    objective_input_string = ' '.join(args).lower()
+    if not (objective_name := dict_management.key_search(database, dictionary, objective_input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
-    input_string = input('What to-do objective would you like to link this objective to?\n\n').lower()
-    if not (linked_objective_name := dict_management.key_search(database, database['todo'], input_string)):
+    type_input_string = input('> What objective type would you like to link this objective to?\n\n').lower()
+    if type_input_string not in documentation.get_linkable_dictionary_names():
+        console_display.refresh_and_print(database, 'Invalid objective type')
+        raise errors.InvalidCommandUsage(command, context['mode'])
+    link_input_string = input('> What objective would you like to link this objective to?\n\n').lower()
+    if not (linked_objective_name := dict_management.key_search(database, database[type_input_string],
+                                                                link_input_string)):
         console_display.refresh_and_print(database, 'Objective not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
-    dictionary[objective_name]['link'] = linked_objective_name
+
+    link = dictionary[objective_name]['link']
+    linked_to = link[0]
+    if linked_to:  # If it's already linking to another objective
+        if linked_to == [type_input_string, linked_objective_name]:  # Already linked
+            console_display.refresh_and_print(database, 'This link already exists')
+            return
+        dict_management.remove_from_linked_from(database, command, objective_name)  # Undo link from other side
+
+    # Set this objective's linked_to
+    link[0] = [type_input_string, linked_objective_name]
+    # Set the linked objective's linked_from
+    database[type_input_string][linked_objective_name]['link'][1].append([command, objective_name])
+
     # Save and print display
     file_management.update(database)
     console_display.refresh_and_print(database, f'[{objective_name}] successfully linked to [{linked_objective_name}]!')
@@ -562,11 +574,13 @@ def unlink_mode(database, context, args):
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
-    if 'link' not in dictionary[objective_name]:
+    link = dictionary[objective_name]['link']
+    linked_to = link[0]
+    if not linked_to:
         console_display.refresh_and_print(database, 'Objective is not linked')
         return
-    linked_objective_name = dictionary[objective_name].pop('link')  # Remove from daily objective
-    database['todo'][linked_objective_name].pop('link')  # Remove from to-do objective
+    dict_management.remove_from_linked_from(database, command, objective_name)
+    link[0] = []  # Reset linked_to
     # Save and print display
     file_management.update(database)
     console_display.refresh_and_print(database, f'[{objective_name}] successfully unlinked!')
@@ -586,8 +600,8 @@ def remove_mode(database, context, args):
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
         print('Objective name not found', end='\n\n')
         raise errors.InvalidCommandUsage(command, context['mode'])
+    dict_management.remove_item(database, command, objective_name)
 
-    dictionary.pop(objective_name)
     # Save and print display
     file_management.update(database)
     console_display.refresh_and_print(database, f'{command.capitalize()} item successfully removed!')

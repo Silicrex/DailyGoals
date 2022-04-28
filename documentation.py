@@ -27,6 +27,11 @@ def get_enforced_dict_names():
     return enforced_dictionaries
 
 
+def get_linkable_dictionary_names():
+    dictionaries = ('daily', 'optional', 'todo', 'cycle', 'longterm', 'counter')
+    return dictionaries
+
+
 def get_modes(command):
     if command != 'daily' and command in get_goal_dictionary_names():
         command = 'goal'  # For any of the normal goal dictionaries other than daily (which have the same modes)
