@@ -669,7 +669,7 @@ def containerdelete_mode(database, context, args):
         raise errors.InvalidCommandUsage(command, context['mode'])
 
     for objective_key in command_containers[container_key].items():
-        command_containers['_default'].append(objective_key)
+        command_containers['_default']['items'].append(objective_key)
     command_containers.remove(container_key)
     # Save and print display
     file_management.update(database)
