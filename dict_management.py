@@ -136,6 +136,34 @@ def remove_item(database, dict_name, objective_name):
 
 # Links ------------------------------------------------------------------------------------------
 
+def get_link_chain(database, origin, new_link):
+    """Gets a list of the link sequence produced if given objectives are linked.
+
+    :param database:
+    :param list origin: Starting point [dict_name, objective_name]
+    :param list new_link: Proposed new link [dict_name, objective_name]
+    :return: List of lists [dict_name, obj_name] in order of the link sequence. If link is circular, chain ends with
+    origin being reached again
+    """
+    chain = [origin, new_link]
+    to_dict, to_obj = new_link
+    while True:
+        # linked_to = [type_string, linked_objective_name]
+        foreign_linked_to = database[to_dict][to_obj]['link'][0]
+        if not foreign_linked_to:  # Dead end, not circular
+            return chain
+        chain.append(foreign_linked_to)
+        if foreign_linked_to == origin:  # Ends up back at the start; is circular
+            return chain
+        # Check link of the link until you either hit a dead end (non-circular) or end up back at the start (circular)
+        to_dict, to_obj = foreign_linked_to
+
+
+def format_link_chain(link_chain):
+    # ex: (Daily) wanikani -> (Optional) Extra work
+    return ' -> '.join([f'({x[0].capitalize()}) {x[1]}' for x in link_chain])
+
+
 def remove_from_linked_to(database, dict_name, objective_name, *, rename_value=False):
     """For a given objective with a link, remove it from the linked_to section of the objectives which link to it
 
@@ -143,7 +171,7 @@ def remove_from_linked_to(database, dict_name, objective_name, *, rename_value=F
     :param dict_name: Dict name of the objective being removed
     :param objective_name: Name of the objective being removed
     :param rename_value: (Optional) Instead of deleting, rename objective name to this value in link's data
-    :return:
+    :return: None
     """
     linked_from = database[dict_name][objective_name]['link'][1]
     for pair in linked_from:  # pair = [linked_dict_name, linked_objective_name]

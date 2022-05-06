@@ -168,7 +168,7 @@ def print_longterm_objectives(database):
         print()  # Extra newline
 
 
-def print_counter_dict(database):
+def print_counter_objectives(database):
     dictionary = database['counter']
     if dictionary:
         print('>>> Counters', end='\n\n')

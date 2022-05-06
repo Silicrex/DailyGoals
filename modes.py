@@ -528,6 +528,7 @@ def link_mode(database, context, args):
     command = context['command']
     dictionary = database[command]
 
+    # Input validation
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to link')
         raise errors.InvalidCommandUsage(command, context['mode'])
@@ -535,33 +536,59 @@ def link_mode(database, context, args):
     if not (objective_name := dict_management.key_search(database, dictionary, objective_input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
-    type_input_string = input('> What objective type would you like to link this objective to?\n\n').lower()
-    if type_input_string not in documentation.get_linkable_dictionary_names():
+    type_string = input('> What objective type would you like to link this objective to? '
+                        '(Blank input = cancel)\n\n').lower()
+    if not type_string:
+        console_display.refresh_and_print(database, 'Cancelled')
+        return
+    if type_string not in documentation.get_linkable_dictionary_names():
         console_display.refresh_and_print(database, 'Invalid objective type')
         raise errors.InvalidCommandUsage(command, context['mode'])
     print()  # Extra newline
-    link_input_string = input('> What objective would you like to link this objective to?\n\n').lower()
-    if not (linked_objective_name := dict_management.key_search(database, database[type_input_string],
+    link_input_string = input('> What objective would you like to link this objective to? '
+                              '(Blank input = cancel)\n\n').lower()
+    if not link_input_string:
+        console_display.refresh_and_print(database, 'Cancelled')
+        return
+    if not (linked_objective_name := dict_management.key_search(database, database[type_string],
                                                                 link_input_string)):
         console_display.refresh_and_print(database, 'Objective not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
 
+    origin = [command, objective_name]
+    new_link = [type_string, linked_objective_name]
+
+    # Make sure link is not to itself or circular
+    if origin == new_link:
+        console_display.refresh_and_print(database, 'Cannot link an objective to itself')
+        return
+    link_chain = dict_management.get_link_chain(database, origin, new_link)
+    if link_chain[0] == link_chain[-1]:  # Circular behavior
+        console_display.refresh_and_print(database, f'Invalid link as it would be circular: '
+                                                    f'{dict_management.format_link_chain(link_chain)}')
+        return
+
+    # Check if it's already linked
     link = dictionary[objective_name]['link']
     linked_to = link[0]
-    if linked_to:  # If it's already linking to another objective
-        if linked_to == [type_input_string, linked_objective_name]:  # Already linked
+
+    if linked_to:
+        if linked_to == [type_string, linked_objective_name]:  # Already linked to given input
             console_display.refresh_and_print(database, 'This link already exists')
             return
+        # A different link was inputted, overwrite previous
         dict_management.remove_from_linked_from(database, command, objective_name)  # Undo link from other side
 
     # Set this objective's linked_to
-    link[0] = [type_input_string, linked_objective_name]
+    link[0] = [type_string, linked_objective_name]
+
     # Set the linked objective's linked_from
-    database[type_input_string][linked_objective_name]['link'][1].append([command, objective_name])
+    database[type_string][linked_objective_name]['link'][1].append([command, objective_name])
 
     # Save and print display
     file_management.update(database)
-    console_display.refresh_and_print(database, f'[{objective_name}] successfully linked to [{linked_objective_name}]!')
+    console_display.refresh_and_print(database, f'[{objective_name}] successfully linked to [{linked_objective_name}]! '
+                                                f'Link sequence: {dict_management.format_link_chain(link_chain)}')
 
 
 def unlink_mode(database, context, args):
@@ -569,6 +596,7 @@ def unlink_mode(database, context, args):
     command = context['command']
     dictionary = database[command]
 
+    # Input validation
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to unlink')
         raise errors.InvalidCommandUsage(command, context['mode'])
@@ -581,8 +609,13 @@ def unlink_mode(database, context, args):
     if not linked_to:
         console_display.refresh_and_print(database, 'Objective is not linked')
         return
+
+    # Remove from the objective it's linked to
     dict_management.remove_from_linked_from(database, command, objective_name)
-    link[0] = []  # Reset linked_to
+
+    # Reset this objective's link
+    link[0] = []
+
     # Save and print display
     file_management.update(database)
     console_display.refresh_and_print(database, f'[{objective_name}] successfully unlinked!')
