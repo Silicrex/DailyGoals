@@ -136,7 +136,7 @@ def remove_item(database, dict_name, objective_name):
 
 # Links ------------------------------------------------------------------------------------------
 
-def get_link_chain(database, origin, new_link):
+def test_link_chain(database, origin, new_link):
     """Gets a list of the link sequence produced if given objectives are linked.
 
     :param database:
@@ -157,6 +157,17 @@ def get_link_chain(database, origin, new_link):
             return chain
         # Check link of the link until you either hit a dead end (non-circular) or end up back at the start (circular)
         to_dict, to_obj = foreign_linked_to
+
+
+def get_link_chain(database, dict_name, objective_name):
+    chain = [[dict_name, objective_name]]  # Start with origin, then append in order
+    while True:
+        # linked_to = [type_string, linked_objective_name]
+        linked_to = database[dict_name][objective_name]['link'][0]
+        if not linked_to:  # Reached the end
+            return chain
+        chain.append(linked_to)  # It is linked, append that link to the chain
+        dict_name, objective_name = linked_to  # Move down a link
 
 
 def format_link_chain(link_chain):

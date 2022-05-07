@@ -562,7 +562,7 @@ def link_mode(database, context, args):
     if origin == new_link:
         console_display.refresh_and_print(database, 'Cannot link an objective to itself')
         return
-    link_chain = dict_management.get_link_chain(database, origin, new_link)
+    link_chain = dict_management.test_link_chain(database, origin, new_link)
     if link_chain[0] == link_chain[-1]:  # Circular behavior
         console_display.refresh_and_print(database, f'Invalid link as it would be circular: '
                                                     f'{dict_management.format_link_chain(link_chain)}')
@@ -619,6 +619,28 @@ def unlink_mode(database, context, args):
     # Save and print display
     file_management.update(database)
     console_display.refresh_and_print(database, f'[{objective_name}] successfully unlinked!')
+
+
+def viewlink_mode(database, context, args):
+    # ex input: daily viewlink wanikani
+    command = context['command']
+    dictionary = database[command]
+
+    # Input validation
+    if not args:
+        console_display.refresh_and_print(database, 'Must provide an objective to view the link chain of')
+        raise errors.InvalidCommandUsage(command, context['mode'])
+    input_string = ' '.join(args).lower()
+    if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
+        console_display.refresh_and_print(database, 'Objective name not found')
+        raise errors.InvalidCommandUsage(command, context['mode'])
+    linked_to = dictionary[objective_name]['link'][0]
+    if not linked_to:
+        console_display.refresh_and_print(database, 'Objective is not linked')
+        return
+
+    link_chain = dict_management.get_link_chain(database, command, objective_name)
+    console_display.refresh_and_print(database, f'Link: {dict_management.format_link_chain(link_chain)}')
 
 
 # Removing items ------------------------------------------------------------------------------------------
