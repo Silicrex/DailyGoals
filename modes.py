@@ -512,12 +512,13 @@ def tag_mode(database, context, args):
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
-    objective_completed = objective_name['numerator'] >= objective_name['denominator']
+    objective = dictionary[objective_name]
+    objective_completed = objective['numerator'] >= objective['denominator']
     if not objective_completed:
         console_display.refresh_and_print(database, 'Objective must be completed to be tagged')
         return
     tag = get_name('> Enter a tag')
-    objective_name['tag'] = tag
+    objective['tag'] = tag
     # Save and print display
     file_management.update(database)
     console_display.refresh_and_print(database, f'[{objective_name}] successfully tagged!')

@@ -309,47 +309,42 @@ def endday_command(database, context, args):
         numerator = obj_value['numerator']
         denominator = obj_value['denominator']
 
-        command_history_dict = database['history'][dict_name]
+        command_history_dict = database['history'][dict_name]  # Corresponding history dict
         task_string = f" ({obj_value['task_string']})" if obj_value['task_string'] else ''
-        denominator_string = '{:,}'.format(denominator)
+        denominator_string = f'{denominator:,}'
         history_name = f"{obj_value['display_name']}{task_string} (/{denominator_string})"
         history_key = history_name.lower()
+        percent_completed = round(numerator / denominator, 2)  # Tracks >100% completion
+        date_string = f"{calendar_date['year']}-{calendar_date['month']:02d}-{calendar_date['day']:02d}"  # YYYY-MM-DD
 
-        date = datetime.datetime.now().date()
-        if dict_name == 'longterm':  # Longterm is a one-and-done structure
-            if history_key in command_history_dict:
-                return
-            else:  # First time, so create entry
-                command_history_dict.update({history_key: {'display_name': history_name,
-                                                           'first_completed': str(date),
-                                                           'tags': []}})
-                if obj_value['tag']:
-                    command_history_dict[history_key]['tags'].append((date, obj_value['tag']))
-                return
-
-        if history_key in command_history_dict:
-            history_value = command_history_dict[history_key]
-            percent_completed = round(numerator / denominator, 2)  # Tracks >100% comp
-            history_value['total_percent_completed'] += percent_completed
-            history_value['times_completed'] += 1
-        else:  # First time, so create entry
-            percent_completed = round(numerator / denominator, 2)  # Tracks >100% completion
+        if history_key not in command_history_dict:  # Create entry
             command_history_dict.update({
                 history_key: {
                     'display_name': history_name,
-                    'times_completed': 1,
                     'denominator': denominator,
-                    'total_percent_completed': percent_completed,
-                    'first_completed': str(date),
+                    'times_completed': 0,
+                    'total_percent_completed': 0,
+                    'first_completed': date_string,
                     'tags': []
                 }})
+
+        # Longterm is a one-and-done structure
+        if dict_name == 'longterm' and command_history_dict[history_key]['times_completed'] > 0:
+            obj_value['tag'] = None
+            return
+
         if obj_value['tag']:
-            command_history_dict[history_key]['tags'].append((date, obj_value['tag']))
+            command_history_dict[history_key]['tags'].append((date_string, obj_value['tag']))
+            obj_value['tag'] = None
+
+        command_history_dict[history_key]['times_completed'] += 1
+        command_history_dict[history_key]['total_percent_completed'] += percent_completed
 
     if args:
         console_display.refresh_and_print(database, 'Unnecessary args!')
         raise errors.InvalidCommandUsage(context['command'])
 
+    calendar_date = database['settings']['calendar_date']
     daily_dict = database['daily']
     cycle_dict = database['cycle']
     active_cycle_dict = dict_management.get_active_cycle_dict(database)
@@ -358,7 +353,7 @@ def endday_command(database, context, args):
 
     streak_deserved = True
 
-    # key represents lowercase objective name
+    # Handle daily dict
     for key, value in daily_dict.items():
         objective_completed = value['numerator'] >= value['denominator']
         if objective_completed:
@@ -367,12 +362,16 @@ def endday_command(database, context, args):
         else:
             streak_deserved = False
         value['numerator'] = 0
+
+    # Handle optional dict
     for key, value in database['optional'].items():
         objective_completed = value['numerator'] >= value['denominator']
         if objective_completed:
             stats['total_completed'] += 1
             add_to_history('optional', value)
         value['numerator'] = 0
+
+    # Handle to-do dict
     todo_delete_list = []
     for key, value in database['todo'].items():
         objective_completed = value['numerator'] >= value['denominator']
@@ -384,6 +383,8 @@ def endday_command(database, context, args):
             streak_deserved = False
     for key in todo_delete_list:
         dict_management.remove_item(database, 'todo', key)
+
+    # Handle cycle dict
     for key, value in active_cycle_dict.items():
         # value has {display_name, task_string, denominator, numerator, cycle_frequency, current_offset}
         objective_completed = value['numerator'] >= value['denominator']
@@ -399,13 +400,14 @@ def endday_command(database, context, args):
         else:
             value['current_offset'] -= 1
     dict_management.sort_dictionary(database, 'cycle')
+
+    # Handle longterm dict
     for key, value in database['longterm'].items():
         objective_completed = value['numerator'] >= value['denominator']
         if objective_completed:
             add_to_history('longterm', value)  # Works differently; does not track stats past 'has been done'
 
-    # Time to handle streak
-    # First, If there are no enforced objectives, then ignore streak for the day
+    # Time to handle streak. First, make sure there are enforced dailies
     if len(daily_dict) + len(enforced_todo) + len(active_cycle_dict) > 0:
         if streak_deserved:
             stats['days_completed'] += 1
@@ -415,8 +417,6 @@ def endday_command(database, context, args):
         else:
             stats['streak'] = 0
 
-    # Time to handle date
-    calendar_date = database['settings']['calendar_date']
     # Increment month/day/year properly
     date_logic.increment_date(database)
     # Increment week day

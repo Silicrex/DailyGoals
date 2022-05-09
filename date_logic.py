@@ -1,6 +1,3 @@
-import console_display  # For confirm()
-
-
 def valid_date(month, day, year):
     # Given month 1-12, day 1-31
     if month in {1, 3, 5, 7, 8, 10, 12}:  # 31 days
@@ -107,3 +104,28 @@ def convert_day(day):
         return 6
     elif day == 'saturday':
         return 7
+
+
+def string_date(database, string):
+    # String should be YYYY-MM-DD
+    months = ['', 'January', 'February', 'March', 'April', 'May', 'June',  # Blank to line up 1 = January
+              'July', 'August', 'September', 'October', 'November', 'December']  # Or just import calendar
+    date = string.split('-')
+    if database['settings']['date_switch']:
+        date[1], date[2] = date[2], date[1]
+
+    year = int(date[0])
+    month = int(date[1])
+    day = int(date[2])
+    str_day = str(day)
+
+    if str_day in {'1', '21', '31'}:
+        suffix = 'st'
+    elif str_day in {'2', '22'}:
+        suffix = 'nd'
+    elif str_day in {'3', '23'}:
+        suffix = 'rd'
+    else:
+        suffix = 'th'
+
+    return f'{months[month]} {day}{suffix}, {year}'

@@ -1,4 +1,6 @@
 import os  # For os.system('cls')
+
+import date_logic
 import documentation
 import console_display
 import dict_management  # For key_search
@@ -25,14 +27,16 @@ def launch_history_interface(database, dict_name):
         tags_container = history_value['tags']
         times_completed = history_value['times_completed']
         total_percent_completed = history_value['total_percent_completed']
+        first_completed = date_logic.string_date(database, history_value['first_completed'])
 
         print(f"#{index + 1:,}: {history_value['display_name']}\n"
               f"-----------------------------------\n"
               f">>> Times completed: {times_completed:,}\n"
               f">>> Denominator sum: {times_completed * history_value['denominator']:,}\n"
               f">>> Total % completed: {total_percent_completed:,.2%}\n"
-              f">>> Average % completed: {total_percent_completed / times_completed:,.2%}"
-              f">>> Tags: {len(history_value['tags'])}")
+              f">>> Average % completed: {total_percent_completed / times_completed:,.2%}\n"
+              f">>> First completed: {first_completed}\n"
+              f">>> Tags: {len(tags_container)}")
         print()  # Newline
 
     def print_header():
@@ -48,29 +52,6 @@ def launch_history_interface(database, dict_name):
 # Utility, main loop ------------------------------------------------------------------------------------------
     def key_index_to_page(key_index):  # key_index starts counting from 0
         return 1 + key_index // keys_per_page  # 0 = 0 page, 1-20 = 1 page, 21-40 = 2 pages w/ 20
-
-    def get_pos_index():
-        index = input()
-        if not index:  # Blank == cancel
-            print_display()
-            print('Cancelled', end='\n\n')
-            return False
-        if not index.isnumeric():
-            print_display()
-            print('Index must be a positive integer', end='\n\n')
-            return False
-        print()  # Newline to separate input from print
-        return eval(index)
-
-    def get_tag_text():
-        print('Enter tag text (Blank to cancel)', end='\n\n')
-        text = input()
-        if not tag_text:
-            print_display()
-            print('Cancelled', end='\n\n')
-            return False
-        print()  # Newline to separate input from print
-        return text
 
     dictionary = database['history'][dict_name]
     keys = list(dictionary)
@@ -188,7 +169,7 @@ def launch_history_interface(database, dict_name):
             print_item(keys.index(item_name))  # print_item() goes by index, not by name
             print(f'Tags: {len(tags)}', end='\n\n')
             for tag in tags:
-                print(f'{tag[0]}: {tag[1]}', end='\n\n')  # Date: tag
+                print(f'{date_logic.string_date(database, tag[0])}: {tag[1]}', end='\n\n')  # Date: tag
 
 # Misc commands/not found ------------------------------------------------------------------------------------------
         elif command == 'help':
