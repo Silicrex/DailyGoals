@@ -247,9 +247,10 @@ def setdate_command(database, context, args):
         console_display.refresh_and_print(database, 'Invalid day for that month/year')
         return
 
-    if not console_display.confirm('WARNING: Resets streak and *DELETES* ALL CYCLE OBJECTIVES. Proceed? (y/n)'):
-        console_display.refresh_and_print(database, 'Cancelled')
-        return
+    if database['streak'] == 0 and len(database['cycle']) == 0:
+        if not console_display.confirm('WARNING: Resets streak and *DELETES* ALL CYCLE OBJECTIVES. Proceed? (y/n)'):
+            console_display.refresh_and_print(database, 'Cancelled')
+            return
     database['streak'] = 0
     database['cycle'].clear()
 
@@ -270,10 +271,11 @@ def setday_command(database, context, args):
     if input_week_day not in date_logic.get_week_days():
         print('Invalid day. Enter week day name (ie saturday)', end='\n\n')
         return
-    if not console_display.confirm('WARNING: Resets streak and *DELETES* ALL CYCLE OBJECTIVES. Proceed? (y/n)'):
-        console_display.print_display(database)
-        print('Cancelled', end='\n\n')
-        return
+    if database['streak'] == 0 and len(database['cycle']) == 0:
+        if not console_display.confirm('WARNING: Resets streak and *DELETES* ALL CYCLE OBJECTIVES. Proceed? (y/n)'):
+            console_display.print_display(database)
+            print('Cancelled', end='\n\n')
+            return
     database['streak'] = 0
     database['cycle'].clear()
 

@@ -20,6 +20,8 @@
 # TODO: Option to combine history entries
 # TODO: PLURALIZE CONTAINER ITEMS, show list of options in containeredit, fix extra newline
 # TODO: Way to view links. When you link, should also specify dict type
+# TODO: 3 cycle modes: every x days, every certain week day with min cd (to accomplish every other monday),
+#       several certain days ie Mon, Wed, Fri
 import file_management  # For loading/saving
 import commands  # Command functions and formatting
 import console_display  # To print the initial console display
