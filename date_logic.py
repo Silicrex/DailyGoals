@@ -73,32 +73,19 @@ def get_week_days():
 
 
 def convert_day_number(day_number_input):
-    if day_number_input == 1:
-        return 'Sunday'
-    elif day_number_input == 2:
-        return 'Monday'
-    elif day_number_input == 3:
-        return 'Tuesday'
-    elif day_number_input == 4:
-        return 'Wednesday'
-    elif day_number_input == 5:
-        return 'Thursday'
-    elif day_number_input == 6:
-        return 'Friday'
-    elif day_number_input == 7:
-        return 'Saturday'
-    else:
+    if day_number_input not in range(1, 8):  # Must be 1-7
         return False
+    days = [x.capitalize() for x in get_week_days()]
+    return days[day_number_input - 1]  # Adjust for offset (Sunday starts at 1, index starts at 0)
 
 
 def convert_day(day_input):
     if not day_input or day_input in {'t', 's'}:  # 't' and 's' could be mixed between tues/thurs, sat/sun
         return False
-
     week_days = get_week_days()
     for index, day in enumerate(week_days):
         if day_input == day or day.startswith(day_input):
-            return index + 1  # Sunday starts at 1
+            return index + 1  # Sunday starts at 1, enumerate() starts at 0
     return False
 
 
