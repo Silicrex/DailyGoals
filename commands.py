@@ -268,18 +268,15 @@ def setday_command(database, context, args):
         print('Invalid number of arguments!', end='\n\n')
         raise errors.InvalidCommandUsage(context['command'])
     input_week_day = args[0]
-    if input_week_day not in date_logic.get_week_days():
-        print('Invalid day. Enter week day name (ie saturday)', end='\n\n')
+    if not (week_day_number := date_logic.convert_day(input_week_day)):
+        console_display.refresh_and_print(database, 'Invalid day. Enter week day name or keyword (ie Saturday)')
         return
     if database['streak'] == 0 and len(database['cycle']) == 0:
         if not console_display.confirm('WARNING: Resets streak and *DELETES* ALL CYCLE OBJECTIVES. Proceed? (y/n)'):
-            console_display.print_display(database)
-            print('Cancelled', end='\n\n')
+            console_display.refresh_and_print(database, 'Cancelled')
             return
     database['streak'] = 0
     database['cycle'].clear()
-
-    week_day_number = date_logic.convert_day(input_week_day)  # Convert to #, ie Sunday = 1
     database['settings']['calendar_date']['week_day'] = week_day_number
 
     file_management.update(database)

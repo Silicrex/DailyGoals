@@ -66,6 +66,39 @@ def add_cycle_mode(database, dictionary):
     task_string = get_task_string()
     denominator = get_denominator()
 
+    mode_input = input('> Enter a number corresponding to a mode for item setup\n'
+                       '> [1] Every x days\n'
+                       '> [2] Certain week day(s)\n'
+                       '> [3] Advanced\n\n')
+    if mode_input not in {1, 2, 3}:
+        console_display.refresh_and_print(database, 'Invalid mode response, should be a number 1-3')
+        return
+
+    if mode_input == 1:  # Every x days
+        repeat_input = input('> Every how many days should this item activate? (ie 2 = every other day)\n\n')
+        if not isinstance(repeat_input, int):
+            console_display.refresh_and_print(database, 'Invalid input. Should be integer days')
+            return
+        cooldown_sequence = [repeat_input]
+        offset_input = input('> In how many days should this item start activating? (ie 0 = today)\n\n')
+        if not isinstance(offset_input, int):
+            console_display.refresh_and_print(database, 'Invalid input. Expected integer days')
+            return
+    elif mode_input == 2:  # Every certain week day(s)
+        days = []
+        while True:
+            days_print = [date_logic.convert_day_number(day_number) for day_number in days]
+            day_input = input(f'> Enter week days one-by-one. Say "done" when finished.\n'
+                              f'> Current days: {days_print}\n\n').lower()
+            if not (day_number := date_logic.convert_day(day_input)):
+                print('Cannot discern weekday from input. Say "done" when finished\n')
+                continue
+            if day_number in days:
+                print('That day has already been added. Say "done" when finished\n')
+                continue
+            days.append(day_number)
+            print(f'Successfully added {date_logic.convert_day_number(day_number)}. Say "done" when finished')
+
     print('> Enter a frequency (every x days) or a week day name', end='\n\n')
     frequency = input().lower()
     print()  # Newline
@@ -87,10 +120,15 @@ def add_cycle_mode(database, dictionary):
                                                     'Returning to menu.')
         return
 
-    dictionary.update({objective_key: {'display_name': objective_name, 'task_string': task_string,
-                                       'denominator': denominator, 'numerator': 0,
-                                       'cycle_frequency': cycle_frequency, 'current_offset': current_offset,
-                                       'link': [[], []], 'tag': None}})
+    dictionary.update({objective_key: {'display_name': objective_name,
+                                       'task_string': task_string,
+                                       'denominator': denominator,
+                                       'numerator': 0,
+                                       'cooldown_sequence': cooldown_sequence,
+                                       'cooldown_iterator': 0,
+                                       'remaining_cooldown': offset_input,
+                                       'link': [[], []],  # linked_to list, linked_from list
+                                       'tag': None}})
     dict_management.add_to_container(database, 'cycle', objective_key)  # Add to default container
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'cycle')

@@ -72,38 +72,40 @@ def get_week_days():
     return week_days
 
 
-def convert_day_number(week_day):
-    if week_day == 1:
+def convert_day_number(day_number):
+    if day_number == 1:
         return 'Sunday'
-    elif week_day == 2:
+    elif day_number == 2:
         return 'Monday'
-    elif week_day == 3:
+    elif day_number == 3:
         return 'Tuesday'
-    elif week_day == 4:
+    elif day_number == 4:
         return 'Wednesday'
-    elif week_day == 5:
+    elif day_number == 5:
         return 'Thursday'
-    elif week_day == 6:
+    elif day_number == 6:
         return 'Friday'
-    elif week_day == 7:
+    elif day_number == 7:
         return 'Saturday'
 
 
 def convert_day(day):
-    if day == 'sunday':
+    if day in {'sunday', 'su', 'sun', 'sund', 'sunda'}:
         return 1
-    elif day == 'monday':
+    elif day in {'monday', 'm', 'mo', 'mon', 'mond', 'monda'}:
         return 2
-    elif day == 'tuesday':
+    elif day in {'tuesday', 'tu', 'tu', 'tue', 'tues', 'tuesd', 'tuesda'}:
         return 3
-    elif day == 'wednesday':
+    elif day in {'wednesday', 'w', 'we', 'wed', 'wedn', 'wedne', 'wednes', 'wednesd', 'wednesda'}:
         return 4
-    elif day == 'thursday':
+    elif day in {'thursday', 'th', 'thu', 'thur', 'thurs', 'thursd', 'thursda'}:
         return 5
-    elif day == 'friday':
+    elif day in {'friday', 'f', 'fr', 'fri', 'frid', 'frida'}:
         return 6
-    elif day == 'saturday':
+    elif day in {'saturday', 'sa', 'sat', 'satu', 'satur', 'saturd', 'saturda'}:
         return 7
+    else:
+        return False
 
 
 def string_date(database, string):
