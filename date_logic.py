@@ -72,42 +72,34 @@ def get_week_days():
     return week_days
 
 
-def convert_day_number(day_number):
-    if day_number == 1:
+def convert_day_number(day_number_input):
+    if day_number_input == 1:
         return 'Sunday'
-    elif day_number == 2:
+    elif day_number_input == 2:
         return 'Monday'
-    elif day_number == 3:
+    elif day_number_input == 3:
         return 'Tuesday'
-    elif day_number == 4:
+    elif day_number_input == 4:
         return 'Wednesday'
-    elif day_number == 5:
+    elif day_number_input == 5:
         return 'Thursday'
-    elif day_number == 6:
+    elif day_number_input == 6:
         return 'Friday'
-    elif day_number == 7:
+    elif day_number_input == 7:
         return 'Saturday'
-
-
-def convert_day(day):
-    if not day:
-        return False
-    elif day == 'sunday' or 'sunday'.startswith(day) and day != 's':  # 's' not sufficient to distinguish
-        return 1
-    elif day == 'monday' or 'monday'.startswith(day):
-        return 2
-    elif day == 'tuesday' or 'tuesday'.startswith(day) and day != 't':  # 't' not sufficient to distinguish
-        return 3
-    elif day == 'wednesday' or 'wednesday'.startswith(day):
-        return 4
-    elif day == 'thursday' or 'thursday'.startswith(day) and day != 't':  # 't' not sufficient to distinguish
-        return 5
-    elif day == 'friday' or 'friday'.startswith(day):
-        return 6
-    elif day == 'saturday' or 'saturday'.startswith(day) and day != 's':  # 's' not sufficient to distinguish
-        return 7
     else:
         return False
+
+
+def convert_day(day_input):
+    if not day_input or day_input in {'t', 's'}:  # 't' and 's' could be mixed between tues/thurs, sat/sun
+        return False
+
+    week_days = get_week_days()
+    for index, day in enumerate(week_days):
+        if day_input == day or day.startswith(day_input):
+            return index + 1  # Sunday starts at 1
+    return False
 
 
 def string_date(database, string):
