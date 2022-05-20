@@ -90,19 +90,21 @@ def convert_day_number(day_number):
 
 
 def convert_day(day):
-    if day in {'sunday', 'su', 'sun', 'sund', 'sunda'}:
+    if not day:
+        return False
+    elif day == 'sunday' or 'sunday'.startswith(day) and day != 's':  # 's' not sufficient to distinguish
         return 1
-    elif day in {'monday', 'm', 'mo', 'mon', 'mond', 'monda'}:
+    elif day == 'monday' or 'monday'.startswith(day):
         return 2
-    elif day in {'tuesday', 'tu', 'tu', 'tue', 'tues', 'tuesd', 'tuesda'}:
+    elif day == 'tuesday' or 'tuesday'.startswith(day) and day != 't':  # 't' not sufficient to distinguish
         return 3
-    elif day in {'wednesday', 'w', 'we', 'wed', 'wedn', 'wedne', 'wednes', 'wednesd', 'wednesda'}:
+    elif day == 'wednesday' or 'wednesday'.startswith(day):
         return 4
-    elif day in {'thursday', 'th', 'thu', 'thur', 'thurs', 'thursd', 'thursda'}:
+    elif day == 'thursday' or 'thursday'.startswith(day) and day != 't':  # 't' not sufficient to distinguish
         return 5
-    elif day in {'friday', 'f', 'fr', 'fri', 'frid', 'frida'}:
+    elif day == 'friday' or 'friday'.startswith(day):
         return 6
-    elif day in {'saturday', 'sa', 'sat', 'satu', 'satur', 'saturd', 'saturda'}:
+    elif day == 'saturday' or 'saturday'.startswith(day) and day != 's':  # 's' not sufficient to distinguish
         return 7
     else:
         return False
