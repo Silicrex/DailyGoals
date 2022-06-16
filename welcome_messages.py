@@ -34,7 +34,7 @@ def get_welcome(current_welcome=None):
         "ANY LANGUAGES YOU WANT TO LEARN/PROGRESS WITH; PROGRAMMING OR OTHERWISE? IF SO, HOW'S THAT GOING?",
         "ANY MUSICAL INSTRUMENTS YOU WANT TO LEARN/PROGRESS WITH? IF SO, HOW'S THAT GOING?",
         "QUICK! WHAT'S 27 * 12 WITHOUT USING A CALCULATOR?",
-        "OKAY, SORRY, WRITING THESE WELCOME MESSAGES IS A LOT HARDER THAN I ANTICIPATED. HERE; YOU THINK OF ONE! "
+        "OKAY, SORRY, WRITING THESE WELCOME MESSAGES IS A LOT HARDER THAN I ANTICIPATED. HERE; YOU THINK OF ONE!"
         "CREATIVE EXERCISE!",
         "HAVE ANY GOOD PLANS AFTER FINISHING YOUR GOALS TODAY? IF SO, USE THAT AS MOTIVATION TO FINISH THEM FIRST!",
         "WELCOME! HAVE A GOOD DAY!",
@@ -48,5 +48,6 @@ def get_welcome(current_welcome=None):
         "PLAY ANY GAMES LATELY? IF SO, WHAT'S BEEN YOUR FAVORITE?",
         "ALOHA!",
     ]
-    welcome_messages.remove(current_welcome)  # No consecutive reroll of same message!
+    if current_welcome in welcome_messages:
+        welcome_messages.remove(current_welcome)  # No consecutive reroll of same message!
     return random.choice(welcome_messages)

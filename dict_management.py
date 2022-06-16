@@ -5,12 +5,10 @@ import documentation
 
 def get_display_list(database):
     settings = database['settings']
-    toggle_list = {'daily': settings['daily'], 'optional': settings['optional'],
-                   'todo': settings['todo'], 'active_cycle': settings['cycle'],
-                   'inactive_cycle': settings['full_cycle'], 'longterm': settings['longterm'],
-                   'counter': settings['counter'], 'note': settings['note']}
-    return [x for x in toggle_list if toggle_list[x] and name_to_container(database, x)]
-    # Add toggle to list if the toggle is on and if the corresponding container isn't empty
+    toggle_list = {'daily': settings['daily'], 'todo': settings['todo'], 'cycle': settings['cycle'],
+                   'longterm': settings['longterm'], 'counter': settings['counter'], 'note': settings['note']}
+    return [x for x in toggle_list if toggle_list[x]]
+    # Add toggle to list if the toggle is on
 
 
 def name_to_container(database, name):
@@ -318,12 +316,12 @@ def get_unenforced_todo_dict(database):
 
 def get_active_cycle_dict(database):
     cycle_dict = database['cycle']
-    return {k: cycle_dict[k] for k in cycle_dict if cycle_dict[k]['current_offset'] == 0}
+    return {k: cycle_dict[k] for k in cycle_dict if cycle_dict[k]['remaining_cooldown'] == 0}
 
 
 def get_inactive_cycle_dict(database):
     cycle_dict = database['cycle']
-    return {k: cycle_dict[k] for k in cycle_dict if cycle_dict[k]['current_offset'] != 0}
+    return {k: cycle_dict[k] for k in cycle_dict if cycle_dict[k]['remaining_cooldown'] != 0}
 
 
 def sort_dictionary(database, dict_name):
@@ -336,7 +334,7 @@ def sort_dictionary(database, dict_name):
     def cycle_sort(obj):
         # (current offset, completion bool, name)
         # 0 sorts before 1, False before True, a before z. Sorts by offset, then completion bool, then name
-        return obj[1]['current_offset'], obj[1]['numerator'] >= obj[1]['denominator'], obj[0]
+        return obj[1]['remaining_cooldown'], obj[1]['numerator'] >= obj[1]['denominator'], obj[0]
 
     def todo_sort(obj):
         # Puts enforced daily to-do objectives on top (False sorts before True, so invert with not)
@@ -367,3 +365,10 @@ def sort_dictionary(database, dict_name):
         temp_list = sorted(temp_list, key=completion_then_alpha_sort)
 
     database[dict_name] = dict(temp_list)  # Assignment via method to preserve object
+
+
+def roll_over_index(n, length):
+    if n < length - 1:  # Is n less than the last index?
+        return n + 1
+    else:
+        return 0

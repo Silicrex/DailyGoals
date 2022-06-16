@@ -1,11 +1,9 @@
 # Set to enforce ASCII just because it's what Windows cmd can display. Can be avoided if this is interfaced
 # TODO: Help dialog, tutorial dialog, mention backup when running program, mention case sensitivity
 # TODO: Error handling/polishing
-# TODO: Finish cycles (need to work around endday, fix for active vs inactive)
 # TODO: uhhhh END DAY Cycles etc. count for streak, todo for total etc
 #       Make the stats increment, make sure auto toggle actually does something
 # TODO: Notes
-# TODO: warn about clearing
 # TODO: print help on the command for commands not being used right?
 # TODO: reset data command
 # TODO: setting for sorting counter by counter val instead of name
@@ -20,8 +18,8 @@
 # TODO: Option to combine history entries
 # TODO: PLURALIZE CONTAINER ITEMS, show list of options in containeredit, fix extra newline
 # TODO: Way to view links. When you link, should also specify dict type
-# TODO: 3 cycle modes: every x days, every certain week day with min cd (to accomplish every other monday),
-#       several certain days ie Mon, Wed, Fri
+# TODO: Break command, indicate a daily isn't needed today
+# TODO: Fix display settings stuff
 import file_management  # For loading/saving
 import commands  # Command functions and formatting
 import console_display  # To print the initial console display

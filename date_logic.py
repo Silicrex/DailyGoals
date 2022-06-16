@@ -68,8 +68,13 @@ def next_week_day(week_day):
 
 
 def get_week_days():
-    week_days = {'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'}
+    week_days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
     return week_days
+
+
+def get_week_day_abbreviation(num):
+    abbreviations = ['', 'Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa']  # Blank string to offset, since Sunday = 1
+    return abbreviations[num]
 
 
 def convert_day_number(day_number_input):
@@ -84,7 +89,7 @@ def convert_day(day_input):
         return False
     week_days = get_week_days()
     for index, day in enumerate(week_days):
-        if day_input == day or day.startswith(day_input):
+        if day.startswith(day_input):
             return index + 1  # Sunday starts at 1, enumerate() starts at 0
     return False
 

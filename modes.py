@@ -47,8 +47,12 @@ def add_mode(database, context, args):
         return
     task_string = get_task_string()
     denominator = get_denominator()
-    dictionary.update({objective_key: {'display_name': objective_name, 'task_string': task_string,
-                                       'denominator': denominator, 'numerator': 0, 'link': [[], []],
+    dictionary.update({objective_key: {'display_name': objective_name,
+                                       'task_string': task_string,
+                                       'denominator': denominator,
+                                       'numerator': 0,
+                                       'enabled': True,
+                                       'link': [[], []],
                                        'tag': None}})
     dict_management.add_to_container(database, command, objective_key)  # Add to default container
     # Save, sort, and print display
@@ -58,6 +62,20 @@ def add_mode(database, context, args):
 
 
 def add_cycle_mode(database, dictionary):
+    def calculate_cooldown_sequence(days_list):
+        def next_index():
+            if i == len(days_list) - 1:
+                return 0
+            else:
+                return i + 1
+
+        seq = []
+        for i, n in enumerate(days_list):
+            if i == len(days_list) - 1:  # Last step
+                n = n - 7
+            seq.append(days_list[next_index()] - n)
+        return seq
+
     objective_name = get_name()
     objective_key = objective_name.lower()
     if objective_key in dictionary:
@@ -67,66 +85,119 @@ def add_cycle_mode(database, dictionary):
     denominator = get_denominator()
 
     mode_input = input('> Enter a number corresponding to a mode for item setup\n'
-                       '> [1] Every x days\n'
-                       '> [2] Certain week day(s)\n'
-                       '> [3] Advanced\n\n')
-    if mode_input not in {1, 2, 3}:
-        console_display.refresh_and_print(database, 'Invalid mode response, should be a number 1-3')
+                       '  [1] Every x days\n'
+                       '  [2] Certain week day(s)\n\n')
+    print()  # Extra newline
+    if mode_input not in {'1', '2'}:
+        console_display.refresh_and_print(database, 'Invalid mode response, should either be 1 or 2')
         return
 
-    if mode_input == 1:  # Every x days
+    if mode_input == '1':  # Every x days
+        display_mode = 'number'
+        abbreviations = None  # Not used for this mode
+        # Get cycle sequence
         repeat_input = input('> Every how many days should this item activate? (ie 2 = every other day)\n\n')
-        if not isinstance(repeat_input, int):
-            console_display.refresh_and_print(database, 'Invalid input. Should be integer days')
+        print()  # Extra newline
+        if not repeat_input.isnumeric():
+            console_display.refresh_and_print(database, 'Invalid input. Should be positive integer days')
             return
-        cooldown_sequence = [repeat_input]
-        offset_input = input('> In how many days should this item start activating? (ie 0 = today)\n\n')
-        if not isinstance(offset_input, int):
-            console_display.refresh_and_print(database, 'Invalid input. Expected integer days')
-            return
-    elif mode_input == 2:  # Every certain week day(s)
-        days = []
-        while True:
-            days_print = [date_logic.convert_day_number(day_number) for day_number in days]
-            day_input = input(f'> Enter week days one-by-one. Say "done" when finished.\n'
-                              f'> Current days: {days_print}\n\n').lower()
-            if not (day_number := date_logic.convert_day(day_input)):
-                print('Cannot discern weekday from input. Say "done" when finished\n')
-                continue
-            if day_number in days:
-                print('That day has already been added. Say "done" when finished\n')
-                continue
-            days.append(day_number)
-            print(f'Successfully added {date_logic.convert_day_number(day_number)}. Say "done" when finished')
+        cooldown_sequence = [int(repeat_input)]
 
-    print('> Enter a frequency (every x days) or a week day name', end='\n\n')
-    frequency = input().lower()
-    print()  # Newline
-    # Going by day name automatically fills day frequency and offset
-    if frequency in date_logic.get_week_days():
-        current_week_day = database['week_day']
-        input_week_day = date_logic.convert_day(frequency)
-        cycle_frequency = 7  # If a day is specified, it's weekly
-        current_offset = input_week_day - current_week_day  # Diff between given day and today
-    elif frequency.isnumeric():  # A number was given, not specific day
-        cycle_frequency = eval(frequency)
-        if cycle_frequency == 0:
-            console_display.refresh_and_print(database, 'Item frequency cannot be 0. Returning to menu')
+        # Get initial cooldown and set cooldown iterator
+        offset_input = input('> In how many days should this item start activating? (ie 0 = today)\n\n')
+        print()  # Extra newline
+        if not offset_input.isnumeric():
+            console_display.refresh_and_print(database, 'Invalid input. Expected positive integer days')
             return
-        print('> Enter offset until next occurrence (ie 0 if today, 1 if tomorrow)', end='\n\n')
-        current_offset = eval(input())
-    else:  # Neither a weekday nor integer were given
-        console_display.refresh_and_print(database, 'Invalid input. Expected day name or day offset integer. '
-                                                    'Returning to menu.')
-        return
+        start_offset = int(offset_input)
+        cooldown_iterator = 0
+
+    else:  # Every certain week day(s)
+        display_mode = 'week_day'
+        # Get cycle sequence
+        day_numbers = []
+        abbreviations = []  # Letter form of weekdays for later display purposes
+        while True:
+            days_print = [date_logic.convert_day_number(day_number) for day_number in day_numbers]  # Print full names
+            user_response = input(f'> Enter week days one-by-one. Say "done" when finished.\n'
+                                  f'> Current days: {days_print}\n\n').lower()
+            print()  # Extra newline
+            if user_response == 'done':
+                break
+            if not (day_number := date_logic.convert_day(user_response)):
+                print("Cannot discern week day from input\n")
+                continue
+            print(f'{day_number=}')
+            if day_number in day_numbers:
+                print("That day has already been added\n")
+                continue
+            day_numbers.append(day_number)
+            print(f'(before sort) {day_numbers=}')
+            day_numbers.sort()
+            print(f'(after sort) {day_numbers=}')
+            print(f'Successfully added {date_logic.convert_day_number(day_number)}\n')
+        if not day_numbers:
+            console_display.refresh_and_print(database, 'Exited as no days were provided')
+            return
+        for day_number in day_numbers:
+            abbreviations.append(date_logic.get_week_day_abbreviation(day_number))
+        cooldown_sequence = calculate_cooldown_sequence(day_numbers)
+
+        # Get in-between cooldown
+        end_cooldown_input = input('> Enter an amount of weeks to wait between cycles '
+                                   '(0 = every week, 1 = every other week)\n\n')
+        print()  # Extra newline
+        if not end_cooldown_input.isnumeric():
+            console_display.refresh_and_print(database, 'Invalid input, expected positive integer')
+            return
+        cooldown_sequence[-1] += int(end_cooldown_input) * 7  # Weeks to days, add to end of cycle
+
+        # Get initial offset and set cooldown iterator
+        current_day = database['settings']['calendar_date']['week_day']
+
+        cooldown_iterator = None  # Init variables so intellisense doesn't complain
+        nearest_active_offset = None
+
+        # Find nearest active and its offset from today
+        if current_day > day_numbers[-1]:  # Check for no upcoming this week
+            cooldown_iterator = 0
+            nearest_active_offset = day_numbers[0]
+        else:  # Nearest active is today or upcoming this week
+            for index, day in enumerate(day_numbers):
+                if day >= current_day:  # Find first one from today
+                    cooldown_iterator = index
+                    nearest_active_offset = day - current_day
+                    break
+        next_week_offset = day_numbers[0] - (current_day - 7)  # -7 to correct for 'next week'
+        offset_input = input("> When should the cycle start? Pick an option or provide a number of weeks to wait\n"
+                             "  [A] ASAP & can start mid-cycle\n"
+                             "  [B] Wait until next first day of sequence\n"
+                             "  [n > 0] Wait n weeks from next first day of sequence; ie 1 = first day + "
+                             "extra 7 days\n\n").lower()
+        print()  # Extra newline
+        if offset_input in {'a', '0'}:  # Start ASAP
+            start_offset = nearest_active_offset
+        elif offset_input == 'b':  # Wait until first active day in sequence from Sunday
+            start_offset = next_week_offset
+            cooldown_iterator = 0
+        elif offset_input.isnumeric():  # n > 0
+            offset_input = int(offset_input)
+            start_offset = next_week_offset + offset_input * 7
+            cooldown_iterator = 0
+        else:
+            console_display.refresh_and_print(database, "Invalid input, expected 'a', 'b', or a positive integer")
+            return
 
     dictionary.update({objective_key: {'display_name': objective_name,
                                        'task_string': task_string,
                                        'denominator': denominator,
                                        'numerator': 0,
+                                       'week_days': abbreviations,  # Only for week_day mode
                                        'cooldown_sequence': cooldown_sequence,
-                                       'cooldown_iterator': 0,
-                                       'remaining_cooldown': offset_input,
+                                       'cooldown_iterator': cooldown_iterator,
+                                       'remaining_cooldown': start_offset,
+                                       'display_mode': display_mode,
+                                       'enabled': True,
                                        'link': [[], []],  # linked_to list, linked_from list
                                        'tag': None}})
     dict_management.add_to_container(database, 'cycle', objective_key)  # Add to default container
@@ -143,8 +214,11 @@ def add_counter_mode(database, dictionary):
         console_display.refresh_and_print(database, 'Counter by that name already exists. Returning to menu')
         return
     task_string = get_task_string()
-    dictionary.update({objective_key: {'display_name': objective_name, 'task_string': task_string,
-                                       'numerator': 0, 'link': [[], []]}})
+    dictionary.update({objective_key: {'display_name': objective_name,
+                                       'task_string': task_string,
+                                       'numerator': 0,
+                                       'enabled': True,
+                                       'link': [[], []]}})
     dict_management.add_to_container(database, 'counter', objective_key)  # Add to default container
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'counter')
@@ -164,9 +238,12 @@ def add_todo_mode(database, dictionary):
         enforced_todo = True
     else:
         enforced_todo = False
-    dictionary.update({objective_key: {'display_name': objective_name, 'task_string': task_string,
-                                       'denominator': denominator, 'numerator': 0,
-                                       'enforced_todo': enforced_todo, 'link': [[], []], 'tag': None}})
+    dictionary.update({objective_key: {'display_name': objective_name,
+                                       'task_string': task_string,
+                                       'denominator': denominator,
+                                       'numerator': 0,
+                                       'enforced_todo': enforced_todo,
+                                       'link': [[], []], 'tag': None}})
     dict_management.add_to_container(database, 'todo', objective_key)  # Add to default container
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'todo')

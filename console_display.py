@@ -34,9 +34,6 @@ def print_display(database):
 
     # Print dicts
     display_list = dict_management.get_display_list(database)
-    if 'inactive_cycle' in display_list:  # If active cycles are toggled off, don't show inactives
-        if not settings['cycle']:
-            display_list.remove('inactive_cycle')
     if not display_list:  # If display_list is empty
         overall_item_length = 0
         for dictionary in documentation.get_dictionary_names():
@@ -104,11 +101,14 @@ def print_base_dictionary(dictionary, containers, *, item_prefix='', item_suffix
 
 
 def print_daily_objectives(database):
-    dictionary = database['daily']
-    if dictionary:
-        print('>>> Daily objectives:', end='\n\n')
-        print_base_dictionary(dictionary, database['containers']['daily'])
-        print()  # Extra newline
+    daily_dict = database['daily']
+    optional_dict = database['optional']
+    if daily_dict or optional_dict:
+        print('>>> Dailies:', end='\n\n')
+        if daily_dict:
+            print_base_dictionary(daily_dict, database['containers']['daily'])
+            print()  # Extra newline
+        print_optional_objectives(database)
 
 
 def print_optional_objectives(database):
@@ -134,12 +134,25 @@ def print_todo_objectives(database):
         print()  # Extra newline
 
 
+def print_cycle_objectives(database):
+    dictionary = database['cycle']
+    if dictionary:
+        print('>>> Cycles', end='\n\n')
+        print_active_cycle_objectives(database)
+        print_inactive_cycle_objectives(database)
+
+
 def print_active_cycle_objectives(database):
+    def get_sequence_string(value):
+        if value['display_mode'] == 'number':
+            return f' (every {value["cooldown_sequence"][0]}d)'
+        else:  # == 'week_day'
+            return f' ({"/".join(value["week_days"])})'
+
     dictionary = dict_management.get_active_cycle_dict(database)
     if dictionary:
-        print('>>> Active cycles', end='\n\n')
         print_base_dictionary(dictionary, database['containers']['cycle'],
-                              task_string_exec=lambda value: f" (every {value['cycle_frequency']}d)")
+                              task_string_exec=get_sequence_string)
         print()  # Extra newline
 
 
@@ -147,15 +160,17 @@ def print_inactive_cycle_objectives(database):
     dictionary = dict_management.get_inactive_cycle_dict(database)
     if dictionary:
         print('(Inactive cycles)', end='\n\n')
-        # {display_name, task_string, denominator, progress numerator, cycle_length, current_offset}
         for key, value in dictionary.items():
             display_name = value['display_name']
             task_string = value['task_string']
-            cycle_frequency = value['cycle_frequency']
-            current_offset = value['current_offset']
+            remaining_cooldown = value['remaining_cooldown']
             denominator = value['denominator']
-            print(f'{display_name} ({task_string}) (x/{denominator}): '
-                  f'Every {cycle_frequency}d, next in {current_offset}d')
+            if value['display_mode'] == 'number':
+                print(f'{display_name} ({task_string}) (x/{denominator}): '
+                      f'Every {value["cooldown_sequence"][0]}d, next in {remaining_cooldown}d')
+            else:  # == 'week_day'
+                print(f'{display_name} ({task_string}) (x/{denominator}): '
+                      f'Every {"/".join(value["week_days"])}, next in {remaining_cooldown}d')
         print()  # Extra newline
 
 
@@ -178,6 +193,10 @@ def print_counter_objectives(database):
             numerator = value['numerator']
             print(f'{display_name} ({task_string}): {numerator}')
         print()  # Extra newline
+
+
+def print_note_objectives(database):
+    pass
 
 
 def print_stats(database):

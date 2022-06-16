@@ -14,6 +14,8 @@ import errors
 # Command functions should take arguments (database, context, args)
 # mode_route() is a generalized function for routing commands to mode functions for dicts with generic structures
 # Dictionary commands ------------------------------------------------------------------------------------------
+import welcome_messages
+
 
 def daily_command(database, context, args):
     modes.mode_route(database, context, args)
@@ -247,11 +249,11 @@ def setdate_command(database, context, args):
         console_display.refresh_and_print(database, 'Invalid day for that month/year')
         return
 
-    if database['streak'] == 0 and len(database['cycle']) == 0:
+    if database['stats']['streak'] != 0 or len(database['cycle']) != 0:
         if not console_display.confirm('WARNING: Resets streak and *DELETES* ALL CYCLE OBJECTIVES. Proceed? (y/n)'):
             console_display.refresh_and_print(database, 'Cancelled')
             return
-    database['streak'] = 0
+    database['stats']['streak'] = 0
     database['cycle'].clear()
 
     database['settings']['calendar_date']['month'] = month
@@ -314,7 +316,8 @@ def endday_command(database, context, args):
         history_name = f"{obj_value['display_name']}{task_string} (/{denominator_string})"
         history_key = history_name.lower()
         percent_completed = round(numerator / denominator, 2)  # Tracks >100% completion
-        date_string = f"{calendar_date['year']}-{calendar_date['month']:02d}-{calendar_date['day']:02d}"  # YYYY-MM-DD
+        date_string = (f"{calendar_date['year']}-{calendar_date['month']:02d}-{calendar_date['day']:02d}, " 
+                       f"{date_logic.convert_day_number(calendar_date['week_day'])}")  # YYYY-MM-DD, Day
 
         if history_key not in command_history_dict:  # Create entry
             command_history_dict.update({
@@ -394,10 +397,13 @@ def endday_command(database, context, args):
             streak_deserved = False
         value['numerator'] = 0
     for key, value in cycle_dict.items():
-        if value['current_offset'] == 0:  # Was an active today
-            value['current_offset'] = value['cycle_frequency'] - 1  # Then reset; -1 to account for date switching now
+        if value['remaining_cooldown'] == 0:  # Was an active today
+            next_cooldown_index = value['cooldown_iterator']
+            cooldown_sequence = value['cooldown_sequence']
+            value['remaining_cooldown'] = cooldown_sequence[next_cooldown_index] - 1  # -1 to factor day change
+            value['cooldown_iterator'] = dict_management.roll_over_index(next_cooldown_index, len(cooldown_sequence))
         else:
-            value['current_offset'] -= 1
+            value['remaining_cooldown'] -= 1
     dict_management.sort_dictionary(database, 'cycle')
 
     # Handle longterm dict
@@ -420,6 +426,9 @@ def endday_command(database, context, args):
     date_logic.increment_date(database)
     # Increment week day
     calendar_date['week_day'] = date_logic.next_week_day(calendar_date['week_day'])
+
+    # Update welcome message
+    database['welcome_message'] = welcome_messages.get_welcome(current_welcome=database['welcome_message'])
 
     # Save, sort, and print display
     file_management.update(database)
