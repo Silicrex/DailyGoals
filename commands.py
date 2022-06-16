@@ -273,11 +273,11 @@ def setday_command(database, context, args):
     if not (week_day_number := date_logic.convert_day(input_week_day)):
         console_display.refresh_and_print(database, 'Invalid day. Enter week day name or keyword (ie Saturday)')
         return
-    if database['streak'] == 0 and len(database['cycle']) == 0:
+    if database['stats']['streak'] != 0 or len(database['cycle']) != 0:
         if not console_display.confirm('WARNING: Resets streak and *DELETES* ALL CYCLE OBJECTIVES. Proceed? (y/n)'):
             console_display.refresh_and_print(database, 'Cancelled')
             return
-    database['streak'] = 0
+    database['stats']['streak'] = 0
     database['cycle'].clear()
     database['settings']['calendar_date']['week_day'] = week_day_number
 
