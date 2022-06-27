@@ -309,11 +309,12 @@ def endday_command(database, context, args):
     def add_to_history(dict_name, obj_value):
         numerator = obj_value['numerator']
         denominator = obj_value['denominator']
-
         command_history_dict = database['history'][dict_name]  # Corresponding history dict
         task_string = f" ({obj_value['task_string']})" if obj_value['task_string'] else ''
         denominator_string = f'{denominator:,}'
         history_name = f"{obj_value['display_name']}{task_string} (/{denominator_string})"
+        if dict_name == 'cycle':  # Also has frequency in name
+            history_name += f' {console_display.get_cycle_sequence_string(obj_value)})'
         history_key = history_name.lower()
         percent_completed = round(numerator / denominator, 2)  # Tracks >100% completion
         date_string = (f"{calendar_date['year']}-{calendar_date['month']:02d}-{calendar_date['day']:02d}, " 

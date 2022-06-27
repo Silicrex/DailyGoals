@@ -51,7 +51,7 @@ def add_mode(database, context, args):
                                        'task_string': task_string,
                                        'denominator': denominator,
                                        'numerator': 0,
-                                       'enabled': True,
+                                       'pause_timer': 0,
                                        'link': [[], []],
                                        'tag': None}})
     dict_management.add_to_container(database, command, objective_key)  # Add to default container
@@ -86,15 +86,21 @@ def add_cycle_mode(database, dictionary):
 
     mode_input = input('> Enter a number corresponding to a mode for item setup\n'
                        '  [1] Every x days\n'
-                       '  [2] Certain week day(s)\n\n')
+                       '  [2] Certain week day(s)\n'
+                       '  [3] Advanced (manually insert cooldown sequence)\n\n')
     print()  # Extra newline
-    if mode_input not in {'1', '2'}:
-        console_display.refresh_and_print(database, 'Invalid mode response, should either be 1 or 2')
+    if mode_input not in {'1', '2', '3'}:
+        console_display.refresh_and_print(database, 'Invalid mode response')
         return
+
+    # Variables that are not used in every mode but need to be set
+    frequency_description = None
+    abbreviations = None
+    week_cooldown = None
+    cooldown_iterator = None  # Stop intellisense from complaining
 
     if mode_input == '1':  # Every x days
         display_mode = 'number'
-        abbreviations = None  # Not used for this mode
         # Get cycle sequence
         repeat_input = input('> Every how many days should this item activate? (ie 2 = every other day)\n\n')
         print()  # Extra newline
@@ -112,7 +118,7 @@ def add_cycle_mode(database, dictionary):
         start_offset = int(offset_input)
         cooldown_iterator = 0
 
-    else:  # Every certain week day(s)
+    elif mode_input == '2':  # Every certain week day(s)
         display_mode = 'week_day'
         # Get cycle sequence
         day_numbers = []
@@ -124,17 +130,14 @@ def add_cycle_mode(database, dictionary):
             print()  # Extra newline
             if user_response == 'done':
                 break
-            if not (day_number := date_logic.convert_day(user_response)):
+            elif not (day_number := date_logic.convert_day(user_response)):
                 print("Cannot discern week day from input\n")
                 continue
-            print(f'{day_number=}')
-            if day_number in day_numbers:
+            elif day_number in day_numbers:
                 print("That day has already been added\n")
                 continue
             day_numbers.append(day_number)
-            print(f'(before sort) {day_numbers=}')
             day_numbers.sort()
-            print(f'(after sort) {day_numbers=}')
             print(f'Successfully added {date_logic.convert_day_number(day_number)}\n')
         if not day_numbers:
             console_display.refresh_and_print(database, 'Exited as no days were provided')
@@ -144,13 +147,14 @@ def add_cycle_mode(database, dictionary):
         cooldown_sequence = calculate_cooldown_sequence(day_numbers)
 
         # Get in-between cooldown
-        end_cooldown_input = input('> Enter an amount of weeks to wait between cycles '
-                                   '(0 = every week, 1 = every other week)\n\n')
+        week_cooldown_input = input('> Enter an amount of weeks to wait between cycles '
+                                    '(0 = every week, 1 = every other week)\n\n')
         print()  # Extra newline
-        if not end_cooldown_input.isnumeric():
+        if not week_cooldown_input.isnumeric():
             console_display.refresh_and_print(database, 'Invalid input, expected positive integer')
             return
-        cooldown_sequence[-1] += int(end_cooldown_input) * 7  # Weeks to days, add to end of cycle
+        week_cooldown = int(week_cooldown_input)
+        cooldown_sequence[-1] += week_cooldown * 7  # Weeks to days, add to end of cycle
 
         # Get initial offset and set cooldown iterator
         current_day = database['settings']['calendar_date']['week_day']
@@ -175,7 +179,7 @@ def add_cycle_mode(database, dictionary):
                              "  [n > 0] Wait n weeks from next first day of sequence; ie 1 = first day + "
                              "extra 7 days\n\n").lower()
         print()  # Extra newline
-        if offset_input in {'a', '0'}:  # Start ASAP
+        if offset_input == 'a' or int(offset_input) == 0:  # Start ASAP
             start_offset = nearest_active_offset
         elif offset_input == 'b':  # Wait until first active day in sequence from Sunday
             start_offset = next_week_offset
@@ -188,16 +192,96 @@ def add_cycle_mode(database, dictionary):
             console_display.refresh_and_print(database, "Invalid input, expected 'a', 'b', or a positive integer")
             return
 
+    elif mode_input == '3':  # Manually provide cooldown sequence
+        display_mode = 'custom'
+        print('> Advanced Mode has three primary fields and then a custom identifier tag to be used for display and '
+              'History Mode.\n'
+              '> First is days until the first activation (can be mid-cycle; 0 = today).\n'
+              '> Second is the cooldown sequence. This is an ordered list of positive integers that corresponds to '
+              'how long to wait\n  between each activation, cycling back to the start after the finishing the end.\n'
+              '> Third is the index (starting at 0) of the value in the cooldown sequence that the first-activation '
+              'timer (from step 1)\n  was configured for (0 = first value).\n>\n'
+              '> For example, say today is Friday, and you want to set up a cycle for every other Sat/Sun. This can be '
+              'done with\n  '
+              '(1) a first-activation timer of 1 day (to Saturday; though could do 2 for Sunday; only affects the '
+              'first time)\n  '
+              '(2) a cooldown sequence of [1, 13] (1 day from Sat to Sun, 13 days from Sun to next-next Sat)\n  '
+              '(3) first-activation index of 0 (the 1 from [1, 13] is for Saturday to Sunday, and we tuned the '
+              'first-activation\n  timer for Saturday (would be index of 1 instead if we tuned to start Sunday; this '
+              'also only impacts the first run\n  of the cycle and is for convenience)\n>\n>')
+        cooldown_sequence = []
+        start_offset = input('> In how many days should the first activation be? (0 = today)\n\n')
+        if not start_offset.isnumeric():
+            console_display.refresh_and_print(database, 'Invalid response, expected 0 or positive integer')
+            return
+        start_offset = int(start_offset)
+        print()  # Extra newline
+        while True:
+            user_response = input(f'> Enter cooldown (positive integer) sequence values one-by-one.\n'
+                                  f'> Say "done" when finished, "del" to delete most recent, or "clear" to delete '
+                                  f'all.\n'
+                                  f'> Current sequence: {cooldown_sequence}\n\n').lower()
+            print()  # Extra newline
+            if user_response == 'done':
+                break
+            elif user_response == 'clear':
+                cooldown_sequence.clear()
+                continue
+            elif user_response == 'del':
+                cooldown_sequence.pop()
+                continue
+            elif not user_response.isnumeric() or int(user_response) == 0:
+                print('Invalid input\n')
+                continue
+            cooldown = int(user_response)
+            cooldown_sequence.append(cooldown)
+            print(f'Successfully added {cooldown}\n')
+        if not cooldown_sequence:
+            console_display.refresh_and_print(database, 'Exited as cooldown sequence was not provided')
+            return
+        while True:
+            cooldown_iterator_input = input('> Enter the index (starting from 0) in the cooldown sequence list that '
+                                            'the first-activation timer was\n  tuned to transition into\n\n').lower()
+            print()  # Extra newline
+            if cooldown_iterator_input == 'cancel':
+                console_display.refresh_and_print(database, 'Cancelled')
+                return
+            elif not cooldown_iterator_input.isnumeric():
+                print('Invalid response, should be 0 or an integer. Try again or say "cancel" to exit\n')
+                continue
+            cooldown_iterator = int(cooldown_iterator_input)
+            if cooldown_iterator >= len(cooldown_sequence):
+                print('Invalid response, index out of range (remember it starts counting at 0), please try again\n')
+                continue
+            break
+        while True:
+            frequency_description = input("> Enter a description of the frequency.\n  "
+                                          "This is a string that will be displayed in the objective title to indicate "
+                                          "the objective's frequency,\n  and is also used for the objective's History "
+                                          "Mode key. (BLANK = CANCEL)\n\n")
+            if not frequency_description:
+                if console_display.confirm('Cancel creation of this objective? (y/n)'):
+                    console_display.refresh_and_print(database, 'Cancelled')
+                    return
+                continue
+            break
+
+    else:
+        console_display.refresh_and_print(database, 'Invalid mode number')
+        return
+
     dictionary.update({objective_key: {'display_name': objective_name,
                                        'task_string': task_string,
                                        'denominator': denominator,
                                        'numerator': 0,
                                        'week_days': abbreviations,  # Only for week_day mode
+                                       'week_cooldown': week_cooldown,
                                        'cooldown_sequence': cooldown_sequence,
                                        'cooldown_iterator': cooldown_iterator,
+                                       'frequency_description': frequency_description,
                                        'remaining_cooldown': start_offset,
                                        'display_mode': display_mode,
-                                       'enabled': True,
+                                       'pause_timer': 0,
                                        'link': [[], []],  # linked_to list, linked_from list
                                        'tag': None}})
     dict_management.add_to_container(database, 'cycle', objective_key)  # Add to default container
@@ -217,7 +301,7 @@ def add_counter_mode(database, dictionary):
     dictionary.update({objective_key: {'display_name': objective_name,
                                        'task_string': task_string,
                                        'numerator': 0,
-                                       'enabled': True,
+                                       'pause_timer': 0,
                                        'link': [[], []]}})
     dict_management.add_to_container(database, 'counter', objective_key)  # Add to default container
     # Save, sort, and print display
@@ -243,7 +327,9 @@ def add_todo_mode(database, dictionary):
                                        'denominator': denominator,
                                        'numerator': 0,
                                        'enforced_todo': enforced_todo,
-                                       'link': [[], []], 'tag': None}})
+                                       'pause_timer': 0,
+                                       'link': [[], []],
+                                       'tag': None}})
     dict_management.add_to_container(database, 'todo', objective_key)  # Add to default container
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'todo')
@@ -757,6 +843,53 @@ def viewlink_mode(database, context, args):
 
     link_chain = dict_management.get_link_chain(database, command, objective_name)
     console_display.refresh_and_print(database, f'Link: {dict_management.format_link_chain(link_chain)}')
+
+
+def pause_mode(database, context, args):
+    # ex input: daily pause
+
+    def get_duration():
+        duration_input = input('> How many days should the objective be paused for? (-1 = indefinite, 0 = cancel)\n\n')
+        if not (duration_input == '-1' or duration_input.isnumeric()):
+            console_display.refresh_and_print(database, 'Invalid input, expected a positive integer or -1')
+            return 0
+        return int(duration_input)
+
+    command = context['command']
+    dictionary = database[command]
+
+    # Input validation
+    if args:
+        console_display.refresh_and_print(database, 'Unnecessary arguments!')
+        raise errors.InvalidCommandUsage(command, context['mode'])
+
+    user_response = input('> Enter a response corresponding to a selection mode\n'
+                          '> [A] Single objective\n'
+                          '> [B] Container\n\n').lower()
+    if user_response not in {'a', 'b'}:
+        console_display.refresh_and_print(database, 'Invalid response')
+        return
+    if user_response == 'a':
+        input_objective_name = input('> What objective would you like to pause? (Blank input = cancel)\n\n').lower()
+        if not input_objective_name:
+            console_display.refresh_and_print(database, 'Cancelled')
+            return
+        if not (objective_name := dict_management.key_search(database, dictionary, input_objective_name)):
+            console_display.refresh_and_print(database, 'Objective not found')
+            raise errors.InvalidCommandUsage(command, context['mode'])
+        if not (duration := get_duration()):
+            return
+    else:  # == 'b'
+        input_container_name = input('> What container would you like to pause? (Blank input = cancel)\n\n').lower()
+        if not input_container_name:
+            console_display.refresh_and_print(database, 'Cancelled')
+            return
+        if not (container_name := dict_management.key_search(database, database['containers'][command],
+                                                             input_container_name)):
+            console_display.refresh_and_print(database, 'Container not found')
+            raise errors.InvalidCommandUsage(command, context['mode'])
+        if not (duration := get_duration()):
+            return
 
 
 # Removing items ------------------------------------------------------------------------------------------

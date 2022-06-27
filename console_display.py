@@ -142,17 +142,30 @@ def print_cycle_objectives(database):
         print_inactive_cycle_objectives(database)
 
 
-def print_active_cycle_objectives(database):
-    def get_sequence_string(value):
-        if value['display_mode'] == 'number':
-            return f' (every {value["cooldown_sequence"][0]}d)'
-        else:  # == 'week_day'
-            return f' ({"/".join(value["week_days"])})'
+def get_cycle_sequence_string(obj_value):
+    display_mode = obj_value['display_mode']
+    if display_mode == 'number':
+        return f'every {obj_value["cooldown_sequence"][0]}d'
+    elif display_mode == 'week_day':
+        week_cooldown = obj_value['week_cooldown']
+        if week_cooldown == 0:
+            cooldown_string = 'every'
+        elif week_cooldown == 1:
+            cooldown_string = 'every other'
+        else:
+            cooldown_string = f'every {week_cooldown + 1}'  # 2 cooldown = objective occurs every 3 weeks
+        return f'{cooldown_string} [{"/".join(obj_value["week_days"])}]'
+    elif display_mode == 'custom':
+        return obj_value['frequency_description']
+    else:
+        quit('Invalid cycle display mode..')
 
+
+def print_active_cycle_objectives(database):
     dictionary = dict_management.get_active_cycle_dict(database)
     if dictionary:
         print_base_dictionary(dictionary, database['containers']['cycle'],
-                              task_string_exec=get_sequence_string)
+                              task_string_exec=lambda val: f' ({get_cycle_sequence_string(val)})')
         print()  # Extra newline
 
 
@@ -170,7 +183,7 @@ def print_inactive_cycle_objectives(database):
                       f'Every {value["cooldown_sequence"][0]}d, next in {remaining_cooldown}d')
             else:  # == 'week_day'
                 print(f'{display_name} ({task_string}) (x/{denominator}): '
-                      f'Every {"/".join(value["week_days"])}, next in {remaining_cooldown}d')
+                      f'{capitalize_first(get_cycle_sequence_string(value))}, next in {remaining_cooldown}d')
         print()  # Extra newline
 
 
@@ -235,3 +248,7 @@ def confirm(text):  # Take print statement, get yes or no
             return True
         elif user_response in {'no', 'n'}:
             return False
+
+
+def capitalize_first(string):
+    return string[0].upper() + string[1:]
