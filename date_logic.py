@@ -84,6 +84,13 @@ def convert_day_number(day_number_input):
     return days[day_number_input - 1]  # Adjust for offset (Sunday starts at 1, index starts at 0)
 
 
+def convert_month_number(month_number_input):
+    if month_number_input not in range(1, 13):  # Must be 1-7
+        return False
+    months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October',
+              'November', 'December']
+    return months[month_number_input - 1]  # Adjust for offset (January starts at 1, index starts at 0)
+
 def convert_day(day_input):
     if not day_input or day_input in {'t', 's'}:  # 't' and 's' could be mixed between tues/thurs, sat/sun
         return False
@@ -94,26 +101,23 @@ def convert_day(day_input):
     return False
 
 
-def string_date(database, string):
-    # String should be YYYY-MM-DD
-    months = ['', 'January', 'February', 'March', 'April', 'May', 'June',  # Blank to line up 1 = January
-              'July', 'August', 'September', 'October', 'November', 'December']  # Or just import calendar
-    date = string.split('-')
-    if database['settings']['date_switch']:
-        date[1], date[2] = date[2], date[1]
-
-    year = int(date[0])
-    month = int(date[1])
-    day = int(date[2])
-    str_day = str(day)
-
-    if str_day in {'1', '21', '31'}:
+def string_date(database, calendar_date):
+    # date = dict with year, month, day, week_day
+    calendar_date = calendar_date.copy()
+    year = calendar_date['year']
+    month = calendar_date['month']
+    day = calendar_date['week_day']
+    week_day = convert_day_number(calendar_date['week_day'])
+    if day in {1, 21, 31}:
         suffix = 'st'
-    elif str_day in {'2', '22'}:
+    elif day in {2, 22}:
         suffix = 'nd'
-    elif str_day in {'3', '23'}:
+    elif day in {3, 23}:
         suffix = 'rd'
     else:
         suffix = 'th'
 
-    return f'{months[month]} {day}{suffix}, {year}'
+    return f"{week_day}, {convert_month_number(month)} {day}{suffix}, {year}"
+    # return (f"{calendar_date['year']}-{calendar_date['month']:02d}-{calendar_date['day']:02d}, "
+    #        f"{convert_day_number(calendar_date['week_day'])}")
+    # return f'{months[month]} {day}{suffix}, {year}'

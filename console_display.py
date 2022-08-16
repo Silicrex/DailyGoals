@@ -19,12 +19,7 @@ def print_display(database):
 
     # Print date: - 01/01/2022 Sunday -
     calendar_date = database['settings']['calendar_date']  # Date dictionary
-    month = calendar_date['month']
-    day = calendar_date['day']
-    year = calendar_date['year']
-    str_date = f'{year}-{month:02d}-{day:02d}'
-    week_day = date_logic.convert_day_number(calendar_date['week_day'])
-    print(f"- {week_day}, {date_logic.string_date(database, str_date)} -", end='\n\n')
+    print(f"- {date_logic.string_date(database, calendar_date)} -", end='\n\n')
 
     # Streak/total header
     print(f"Streak: {stats['streak']}")

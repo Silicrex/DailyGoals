@@ -317,8 +317,7 @@ def endday_command(database, context, args):
             history_name += f' {console_display.get_cycle_sequence_string(obj_value)})'
         history_key = history_name.lower()
         percent_completed = round(numerator / denominator, 2)  # Tracks >100% completion
-        date_string = (f"{calendar_date['year']}-{calendar_date['month']:02d}-{calendar_date['day']:02d}, " 
-                       f"{date_logic.convert_day_number(calendar_date['week_day'])}")  # YYYY-MM-DD, Day
+        date = database['settings']['calendar_date'].copy()
 
         if history_key not in command_history_dict:  # Create entry
             command_history_dict.update({
@@ -327,7 +326,7 @@ def endday_command(database, context, args):
                     'denominator': denominator,
                     'times_completed': 0,
                     'total_percent_completed': 0,
-                    'first_completed': date_string,
+                    'first_completed': date,
                     'tags': []
                 }})
 
@@ -337,7 +336,7 @@ def endday_command(database, context, args):
             return
 
         if obj_value['tag']:
-            command_history_dict[history_key]['tags'].append((date_string, obj_value['tag']))
+            command_history_dict[history_key]['tags'].append((date, obj_value['tag']))
             obj_value['tag'] = None
 
         command_history_dict[history_key]['times_completed'] += 1
