@@ -86,7 +86,7 @@ def update_item(database, dictionary, objective_name, update_value):
     objective['numerator'] += update_value
 
     # Handle link
-    linked_to = objective['link'][0]
+    linked_to = objective['link']['linked_to']
     if linked_to:
         linked_dict = database[linked_to[0]]
         linked_objective_name = linked_to[1]
@@ -117,8 +117,8 @@ def reset_item(database, dictionary, objective_name):
 def remove_item(database, dict_name, objective_name):
     dictionary = database[dict_name]
     objective = dictionary[objective_name]
-    linked_to = objective['link'][0]
-    linked_from = objective['link'][1]
+    linked_to = objective['link']['linked_to']
+    linked_from = objective['link']['linked_from']
 
     # Handle links
     if linked_to:  # Remove from linked item's linked_from
@@ -147,7 +147,7 @@ def test_link_chain(database, origin, new_link):
     to_dict, to_obj = new_link
     while True:
         # linked_to = [type_string, linked_objective_name]
-        foreign_linked_to = database[to_dict][to_obj]['link'][0]
+        foreign_linked_to = database[to_dict][to_obj]['link']['linked_to']
         if not foreign_linked_to:  # Dead end, not circular
             return chain
         chain.append(foreign_linked_to)
@@ -161,7 +161,7 @@ def get_link_chain(database, dict_name, objective_name):
     chain = [[dict_name, objective_name]]  # Start with origin, then append in order
     while True:
         # linked_to = [type_string, linked_objective_name]
-        linked_to = database[dict_name][objective_name]['link'][0]
+        linked_to = database[dict_name][objective_name]['link']['linked_to']
         if not linked_to:  # Reached the end
             return chain
         chain.append(linked_to)  # It is linked, append that link to the chain
@@ -182,12 +182,12 @@ def remove_from_linked_to(database, dict_name, objective_name, *, rename_value=F
     :param rename_value: (Optional) Instead of deleting, rename objective name to this value in link's data
     :return: None
     """
-    linked_from = database[dict_name][objective_name]['link'][1]
+    linked_from = database[dict_name][objective_name]['link']['linked_from']
     for pair in linked_from:  # pair = [linked_dict_name, linked_objective_name]
         if rename_value:
             pair[1] = rename_value
         else:
-            database[pair[0]][pair[1]]['link'][0] = []
+            database[pair[0]][pair[1]]['link']['linked_to'] = []
 
 
 def remove_from_linked_from(database, dict_name, objective_name, *, rename_value=False):
@@ -199,8 +199,8 @@ def remove_from_linked_from(database, dict_name, objective_name, *, rename_value
     :param rename_value: (Optional) Instead of deleting, rename objective name to this value in link's data
     :return:
     """
-    linked_to = database[dict_name][objective_name]['link'][0]
-    foreign_linked_from = database[linked_to[0]][linked_to[1]]['link'][1]
+    linked_to = database[dict_name][objective_name]['link']['linked_to']
+    foreign_linked_from = database[linked_to[0]][linked_to[1]]['link']['linked_from']
     for pair in foreign_linked_from:
         if pair == [dict_name, objective_name]:
             if rename_value:

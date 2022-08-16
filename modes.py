@@ -52,7 +52,7 @@ def add_mode(database, context, args):
                                        'denominator': denominator,
                                        'numerator': 0,
                                        'pause_timer': 0,
-                                       'link': [[], []],
+                                       'link': {'linked_to': [], 'linked_from': []},
                                        'tag': None}})
     dict_management.add_to_container(database, command, objective_key)  # Add to default container
     # Save, sort, and print display
@@ -282,7 +282,7 @@ def add_cycle_mode(database, dictionary):
                                        'remaining_cooldown': start_offset,
                                        'display_mode': display_mode,
                                        'pause_timer': 0,
-                                       'link': [[], []],  # linked_to list, linked_from list
+                                       'link': {'linked_to': [], 'linked_from': []},  # linked_to list, linked_from list
                                        'tag': None}})
     dict_management.add_to_container(database, 'cycle', objective_key)  # Add to default container
     # Save, sort, and print display
@@ -328,7 +328,7 @@ def add_todo_mode(database, dictionary):
                                        'numerator': 0,
                                        'enforced_todo': enforced_todo,
                                        'pause_timer': 0,
-                                       'link': [[], []],
+                                       'link': {'linked_to': [], 'linked_from': []},
                                        'tag': None}})
     dict_management.add_to_container(database, 'todo', objective_key)  # Add to default container
     # Save, sort, and print display
@@ -772,7 +772,7 @@ def link_mode(database, context, args):
 
     # Check if it's already linked
     link = dictionary[objective_name]['link']
-    linked_to = link[0]
+    linked_to = link['linked_to']
 
     if linked_to:
         if linked_to == [type_string, linked_objective_name]:  # Already linked to given input
@@ -782,10 +782,10 @@ def link_mode(database, context, args):
         dict_management.remove_from_linked_from(database, command, objective_name)  # Undo link from other side
 
     # Set this objective's linked_to
-    link[0] = [type_string, linked_objective_name]
+    link['linked_to'] = [type_string, linked_objective_name]
 
     # Set the linked objective's linked_from
-    database[type_string][linked_objective_name]['link'][1].append([command, objective_name])
+    database[type_string][linked_objective_name]['link']['linked_from'].append([command, objective_name])
 
     # Save and print display
     file_management.update(database)
@@ -807,7 +807,7 @@ def unlink_mode(database, context, args):
         console_display.refresh_and_print(database, 'Objective name not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
     link = dictionary[objective_name]['link']
-    linked_to = link[0]
+    linked_to = link['linked_to']
     if not linked_to:
         console_display.refresh_and_print(database, 'Objective is not linked')
         return
@@ -816,7 +816,7 @@ def unlink_mode(database, context, args):
     dict_management.remove_from_linked_from(database, command, objective_name)
 
     # Reset this objective's link
-    link[0] = []
+    link['linked_to'] = []
 
     # Save and print display
     file_management.update(database)
@@ -836,7 +836,7 @@ def viewlink_mode(database, context, args):
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
-    linked_to = dictionary[objective_name]['link'][0]
+    linked_to = dictionary[objective_name]['link']['linked_to']
     if not linked_to:
         console_display.refresh_and_print(database, 'Objective is not linked')
         return
