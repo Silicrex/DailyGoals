@@ -47,11 +47,12 @@ def add_mode(database, context, args):
         return
     task_string = get_task_string()
     denominator = get_denominator()
+    start_timer = get_start_timer()
     dictionary.update({objective_key: {'display_name': objective_name,
                                        'task_string': task_string,
                                        'denominator': denominator,
                                        'numerator': 0,
-                                       'pause_timer': 0,
+                                       'pause_timer': start_timer,
                                        'link': {'linked_to': [], 'linked_from': []},
                                        'tag': None}})
     dict_management.add_to_container(database, command, objective_key)  # Add to default container
@@ -282,7 +283,7 @@ def add_cycle_mode(database, dictionary):
                                        'remaining_cooldown': start_offset,
                                        'display_mode': display_mode,
                                        'pause_timer': 0,
-                                       'link': {'linked_to': [], 'linked_from': []},  # linked_to list, linked_from list
+                                       'link': {'linked_to': [], 'linked_from': []},
                                        'tag': None}})
     dict_management.add_to_container(database, 'cycle', objective_key)  # Add to default container
     # Save, sort, and print display
@@ -322,12 +323,13 @@ def add_todo_mode(database, dictionary):
         enforced_todo = True
     else:
         enforced_todo = False
+    start_timer = get_start_timer()
     dictionary.update({objective_key: {'display_name': objective_name,
                                        'task_string': task_string,
                                        'denominator': denominator,
                                        'numerator': 0,
                                        'enforced_todo': enforced_todo,
-                                       'pause_timer': 0,
+                                       'pause_timer': start_timer,
                                        'link': {'linked_to': [], 'linked_from': []},
                                        'tag': None}})
     dict_management.add_to_container(database, 'todo', objective_key)  # Add to default container
@@ -421,6 +423,20 @@ def get_denominator():
             print('Denominator must be greater than 0')
             continue
         return denominator
+
+
+def get_start_timer():
+    while True:
+        print("> Activate in how many days? (blank = 0 = activate now)", end='\n\n')
+        user_input = input().lower()
+        print()  # Extra newline
+
+        if user_input == '':  # Default to 0
+            return 0
+        elif not user_input.isnumeric():
+            print('Input must be a positive integer')
+            continue
+        return int(user_input)
 
 
 # Updating/editing items ------------------------------------------------------------------------------------------
@@ -848,15 +864,9 @@ def viewlink_mode(database, context, args):
 def pause_mode(database, context, args):
     # ex input: daily pause
 
-    def get_duration():
-        duration_input = input('> How many days should the objective be paused for? (-1 = indefinite, 0 = cancel)\n\n')
-        if not (duration_input == '-1' or duration_input.isnumeric()):
-            console_display.refresh_and_print(database, 'Invalid input, expected a positive integer or -1')
-            return 0
-        return int(duration_input)
-
     command = context['command']
     dictionary = database[command]
+    pause_list = []  # Objectives to pause
 
     # Input validation
     if args:
@@ -864,8 +874,8 @@ def pause_mode(database, context, args):
         raise errors.InvalidCommandUsage(command, context['mode'])
 
     user_response = input('> Enter a response corresponding to a selection mode\n'
-                          '> [A] Single objective\n'
-                          '> [B] Container\n\n').lower()
+                          '  [A] Single objective\n'
+                          '  [B] Container\n\n').lower()
     if user_response not in {'a', 'b'}:
         console_display.refresh_and_print(database, 'Invalid response')
         return
@@ -877,8 +887,7 @@ def pause_mode(database, context, args):
         if not (objective_name := dict_management.key_search(database, dictionary, input_objective_name)):
             console_display.refresh_and_print(database, 'Objective not found')
             raise errors.InvalidCommandUsage(command, context['mode'])
-        if not (duration := get_duration()):
-            return
+        pause_list.append(objective_name)
     else:  # == 'b'
         input_container_name = input('> What container would you like to pause? (Blank input = cancel)\n\n').lower()
         if not input_container_name:
@@ -888,8 +897,22 @@ def pause_mode(database, context, args):
                                                              input_container_name)):
             console_display.refresh_and_print(database, 'Container not found')
             raise errors.InvalidCommandUsage(command, context['mode'])
-        if not (duration := get_duration()):
-            return
+        for objective in database['containers'][command][container_name]:
+            pause_list.append(objective)
+    duration_input = input('> How many days should the objective be paused for? (-1 = indefinite, 0 = cancel)\n\n')
+    if not (duration_input == '-1' or duration_input.isnumeric()):
+        console_display.refresh_and_print(database, 'Invalid input. Expected -1 or a positive integer')
+        return
+    elif duration_input == '0':
+        console_display.refresh_and_print(database, 'Cancelled')
+        return
+    duration = int(duration_input)
+    for objective in pause_list:
+        dictionary[objective]['pause_timer'] = duration
+
+    # Save and print display
+    file_management.update(database)
+    console_display.refresh_and_print(database, 'Items successfully paused!')
 
 
 # Removing items ------------------------------------------------------------------------------------------
