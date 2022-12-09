@@ -7,16 +7,16 @@ import dict_management  # For key_search
 import file_management  # For saving
 
 
-# Main func, printing ------------------------------------------------------------------------------------------
 def launch_history_interface(database, dict_name):
     def print_current_page():
         # Header
-        print(f'Page {current_page:,}/{total_pages:,} ({total_keys:,} items total):', end='\n\n')
+        print(f'Page {current_page:,}/{total_pages:,} '
+              f'({total_keys:,} {console_display.pluralize("item", total_keys)} total):', end='\n\n')
 
         index_offset = (current_page - 1) * keys_per_page  # Skip past prior pages
-        keys_left_on_page = total_keys - (current_page - 1) * keys_per_page
+        keys_left = total_keys - (current_page - 1) * keys_per_page
         # Get min between keys_per_page and # of keys left for that page (so last page doesn't index error)
-        for n in range(min(keys_per_page, keys_left_on_page)):  # Iterate for # of items to print on that page
+        for n in range(min(keys_per_page, keys_left)):  # Iterate for # of items to print on that page
             # Start printing from the desired index
             # value is a dict of {display_name, times_completed, denominator, total_percent_completed, first_completed}
             index = index_offset + n
@@ -26,22 +26,19 @@ def launch_history_interface(database, dict_name):
         history_value = dictionary[keys[index]]
         tags_container = history_value['tags']
         times_completed = history_value['times_completed']
-        total_percent_completed = history_value['total_percent_completed']
         first_completed = date_logic.string_date(database, history_value['first_completed'])
 
         print(f"#{index + 1:,}: {history_value['display_name']}\n"
               f"-----------------------------------\n"
-              f">>> Times completed: {times_completed:,}\n"
+              f">>> Times goal completed: {times_completed:,}\n"
               f">>> Denominator sum: {times_completed * history_value['denominator']:,}\n"
-              f">>> Total % completed: {total_percent_completed:,.2%}\n"
-              f">>> Average % completed: {total_percent_completed / times_completed:,.2%}\n"
               f">>> First completed: {first_completed}\n"
               f">>> Tags: {len(tags_container)}")
         print()  # Newline
 
     def print_header():
         print(f"Entered the [{dict_name}] history interface\n"
-              f"Normal commands will not work until interface is exited ('exit')\n"
+              f"Normal commands will not work until interface is exited (blank or 'exit')\n"
               f"'help' for help", end='\n\n')
 
     def print_display():
@@ -49,7 +46,7 @@ def launch_history_interface(database, dict_name):
         print_header()
         print_current_page()
 
-# Utility, main loop ------------------------------------------------------------------------------------------
+    # Utility, main loop ------------------------------------------------------------------------------------------
     def key_index_to_page(key_index):  # key_index starts counting from 0
         return 1 + key_index // keys_per_page  # 0 = 0 page, 1-20 = 1 page, 21-40 = 2 pages w/ 20
 
@@ -78,7 +75,7 @@ def launch_history_interface(database, dict_name):
             print('Unnecessary arguments!', end='\n\n')
             continue
 
-# Page commands ------------------------------------------------------------------------------------------
+        # Page commands ------------------------------------------------------------------------------------------
         if command in {'next', 'n'}:
             pages_to_next = 1  # Default
             if input_length == 2:  # Specific value given
@@ -152,7 +149,7 @@ def launch_history_interface(database, dict_name):
             current_page = key_index_to_page(item_index)
             print_display()
 
-# Tags ------------------------------------------------------------------------------------------
+        # Tags ------------------------------------------------------------------------------------------
         elif command in {'tags', 'tag'}:
             # ex input: tags wanikani
 
@@ -169,9 +166,9 @@ def launch_history_interface(database, dict_name):
             print_item(keys.index(item_name))  # print_item() goes by index, not by name
             print(f'Tags: {len(tags)}', end='\n\n')
             for tag in tags:
-                print(f'{date_logic.string_date(database, tag[0])}: {tag[1]}', end='\n\n')  # Date: tag
+                print(f'[{date_logic.string_date(database, tag[0])}]:\n{tag[1]}', end='\n\n')  # Date:\ntag
 
-# Misc commands/not found ------------------------------------------------------------------------------------------
+        # Misc commands/not found --------------------------------------------------------------------------------------
         elif command == 'help':
             print_display()
             documentation.print_history_commands()

@@ -40,7 +40,7 @@ def get_modes(command):
                  'containeradd', 'containerdelete', 'containeredit', 'containermove', 'tag', 'link', 'unlink',
                  'viewlink', 'pause'},
         'counter': {'add', 'reset', 'remove', 'retask', 'set', 'setall', 'update', 'rename', 'containercreate',
-                    'containerdelete', 'containeredit', 'containermove', 'tag', 'link', 'unlink', 'viewlink'},
+                    'containerdelete', 'containeredit', 'containermove', 'tag', 'link', 'unlink', 'viewlink', 'pause'},
         'note': {'add', 'remove', 'edit', 'position', 'swap'}
     }
     return modes_dict[command]
@@ -53,7 +53,8 @@ def get_command_alias():
         'd': 'daily',
         'o': 'optional',
         't': 'todo',
-        'p': 'print'
+        'p': 'print',
+        'ed': 'endday'
     }
     return command_alias_dict
 

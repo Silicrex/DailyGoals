@@ -178,7 +178,7 @@ def print_inactive_cycle_objectives(database):
                       f'Every {value["cooldown_sequence"][0]}d, next in {remaining_cooldown}d')
             else:  # == 'week_day'
                 print(f'{display_name} ({task_string}) (x/{denominator}): '
-                      f'{capitalize_first(get_cycle_sequence_string(value))}, next in {remaining_cooldown}d')
+                      f'{get_cycle_sequence_string(value).capitalize()}, next in {remaining_cooldown}d')
         print()  # Extra newline
 
 
@@ -245,5 +245,8 @@ def confirm(text):  # Take print statement, get yes or no
             return False
 
 
-def capitalize_first(string):
-    return string[0].upper() + string[1:]
+def pluralize(text, count):
+    if count == 1:
+        return text
+    else:
+        return text + 's'

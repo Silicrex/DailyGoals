@@ -46,7 +46,7 @@ def main():
     while True:  # Main loop
         user_input = input().lower()  # Lower for string comparisons
         if not user_input:  # It's possible to enter nothing- continue loop
-            console_display.print_display(database)  # Remove the newline from blank input by refreshing
+            console_display.print_display(database)
             continue
         if not user_input.isascii():
             console_display.refresh_and_print(database, 'Please only use ASCII characters')

@@ -7,7 +7,6 @@ import errors
 
 
 # Base core dict functions need to take (database, context, args)
-# Return False = abort, return True = sort and save
 
 def mode_route(database, context, args):
     command = context['command']
@@ -28,16 +27,16 @@ def mode_route(database, context, args):
 # Adding items ------------------------------------------------------------------------------------------
 def add_mode(database, context, args):
     # ex input: daily add
-    command = context['command']
-    dictionary = database[command]
+    dict_name = context['command']
+    dictionary = database[dict_name]
 
     if args:
         console_display.refresh_and_print(database, 'Unnecessary arguments!')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
-    if command in {'counter', 'cycle', 'todo'}:  # Different processes
-        special_add_function = globals()['add_' + command + '_mode']  # ie add_cycle_mode, gets corresponding func
-        special_add_function(database, dictionary)
+    if dict_name in {'counter', 'cycle', 'todo'}:  # Different processes
+        special_add_function = globals()['add_' + dict_name + '_mode']  # ie add_cycle_mode, gets corresponding func
+        special_add_function(database, dict_name)
         return
 
     objective_name = get_name()
@@ -47,6 +46,9 @@ def add_mode(database, context, args):
         return
     task_string = get_task_string()
     denominator = get_denominator()
+    if not (history_key := get_history_key(database, dict_name)):
+        console_display.refresh_and_print(database, 'Cancelled')
+        return
     start_timer = get_start_timer()
     dictionary.update({objective_key: {'display_name': objective_name,
                                        'task_string': task_string,
@@ -54,15 +56,16 @@ def add_mode(database, context, args):
                                        'numerator': 0,
                                        'pause_timer': start_timer,
                                        'link': {'linked_to': [], 'linked_from': []},
+                                       'history_key': history_key,
                                        'tag': None}})
-    dict_management.add_to_container(database, command, objective_key)  # Add to default container
+    dict_management.add_to_container(database, dict_name, objective_key)  # Add to default container
     # Save, sort, and print display
-    dict_management.sort_dictionary(database, command)
+    dict_management.sort_dictionary(database, dict_name)
     file_management.update(database)
-    console_display.refresh_and_print(database, f'{command.capitalize()} item successfully added!')
+    console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully added!')
 
 
-def add_cycle_mode(database, dictionary):
+def add_cycle_mode(database, dict_name):
     def calculate_cooldown_sequence(days_list):
         def next_index():
             if i == len(days_list) - 1:
@@ -77,6 +80,7 @@ def add_cycle_mode(database, dictionary):
             seq.append(days_list[next_index()] - n)
         return seq
 
+    dictionary = database[dict_name]
     objective_name = get_name()
     objective_key = objective_name.lower()
     if objective_key in dictionary:
@@ -84,7 +88,9 @@ def add_cycle_mode(database, dictionary):
         return
     task_string = get_task_string()
     denominator = get_denominator()
-
+    if not (history_key := get_history_key(database, dict_name)):
+        console_display.refresh_and_print(database, 'Cancelled')
+        return
     mode_input = input('> Enter a number corresponding to a mode for item setup\n'
                        '  [1] Every x days\n'
                        '  [2] Certain week day(s)\n'
@@ -284,6 +290,7 @@ def add_cycle_mode(database, dictionary):
                                        'display_mode': display_mode,
                                        'pause_timer': 0,
                                        'link': {'linked_to': [], 'linked_from': []},
+                                       'history_key': history_key,
                                        'tag': None}})
     dict_management.add_to_container(database, 'cycle', objective_key)  # Add to default container
     # Save, sort, and print display
@@ -292,18 +299,24 @@ def add_cycle_mode(database, dictionary):
     console_display.refresh_and_print(database, 'Cycle item successfully added!')
 
 
-def add_counter_mode(database, dictionary):
+def add_counter_mode(database, dict_name):
+    dictionary = database[dict_name]
     objective_name = get_name()
     objective_key = objective_name.lower()
     if objective_key in dictionary:
         console_display.refresh_and_print(database, 'Counter by that name already exists. Returning to menu')
         return
     task_string = get_task_string()
+    if not (history_key := get_history_key(database, dict_name)):
+        console_display.refresh_and_print(database, 'Cancelled')
+        return
     dictionary.update({objective_key: {'display_name': objective_name,
                                        'task_string': task_string,
                                        'numerator': 0,
                                        'pause_timer': 0,
-                                       'link': [[], []]}})
+                                       'link': [[], []],
+                                       'history_key': history_key,
+                                       'tag': None}})
     dict_management.add_to_container(database, 'counter', objective_key)  # Add to default container
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'counter')
@@ -311,7 +324,8 @@ def add_counter_mode(database, dictionary):
     console_display.refresh_and_print(database, 'Counter item successfully added!')
 
 
-def add_todo_mode(database, dictionary):
+def add_todo_mode(database, dict_name):
+    dictionary = database[dict_name]
     objective_name = get_name()
     objective_key = objective_name.lower()
     if objective_key in dictionary:
@@ -323,6 +337,9 @@ def add_todo_mode(database, dictionary):
         enforced_todo = True
     else:
         enforced_todo = False
+    if not (history_key := get_history_key(database, dict_name)):
+        console_display.refresh_and_print(database, 'Cancelled')
+        return
     start_timer = get_start_timer()
     dictionary.update({objective_key: {'display_name': objective_name,
                                        'task_string': task_string,
@@ -331,6 +348,7 @@ def add_todo_mode(database, dictionary):
                                        'enforced_todo': enforced_todo,
                                        'pause_timer': start_timer,
                                        'link': {'linked_to': [], 'linked_from': []},
+                                       'history_key': history_key,
                                        'tag': None}})
     dict_management.add_to_container(database, 'todo', objective_key)  # Add to default container
     # Save, sort, and print display
@@ -380,18 +398,40 @@ def add_note_mode(database, context, args):
     console_display.refresh_and_print(database, 'Note item successfully added!')
 
 
-def get_name(prompt='> Enter a name for the objective (must be unique to goal type)'):
+def get_name(prompt='> Enter a name for the objective (must be unique to goal type)', blank_allowed=False):
     while True:
         print(prompt, end='\n\n')
         name = input().strip()  # Get input and remove leading/trailing spaces
         print()  # Extra newline
-        if not name:
+        if not name and not blank_allowed:
             print('Name cannot be blank')
             continue
         if not name.isascii():
             print('Please only use ASCII characters')
             continue
         return name
+
+
+def get_history_key(database, dictionary_name):
+    dictionary = database[dictionary_name]
+    history_dict = database['history'][dictionary_name]
+    while True:
+        history_key = get_name(prompt="> Enter a name for the matching History item title "
+                               "(unique to goal type; persistent; blank = cancel)", blank_allowed=True)
+        if not history_key:
+            return False
+        valid_key = False
+        for objective_name in dictionary:
+            if dictionary[objective_name][history_key].lower() == history_key.lower():
+                print(f'That History key is already used by [{objective_name}]', end='\n\n')
+                break
+        else:
+            valid_key = True
+        if valid_key:
+            if history_key.lower() in history_dict:
+                history_key = history_dict[history_key.lower()]['display_name']  # Match pre-existing casing
+                print('Item successfully attached to an already-existing History item', end='\n\n')
+            return history_key
 
 
 def get_task_string():
@@ -717,6 +757,41 @@ def denominator_mode(database, context, args):
 
 
 def tag_mode(database, context, args):
+    # There are two alternate implementations of getting the tag. The complication comes from inserting newlines
+    # #1 is using a backslash-escape syntax. The user pressing 'enter' submits the string they typed to be parsed
+    # #2 is  getting lines in a loop and using a keyword to stop, with a check for if they wanted to insert the keyword
+    def parse_tag_string():
+        tag = get_name('> Enter a tag (use "\\n" for  newline, backslashes are escapable)')
+        final = []  # Hold the final, parsed and evaluate string
+        search_start = 0
+        while True:
+            index = tag.find('\\', search_start)
+            if index == -1:  # No backslashes remaining
+                final.append(tag[search_start:])  # Finalize remainder of the string
+                break
+            final.append(tag[search_start:index])  # Add in what we've searched past already
+            if index + 1 == len(tag):  # String ends in a single unescaped backslash
+                final.append('\\')
+                break
+            next_char = tag[index + 1]  # Get the character following the backslash
+            if next_char == '\\':
+                final.append('\\')
+            elif next_char == 'n':
+                final.append('\n')
+            search_start = index + 2  # Skip over next_char, which we already processed
+        return ''.join(final)
+
+    def get_tag_lines():
+        print('Write your tag! Press enter for newlines. '
+              'Enter "done" when completed (will confirm if you want to stop or insert that literally)', end='\n\n')
+        lines = []
+        while True:
+            user_input = input()
+            if user_input == "done":
+                if console_display.confirm('\nAre you finished (y/n)? (Will insert as a literal line otherwise)'):
+                    return '\n'.join(lines)
+            lines.append(user_input)
+    # -------------------------------------------------------------------------------------------
     # ex input: daily tag wanikani
     command = context['command']
     dictionary = database[command]
@@ -730,12 +805,8 @@ def tag_mode(database, context, args):
         console_display.refresh_and_print(database, 'Objective name not found')
         raise errors.InvalidCommandUsage(command, context['mode'])
     objective = dictionary[objective_name]
-    objective_completed = objective['numerator'] >= objective['denominator']
-    if not objective_completed:
-        console_display.refresh_and_print(database, 'Objective must be completed to be tagged')
-        return
-    tag = get_name('> Enter a tag')
-    objective['tag'] = tag
+
+    objective['tag'] = get_tag_lines()  # Control which method to get the tag string with here
     # Save and print display
     file_management.update(database)
     console_display.refresh_and_print(database, f'[{objective_name}] successfully tagged!')

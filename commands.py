@@ -37,24 +37,25 @@ def longterm_command(database, context, args):
     modes.mode_route(database, context, args)
 
 
-def counter_command(database, context, args):
+def counter_command(database, conteedxt, args):
     modes.mode_route(database, context, args)
 
 
-def note_command(database, context, args):
-    if not len(args) > 1:
-        console_display.refresh_and_print(database, 'Invalid number of parameters, expected at least 2')
-        raise errors.InvalidCommandUsage('note')
-    mode = args[0]
-    context['mode'] = mode
-    valid_modes = documentation.get_modes('note')
-    if mode in valid_modes:
-        mode_function = getattr(modes, mode + '_note_mode')  # ie 'add' goes to add_note_mode()
-    else:
-        console_display.refresh_and_print(database, 'Invalid mode')
-        raise errors.InvalidCommandUsage('note')
-    context['dictionary'] = database['note']
-    mode_function(database, context, args)
+# --- Disabled for now
+# def note_command(database, context, args):
+#     if not len(args) > 1:
+#         console_display.refresh_and_print(database, 'Invalid number of parameters, expected at least 2')
+#         raise errors.InvalidCommandUsage('note')
+#     mode = args[0]
+#     context['mode'] = mode
+#     valid_modes = documentation.get_modes('note')
+#     if mode in valid_modes:
+#         mode_function = getattr(modes, mode + '_note_mode')  # ie 'add' goes to add_note_mode()
+#     else:
+#         console_display.refresh_and_print(database, 'Invalid mode')
+#         raise errors.InvalidCommandUsage('note')
+#     context['dictionary'] = database['note']
+#     mode_function(database, context, args)
 
 
 def complete_command(database, context, args):
