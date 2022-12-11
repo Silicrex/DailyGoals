@@ -54,6 +54,7 @@ def add_mode(database, context, args):
                                        'task_string': task_string,
                                        'denominator': denominator,
                                        'numerator': 0,
+                                       'streak': 0,
                                        'pause_timer': start_timer,
                                        'link': {'linked_to': [], 'linked_from': []},
                                        'history_key': history_key,
@@ -281,6 +282,7 @@ def add_cycle_mode(database, dict_name):
                                        'task_string': task_string,
                                        'denominator': denominator,
                                        'numerator': 0,
+                                       'streak': 0,
                                        'week_days': abbreviations,  # Only for week_day mode
                                        'week_cooldown': week_cooldown,
                                        'cooldown_sequence': cooldown_sequence,
@@ -313,6 +315,8 @@ def add_counter_mode(database, dict_name):
     dictionary.update({objective_key: {'display_name': objective_name,
                                        'task_string': task_string,
                                        'numerator': 0,
+                                       'highest_value': 0,
+                                       'lowest_value': 0,
                                        'pause_timer': 0,
                                        'link': [[], []],
                                        'history_key': history_key,
@@ -345,6 +349,7 @@ def add_todo_mode(database, dict_name):
                                        'task_string': task_string,
                                        'denominator': denominator,
                                        'numerator': 0,
+                                       'streak': 0,
                                        'enforced_todo': enforced_todo,
                                        'pause_timer': start_timer,
                                        'link': {'linked_to': [], 'linked_from': []},
@@ -488,12 +493,12 @@ def update_mode(database, context, args):
     # Can have a case where obj name is something like "Do number 9". Command could potentially be
     # "daily update do number 9" to increment it by one, or "daily update do number 9 1" for specified.
 
-    command = context['command']  # Cycle handled differently
-    dictionary = database[command]
+    dict_name = context['command']  # Cycle handled differently
+    dictionary = database[dict_name]
 
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to update')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     full_string = ' '.join(args).lower()  # Lowercase string of entire rest of input
     # Search for full string as an objective name; assuming no update value specified
@@ -503,59 +508,59 @@ def update_mode(database, context, args):
         sub_string = ' '.join(args[:-1]).lower()  # Last element should be update value
         if not (objective_name := dict_management.key_search(database, dictionary, sub_string)):
             console_display.refresh_and_print(database, 'Objective name not found')
-            raise errors.InvalidCommandUsage(command, context['mode'])
+            raise errors.InvalidCommandUsage(dict_name, context['mode'])
         update_value = args[-1]  # Worked out this way, proceed
 
     # Validate/format update value from str to int
     if not (update_value := format_integer(update_value)):  # Enforces non-zero integer. Accepts extension ie 1k
         console_display.refresh_and_print(database, 'Invalid update value')
-        raise errors.InvalidCommandUsage(command, context['mode'])  # Invalid update value
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])  # Invalid update value
 
-    if command == 'cycle':  # Can't update inactive item
+    if dict_name == 'cycle':  # Can't update inactive item
         if objective_name not in dict_management.get_active_cycle_dict(database):
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
-    dict_management.update_item(database, dictionary, objective_name, update_value)
+    dict_management.update_item(database, dict_name, objective_name, update_value)
 
     # Save, sort, and print display
-    dict_management.sort_dictionary(database, command)
+    dict_management.sort_dictionary(database, dict_name)
     file_management.update(database)
-    console_display.refresh_and_print(database, f'{command.capitalize()} item successfully updated!')
+    console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully updated!')
 
 
 def set_mode(database, context, args):
     # ex input: daily set wanikani 50
 
-    command = context['command']  # Cycle handled differently
-    dictionary = database[command]
+    dict_name = context['command']  # Cycle handled differently
+    dictionary = database[dict_name]
 
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to update and set value')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args[:-1]).lower()  # Last element should be set value
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if not (set_value := format_integer(args[-1])):  # Enforces non-zero integer. Accepts extension ie 1k
         console_display.refresh_and_print(database, 'Invalid set value')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
-    if command == 'cycle':
+    if dict_name == 'cycle':
         if objective_name not in dict_management.get_active_cycle_dict(database):  # Can't update inactive item
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
     current_value = dictionary[objective_name]['numerator']
     difference = set_value - current_value  # Used to make handling links easier
-    dict_management.update_item(database, dictionary, objective_name, difference)
+    dict_management.update_item(database, dict_name, objective_name, difference)
 
     # Save, sort, and print display
-    dict_management.sort_dictionary(database, command)
+    dict_management.sort_dictionary(database, dict_name)
     file_management.update(database)
-    console_display.refresh_and_print(database, f'{command.capitalize()} item successfully updated!')
+    console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully updated!')
 
 
 def complete_mode(database, context, args):
@@ -615,24 +620,24 @@ def reset_mode(database, context, args):
 def setall_mode(database, context, args):
     # ex input: daily setall complete
 
-    command = context['command']
-    dictionary = database[command]
+    dict_name = context['command']
+    dictionary = database[dict_name]
 
     if not args or len(args) > 1:
         console_display.refresh_and_print(database, 'Must provide a setall type')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     setall_value = args[0]
 
-    if command == 'cycle':
+    if dict_name == 'cycle':
         context['dictionary'] = dictionary = dict_management.get_active_cycle_dict(database)
-    elif command == 'counter':
-        setall_counter_mode(database, dictionary, setall_value)
+    elif dict_name == 'counter':
+        setall_counter_mode(database, dict_name, setall_value)
         return
 
     if setall_value not in {'complete', 'reset'}:
         console_display.refresh_and_print(database, 'Invalid parameter setall value')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if not dictionary:
         console_display.refresh_and_print(database, 'That dictionary is empty')
@@ -645,12 +650,13 @@ def setall_mode(database, context, args):
         for key in dictionary:
             dict_management.reset_item(database, dictionary, key)
     # Save, sort, and print display
-    dict_management.sort_dictionary(database, command)
+    dict_management.sort_dictionary(database, dict_name)
     file_management.update(database)
-    console_display.refresh_and_print(database, f'{command.capitalize()} items successfully updated!')
+    console_display.refresh_and_print(database, f'{dict_name.capitalize()} items successfully updated!')
 
 
-def setall_counter_mode(database, dictionary, setall_value):
+def setall_counter_mode(database, dict_name, setall_value):
+    dictionary = database[dict_name]
     if not (setall_value := format_integer(setall_value)):  # Enforces non-zero integer. Accepts extension ie 1k
         raise errors.InvalidCommandUsage('counter', 'setall')
 
@@ -664,7 +670,7 @@ def setall_counter_mode(database, dictionary, setall_value):
     for counter, value in dictionary.items():
         current_value = value['numerator']
         difference = setall_value - current_value  # Used to make handling links easier
-        dict_management.update_item(database, dictionary, counter, difference)
+        dict_management.update_item(database, dict_name, counter, difference)
 
     # Save, sort, and print display
     dict_management.sort_dictionary(database, 'counter')

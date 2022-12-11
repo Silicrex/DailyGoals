@@ -20,6 +20,10 @@
 # TODO: Break command, indicate a daily isn't needed today
 # TODO: Fix display settings stuff
 # TODO: Banner text, "Daily completion (by # of objectives): x/y (z%)
+
+# TODO: Pause system
+# TODO: Individual item streak backend
+# TODO: Tag pages implementation
 import file_management  # For loading/saving
 import commands  # Command functions and formatting
 import console_display  # To print the initial console display

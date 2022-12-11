@@ -81,9 +81,18 @@ def key_search(database, dictionary, input_string, *, force_manual_match=False):
     return False
 
 
-def update_item(database, dictionary, objective_name, update_value):
+def update_item(database, dict_name, objective_name, update_value):
+    dictionary = database[dict_name]
     objective = dictionary[objective_name]
     objective['numerator'] += update_value
+
+    # If counter, check if history values need updating
+    if dict_name == 'counter':
+        new_value = objective['numerator']
+        if new_value > objective['highest_value']:
+            objective['highest_value'] = new_value
+        elif new_value < objective_name['lowest_value']:
+            objective['lowest_value'] = new_value
 
     # Handle link
     linked_to = objective['link']['linked_to']
