@@ -10,7 +10,10 @@ import pages
 
 def launch_history_interface(database, dict_name):
     keys_per_page = 5
-    pm = pages.HistoryPages(database, dict_name)  # Page manager
+    if dict_name in {'longterm', 'counter'}:  # Special Pages subclasses
+        pm = getattr(pages, dict_name.capitalize() + 'Pages')(database, dict_name)  # Page manager
+    else:
+        pm = pages.HistoryPages(database, dict_name)  # Page manager
     pm.set_keys_per_page(keys_per_page)
     pm.print_display()
 

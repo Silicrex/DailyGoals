@@ -81,9 +81,8 @@ class LongtermPages(HistoryPages):
 
         print(f"#{index + 1:,}: {history_value['display_name']}\n"
               f"-----------------------------------\n"
-              f">>> Times goal completed: {times_completed:,}\n"
-              f">>> Total completion value: {times_completed * history_value['denominator']:,}\n"
-              f">>> First completed: {first_completed}\n"
+              f">>> Completion status: {times_completed:,}\n"
+              f">>> Date of completion: {first_completed}\n"
               f">>> Tags: {len(tags_container)}")
         print()  # Newline
 

@@ -566,55 +566,55 @@ def set_mode(database, context, args):
 def complete_mode(database, context, args):
     # ex input: daily complete wanikani
 
-    command = context['command']
-    dictionary = database[command]
+    dict_name = context['command']
+    dictionary = database[dict_name]
 
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to set as complete')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
-    if command == 'cycle':
+    if dict_name == 'cycle':
         if objective_name not in dict_management.get_active_cycle_dict(database):  # Can't update inactive item
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
-    dict_management.complete_item(database, dictionary, objective_name)
+    dict_management.complete_item(database, dict_name, objective_name)
     # Save, sort, and print display
-    dict_management.sort_dictionary(database, command)
+    dict_management.sort_dictionary(database, dict_name)
     file_management.update(database)
-    console_display.refresh_and_print(database, f'{command.capitalize()} item marked as complete!')
+    console_display.refresh_and_print(database, f'{dict_name.capitalize()} item marked as complete!')
 
 
 def reset_mode(database, context, args):
     # ex input: daily reset wanikani
 
-    command = context['command']
-    dictionary = database[command]
+    dict_name = context['command']
+    dictionary = database[dict_name]
 
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to reset')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
-    if command == 'cycle':
+    if dict_name == 'cycle':
         if objective_name not in dict_management.get_active_cycle_dict(database):  # Can't update inactive item
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
-    dict_management.reset_item(database, dictionary, objective_name)
+    dict_management.reset_item(database, dict_name, objective_name)
     # Save, sort, and print display
-    dict_management.sort_dictionary(database, command)
+    dict_management.sort_dictionary(database, dict_name)
     file_management.update(database)
-    console_display.refresh_and_print(database, f'{command.capitalize()} item successfully updated!')
+    console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully updated!')
 
 
 def setall_mode(database, context, args):
@@ -645,10 +645,10 @@ def setall_mode(database, context, args):
 
     if setall_value == 'complete':
         for key in dictionary:
-            dict_management.complete_item(database, dictionary, key)
+            dict_management.complete_item(database, dict_name, key)
     elif setall_value == 'reset':
         for key in dictionary:
-            dict_management.reset_item(database, dictionary, key)
+            dict_management.reset_item(database, dict_name, key)
     # Save, sort, and print display
     dict_management.sort_dictionary(database, dict_name)
     file_management.update(database)
@@ -681,17 +681,17 @@ def setall_counter_mode(database, dict_name, setall_value):
 def rename_mode(database, context, args):
     # ex input: daily rename wanikani
 
-    command = context['command']
-    dictionary = database[command]
+    dict_name = context['command']
+    dictionary = database[dict_name]
 
     if not args:  # arg = name of objective to rename
         console_display.refresh_and_print(database, 'Must provide an objective to rename')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     new_name = get_name()
     if new_name in dictionary:
@@ -701,65 +701,65 @@ def rename_mode(database, context, args):
     dictionary[new_name] = dictionary.pop(objective_name)
 
     # Handle links
-    dict_management.remove_from_linked_from(database, command, objective_name, rename_value=new_name)
-    dict_management.remove_from_linked_to(database, command, objective_name, rename_value=new_name)
+    dict_management.remove_from_linked_from(database, dict_name, objective_name, rename_value=new_name)
+    dict_management.remove_from_linked_to(database, dict_name, objective_name, rename_value=new_name)
 
     # Handle containers
-    command_containers = database['containers'][command]
+    command_containers = database['containers'][dict_name]
     current_container = dict_management.find_current_container(command_containers, objective_name)
     container_items = command_containers[current_container]['items']
     container_items.remove(objective_name)
     container_items.append(new_name)
 
     # Save, sort, and print display
-    dict_management.sort_dictionary(database, command)
+    dict_management.sort_dictionary(database, dict_name)
     file_management.update(database)
-    console_display.refresh_and_print(database, f'{command.capitalize()} item successfully renamed!')
+    console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully renamed!')
 
 
 def retask_mode(database, context, args):
     # ex input: daily retask wanikani
-    command = context['command']
-    dictionary = database[command]
+    dict_name = context['command']
+    dictionary = database[dict_name]
 
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to give a new task string for')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     new_task_string = get_task_string()
     dictionary[objective_name]['task_string'] = new_task_string
     # Save, sort, and print display
-    dict_management.sort_dictionary(database, command)
+    dict_management.sort_dictionary(database, dict_name)
     file_management.update(database)
-    console_display.refresh_and_print(database, f"{command.capitalize()} item's task string successfully updated!")
+    console_display.refresh_and_print(database, f"{dict_name.capitalize()} item's task string successfully updated!")
 
 
 def denominator_mode(database, context, args):
     # ex input: daily denominator wanikani
-    command = context['command']
-    dictionary = database[command]
+    dict_name = context['command']
+    dictionary = database[dict_name]
 
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to change the denominator of')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if not (new_denominator := get_denominator()):
         return
     dictionary[objective_name]['denominator'] = new_denominator
     # Save, sort, and print display
-    dict_management.sort_dictionary(database, command)
+    dict_management.sort_dictionary(database, dict_name)
     file_management.update(database)
-    console_display.refresh_and_print(database, f'{command.capitalize()} item successfully updated!')
+    console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully updated!')
 
 
 def tag_mode(database, context, args):
@@ -799,17 +799,17 @@ def tag_mode(database, context, args):
             lines.append(user_input)
     # -------------------------------------------------------------------------------------------
     # ex input: daily tag wanikani
-    command = context['command']
-    dictionary = database[command]
+    dict_name = context['command']
+    dictionary = database[dict_name]
 
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to tag')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
     objective = dictionary[objective_name]
 
     objective['tag'] = get_tag_lines()  # Control which method to get the tag string with here
@@ -820,17 +820,17 @@ def tag_mode(database, context, args):
 
 def link_mode(database, context, args):
     # ex input: daily link wanikani
-    command = context['command']
-    dictionary = database[command]
+    dict_name = context['command']
+    dictionary = database[dict_name]
 
     # Input validation
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to link')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
     objective_input_string = ' '.join(args).lower()
     if not (objective_name := dict_management.key_search(database, dictionary, objective_input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
     type_string = input('> What objective type would you like to link this objective to? '
                         '(Blank input = cancel)\n\n').lower()
     if not type_string:
@@ -838,7 +838,7 @@ def link_mode(database, context, args):
         return
     if type_string not in documentation.get_linkable_dictionary_names():
         console_display.refresh_and_print(database, 'Invalid objective type')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
     print()  # Extra newline
     link_input_string = input('> What objective would you like to link this objective to? '
                               '(Blank input = cancel)\n\n').lower()
@@ -848,9 +848,9 @@ def link_mode(database, context, args):
     if not (linked_objective_name := dict_management.key_search(database, database[type_string],
                                                                 link_input_string)):
         console_display.refresh_and_print(database, 'Objective not found')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
-    origin = [command, objective_name]
+    origin = [dict_name, objective_name]
     new_link = [type_string, linked_objective_name]
 
     # Make sure link is not to itself or circular
@@ -872,13 +872,13 @@ def link_mode(database, context, args):
             console_display.refresh_and_print(database, 'This link already exists')
             return
         # A different link was inputted, overwrite previous
-        dict_management.remove_from_linked_from(database, command, objective_name)  # Undo link from other side
+        dict_management.remove_from_linked_from(database, dict_name, objective_name)  # Undo link from other side
 
     # Set this objective's linked_to
     link['linked_to'] = [type_string, linked_objective_name]
 
     # Set the linked objective's linked_from
-    database[type_string][linked_objective_name]['link']['linked_from'].append([command, objective_name])
+    database[type_string][linked_objective_name]['link']['linked_from'].append([dict_name, objective_name])
 
     # Save and print display
     file_management.update(database)
@@ -888,17 +888,17 @@ def link_mode(database, context, args):
 
 def unlink_mode(database, context, args):
     # ex input: daily unlink wanikani
-    command = context['command']
-    dictionary = database[command]
+    dict_name = context['command']
+    dictionary = database[dict_name]
 
     # Input validation
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to unlink')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
     input_string = ' '.join(args).lower()
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
     link = dictionary[objective_name]['link']
     linked_to = link['linked_to']
     if not linked_to:
@@ -906,7 +906,7 @@ def unlink_mode(database, context, args):
         return
 
     # Remove from the objective it's linked to
-    dict_management.remove_from_linked_from(database, command, objective_name)
+    dict_management.remove_from_linked_from(database, dict_name, objective_name)
 
     # Reset this objective's link
     link['linked_to'] = []
@@ -918,37 +918,37 @@ def unlink_mode(database, context, args):
 
 def viewlink_mode(database, context, args):
     # ex input: daily viewlink wanikani
-    command = context['command']
-    dictionary = database[command]
+    dict_name = context['command']
+    dictionary = database[dict_name]
 
     # Input validation
     if not args:
         console_display.refresh_and_print(database, 'Must provide an objective to view the link chain of')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
     input_string = ' '.join(args).lower()
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
     linked_to = dictionary[objective_name]['link']['linked_to']
     if not linked_to:
         console_display.refresh_and_print(database, 'Objective is not linked')
         return
 
-    link_chain = dict_management.get_link_chain(database, command, objective_name)
+    link_chain = dict_management.get_link_chain(database, dict_name, objective_name)
     console_display.refresh_and_print(database, f'Link: {dict_management.format_link_chain(link_chain)}')
 
 
 def pause_mode(database, context, args):
     # ex input: daily pause
 
-    command = context['command']
-    dictionary = database[command]
+    dict_name = context['command']
+    dictionary = database[dict_name]
     pause_list = []  # Objectives to pause
 
     # Input validation
     if args:
         console_display.refresh_and_print(database, 'Unnecessary arguments!')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     user_response = input('> Enter a response corresponding to a selection mode\n'
                           '  [A] Single objective\n'
@@ -963,18 +963,18 @@ def pause_mode(database, context, args):
             return
         if not (objective_name := dict_management.key_search(database, dictionary, input_objective_name)):
             console_display.refresh_and_print(database, 'Objective not found')
-            raise errors.InvalidCommandUsage(command, context['mode'])
+            raise errors.InvalidCommandUsage(dict_name, context['mode'])
         pause_list.append(objective_name)
     else:  # == 'b'
         input_container_name = input('> What container would you like to pause? (Blank input = cancel)\n\n').lower()
         if not input_container_name:
             console_display.refresh_and_print(database, 'Cancelled')
             return
-        if not (container_name := dict_management.key_search(database, database['containers'][command],
+        if not (container_name := dict_management.key_search(database, database['containers'][dict_name],
                                                              input_container_name)):
             console_display.refresh_and_print(database, 'Container not found')
-            raise errors.InvalidCommandUsage(command, context['mode'])
-        for objective in database['containers'][command][container_name]:
+            raise errors.InvalidCommandUsage(dict_name, context['mode'])
+        for objective in database['containers'][dict_name][container_name]:
             pause_list.append(objective)
     duration_input = input('> How many days should the objective be paused for? (-1 = indefinite, 0 = cancel)\n\n')
     if not (duration_input == '-1' or duration_input.isnumeric()):
@@ -995,34 +995,34 @@ def pause_mode(database, context, args):
 # Removing items ------------------------------------------------------------------------------------------
 def remove_mode(database, context, args):
     # ex input: daily remove wanikani
-    command = context['command']
-    dictionary = database[command]
+    dict_name = context['command']
+    dictionary = database[dict_name]
 
     if not args:
         print('Must provide an objective to remove', end='\n\n')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
         print('Objective name not found', end='\n\n')
-        raise errors.InvalidCommandUsage(command, context['mode'])
-    dict_management.remove_item(database, command, objective_name)
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
+    dict_management.remove_item(database, dict_name, objective_name)
 
     # Save and print display
     file_management.update(database)
-    console_display.refresh_and_print(database, f'{command.capitalize()} item successfully removed!')
+    console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully removed!')
 
 
 # Containers ------------------------------------------------------------------------------------------
 
 def containeradd_mode(database, context, args):
     # ex input: daily containercreate
-    command = context['command']
-    command_containers = database['containers'][command]  # Corresponding containers dict
+    dict_name = context['command']
+    command_containers = database['containers'][dict_name]  # Corresponding containers dict
 
     if args:
         console_display.refresh_and_print(database, 'Unnecessary arguments!')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     container_name = get_name('> Enter a name for the container (must be unique to goal type)')
     container_key = container_name.lower()
@@ -1032,22 +1032,22 @@ def containeradd_mode(database, context, args):
     command_containers.update({container_key: {'display_name': container_name, 'expanded': True, 'items': []}})
     # Save and print display
     file_management.update(database)
-    console_display.refresh_and_print(database, f'[{command.capitalize()}] container successfully created!')
+    console_display.refresh_and_print(database, f'[{dict_name.capitalize()}] container successfully created!')
 
 
 def containerdelete_mode(database, context, args):
     # ex input: daily containerdelete
-    command = context['command']
-    command_containers = database['containers'][command]  # Corresponding containers dict
+    dict_name = context['command']
+    command_containers = database['containers'][dict_name]  # Corresponding containers dict
 
     if args:
         console_display.refresh_and_print(database, 'Unnecessary arguments!')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = input('> What container would you like to delete?\n\n').lower()
     if not (container_key := dict_management.key_search(database, command_containers, input_string)):
         console_display.refresh_and_print(database, 'Container name not found')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     for objective_key in command_containers[container_key].items():
         command_containers['_default']['items'].append(objective_key)
@@ -1060,18 +1060,18 @@ def containerdelete_mode(database, context, args):
 
 def containeredit_mode(database, context, args):
     # ex input: daily containeradd
-    command = context['command']
-    dictionary = database[command]
-    command_containers = database['containers'][command]  # Corresponding containers dict
+    dict_name = context['command']
+    dictionary = database[dict_name]
+    command_containers = database['containers'][dict_name]  # Corresponding containers dict
 
     if args:
         console_display.refresh_and_print(database, 'Unnecessary arguments!')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = input('> What item would you like to change the container of?\n\n').lower()
     if not (objective_key := dict_management.key_search(database, dictionary, input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     print()  # Extra newline
     input_string = input('> What container would you like to move this item to? '
@@ -1080,9 +1080,9 @@ def containeredit_mode(database, context, args):
         destination_name = '_default'
     elif not (destination_name := dict_management.key_search(database, command_containers, input_string)):
         console_display.refresh_and_print(database, 'Container name not found')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
-    dict_management.move_to_container(database, command, objective_key, destination_name)
+    dict_management.move_to_container(database, dict_name, objective_key, destination_name)
     # Save and print display
     file_management.update(database)
     console_display.refresh_and_print(database, f'Successfully moved [{objective_key}] to [{destination_name}]!')
@@ -1091,17 +1091,17 @@ def containeredit_mode(database, context, args):
 def containermove_mode(database, context, args):
     # ex input: daily containermove
 
-    command = context['command']
-    command_containers = database['containers'][command]  # Corresponding containers dict
+    dict_name = context['command']
+    command_containers = database['containers'][dict_name]  # Corresponding containers dict
 
     if args:
         console_display.refresh_and_print(database, 'Unnecessary arguments!')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = input('What container would you like to reposition?\n\n').lower()
     if not (container_key := dict_management.key_search(database, command_containers, input_string)):
         console_display.refresh_and_print(database, 'Container name not found')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
     if container_key == '_default':
         console_display.refresh_and_print(database, 'Cannot move the default container. Returning to menu')
         return
@@ -1116,10 +1116,10 @@ def containermove_mode(database, context, args):
         if not input_list[1].isnumeric():
             console_display.refresh_and_print(database, 'Invalid second arg; should be an integer. '
                                                         'Returning to menu')
-            raise errors.InvalidCommandUsage(command, context['mode'])
+            raise errors.InvalidCommandUsage(dict_name, context['mode'])
     elif input_list != 1:
         console_display.refresh_and_print(database, 'Invalid number of args. Returning to menu')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
     arg1 = input_list[0]
     if arg1 in {'up', 'u', 'down', 'd'}:
         move_amount = 1  # Default to 1
@@ -1131,11 +1131,11 @@ def containermove_mode(database, context, args):
     elif arg1 in {'set', 's'}:
         if len(input_list) != 2:
             console_display.refresh_and_print(database, 'Invalid number of args. Returning to menu')
-            raise errors.InvalidCommandUsage(command, context['mode'])
+            raise errors.InvalidCommandUsage(dict_name, context['mode'])
         new_index = input_list[1]
     else:
         console_display.refresh_and_print(database, 'Invalid first arg. Returning to menu')
-        raise errors.InvalidCommandUsage(command, context['mode'])
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if new_index <= 0:
         new_index = 1

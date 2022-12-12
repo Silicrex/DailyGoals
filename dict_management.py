@@ -97,30 +97,33 @@ def update_item(database, dict_name, objective_name, update_value):
     # Handle link
     linked_to = objective['link']['linked_to']
     if linked_to:
-        linked_dict = database[linked_to[0]]
+        linked_dict_name = linked_to[0]
+        linked_dict = database[linked_dict_name]
         linked_objective_name = linked_to[1]
         assert linked_objective_name in linked_dict  # Shouldn't be possible to return false
-        update_item(database, linked_dict, linked_objective_name, update_value)
+        update_item(database, linked_dict_name, linked_objective_name, update_value)
 
 
-def complete_item(database, dictionary, objective_name):
+def complete_item(database, dict_name, objective_name):
+    dictionary = database[dict_name]
     objective = dictionary[objective_name]
     current_value = objective['numerator']
     difference = objective['denominator'] - current_value  # Used to make handling links easier
     if difference <= 0:  # Should not be decreasing anything
         console_display.refresh_and_print(database, 'Item is already marked as complete!')
         return
-    update_item(database, dictionary, objective_name, difference)
+    update_item(database, dict_name, objective_name, difference)
 
 
-def reset_item(database, dictionary, objective_name):
+def reset_item(database, dict_name, objective_name):
+    dictionary = database[dict_name]
     objective = dictionary[objective_name]
     current_value = objective['numerator']
     difference = 0 - current_value  # Used to make handling links easier
     if difference == 0:
         console_display.refresh_and_print(database, 'Item already has no progress!')
         return
-    update_item(database, dictionary, objective_name, difference)
+    update_item(database, dict_name, objective_name, difference)
 
 
 def remove_item(database, dict_name, objective_name):
@@ -271,9 +274,9 @@ def change_all_daily_dicts(database, context, mode):
         dictionary = name_to_container(database, dict_name)
         for key in dictionary:
             if mode == 'complete':
-                complete_item(database, dictionary, key)
+                complete_item(database, dict_name, key)
             else:
-                reset_item(database, dictionary, key)
+                reset_item(database, dict_name, key)
         sort_dictionary(database, dict_name)
 
     file_management.update(database)
