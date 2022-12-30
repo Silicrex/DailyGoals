@@ -91,6 +91,7 @@ def convert_month_number(month_number_input):
               'November', 'December']
     return months[month_number_input - 1]  # Adjust for offset (January starts at 1, index starts at 0)
 
+
 def convert_day(day_input):
     if not day_input or day_input in {'t', 's'}:  # 't' and 's' could be mixed between tues/thurs, sat/sun
         return False
@@ -101,9 +102,8 @@ def convert_day(day_input):
     return False
 
 
-def string_date(database, calendar_date):
+def string_date(calendar_date):
     # date = dict with year, month, day, week_day
-    calendar_date = calendar_date.copy()
     year = calendar_date['year']
     month = calendar_date['month']
     day = calendar_date['week_day']

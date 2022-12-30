@@ -27,7 +27,7 @@ def get_enforced_dict_names():
     return enforced_dictionaries
 
 
-def get_linkable_dictionary_names():
+def get_numeric_dictionary_names():
     dictionaries = ('daily', 'optional', 'todo', 'cycle', 'longterm', 'counter')
     return dictionaries
 
@@ -36,10 +36,10 @@ def get_modes(command):
     if command in get_goal_dictionary_names():
         command = 'goal'  # For any of the normal goal dictionaries other than daily (which have the same modes)
     modes_dict = {
-        'goal': {'add', 'complete', 'reset', 'remove', 'retask', 'set', 'setall', 'update', 'rename', 'denominator',
+        'goal': {'add', 'complete', 'reset', 'remove', 'rehistory', 'set', 'setall', 'update', 'rename', 'denominator',
                  'containeradd', 'containerdelete', 'containeredit', 'containermove', 'tag', 'link', 'unlink',
                  'viewlink', 'pause'},
-        'counter': {'add', 'reset', 'remove', 'retask', 'set', 'setall', 'update', 'rename', 'containercreate',
+        'counter': {'add', 'reset', 'remove', 'set', 'setall', 'update', 'rename', 'containercreate', 'rehistory',
                     'containerdelete', 'containeredit', 'containermove', 'tag', 'link', 'unlink', 'viewlink', 'pause'},
         'note': {'add', 'remove', 'edit', 'position', 'swap'}
     }
@@ -66,6 +66,12 @@ def get_mode_alias():
         'del': 'remove'
     }
     return mode_alias_dict
+
+
+def get_toggles():  # Container of toggle names the user can freely toggle
+    return {'date_switch', 'welcome', 'display_total', 'daily', 'optional', 'todo', 'cycle', 'full_cycle', 'longterm',
+            'counter', 'note', 'auto_match', 'history_auto_match', 'show_history_link', 'end_day_warning',
+            'single_line_tag_input'}
 
 
 def print_help(command=None):
@@ -126,13 +132,6 @@ def print_toggle_help():
           "              (looks for as a substring; prioritizes matches *starting with* the substring)", end='\n\n')
 
 
-def print_history_commands():
-    print("\n'next'/'n', 'previous'/'p', 'page <#>'/'pg <#>', 'find <obj>'/'f <item value>', 'help', 'exit'\n"
-          "Notes:\n"
-          "- Can also provide a number with next/previous, ie 'next 5' goes forward 5 pages\n"
-          "- 'exit' or enter blank to return to main menu")
-
-
 def print_modules():
     print(get_modules())
 
@@ -181,40 +180,39 @@ def print_alias():
 dictionary_module = {
     'daily': "- 'daily'\n"
              "Usage: daily <mode> ...\n"
-             "Modes: add, complete, denominator, remove, rename, reset, retask, setall, update\n"
+             "Modes: add, complete, denominator, remove, rename, reset, setall, update\n"
              "ex: daily add\n"
              "ex: daily update some_task 5\n"
              "Note: See submodule help for more info on a mode (ie 'help daily add')",
     'optional': "- 'optional'\n"
                 "Usage: optional <mode> ...\n"
-                "Modes: add, complete, denominator, remove, rename, reset, retask, setall, update\n"
+                "Modes: add, complete, denominator, remove, rename, reset, setall, update\n"
                 "ex: optional add\n"
                 "ex: optional complete some_task\n"
                 "Note: See submodule help for more info on a mode (ie 'help optional update')",
     'todo': "- 'todo'\n"
             "Usage: todo <mode> ...\n"
-            "Modes: add, complete, denominator, remove, rename, reset, retask, setall, update\n"
+            "Modes: add, complete, denominator, remove, rename, reset, setall, update\n"
             "ex: todo add\n"
             "ex: todo reset some_task\n"
             "Note: See submodule help for more info on a mode (ie 'help todo complete')",
     'cycle': "- 'cycle'\n"
              "Usage: cycle <mode> ...\n"
-             "Modes: add, complete, denominator, remove, rename, reset, retask, setall, update\n"
+             "Modes: add, complete, denominator, remove, rename, reset, setall, update\n"
              "ex: cycle add\n"
              "ex: cycle setall (complete/reset)\n"
              "Note: See submodule help for more info on a mode (ie 'help cycle reset')",
     'longterm': "- 'longterm'\n"
              "Usage: longterm <mode> ...\n"
-             "Modes: add, complete, denominator, remove, rename, reset, retask, setall, update\n"
+             "Modes: add, complete, denominator, remove, rename, reset, setall, update\n"
              "ex: longterm add\n"
              "ex: longterm denominator some_item <new_value>\n"
              "Note: See submodule help for more info on a mode (ie 'help longterm setall')",
     'counter': "- 'counter'\n"
              "Usage: counter <mode> ...\n"
-             "Modes: add, remove, rename, reset, retask, setall, update\n"
+             "Modes: add, remove, rename, reset, setall, update\n"
              "ex: counter add\n"
-             "ex: counter retask some_item\n"
-             "Note: See submodule help for more info on a mode (ie 'help counter retask')",
+             "Note: See submodule help for more info on a mode (ie 'help counter add')",
     'complete': "- 'complete'\n"
                 "Usage: complete <dictionary>\n"
                 "ex: complete todo\n"

@@ -20,10 +20,21 @@
 # TODO: Break command, indicate a daily isn't needed today
 # TODO: Fix display settings stuff
 # TODO: Banner text, "Daily completion (by # of objectives): x/y (z%)
+# TODO: Make database a cross-file global variable?
 
 # TODO: Pause system
 # TODO: Individual item streak backend
-# TODO: Tag pages implementation
+# TODO: Fix display order
+# TODO: Pluralize items in minimized container display
+# TODO: Figure out weird history forced automatch
+# TODO: Fix container grabbing _default in key_search
+# TODO: Way to toggle 'expand' on contaniners
+# TODO: Fix counter History situation..
+# TODO: Add way to rename history item & update references
+# TODO: Move toggles to a toggle section?
+# TODO: can't tag an item without a history link
+# TODO: Tags input accepts multiple words
+# TODO: Counters don't work with containers
 import file_management  # For loading/saving
 import commands  # Command functions and formatting
 import console_display  # To print the initial console display

@@ -19,7 +19,7 @@ def print_display(database):
 
     # Print date: - 01/01/2022 Sunday -
     calendar_date = database['settings']['calendar_date']  # Date dictionary
-    print(f"- {date_logic.string_date(database, calendar_date)} -", end='\n\n')
+    print(f"- {date_logic.string_date(calendar_date)} -", end='\n\n')
 
     # Streak/total header
     print(f"Streak: {stats['streak']}")
@@ -52,35 +52,36 @@ def print_dictionary(database, dict_name):
     globals()['print_' + dict_name + '_objectives'](database)
 
 
-def print_base_dictionary(dictionary, containers, *, item_prefix='', item_suffix='', task_string_exec=None):
+def print_base_dictionary(database, dictionary, containers, *, item_prefix='', item_suffix='', extra_string_exec=None):
     """Given a dictionary of objectives, print them out with detailed information.
 
+    :param dict database: The database
     :param dict dictionary: The dictionary of objectives
     :param dict containers: The dictionary of containers for the above dict type
     :param str item_prefix: String printed before each item
     :param str item_suffix: String printed after each time
-    :param function task_string_exec: Function that takes a dict and returns a string.
-    Passed the value of each item and returns a string to append to the task string
+    :param function extra_string_exec: Function that takes a dict and returns a string.
+    Extra text to be inserted after the item name is generated according to this based on the item's value
     :return:
     """
     def print_items(items_dict):
         for key, value in items_dict.items():
             display_name = value['display_name']
-            task_string = value['task_string']
-            formatted_task_string = ''
-            if task_string:  # If it's not blank
-                formatted_task_string = f' ({task_string})'
-            if task_string_exec:
-                formatted_task_string += task_string_exec(value)
+            extra_string = ''
+            if extra_string_exec:
+                extra_string = extra_string_exec(value)
             denominator = value['denominator']
             numerator = value['numerator']
             box = '[ ] '
-            text = (f'{display_name}{formatted_task_string}: '
+            history_link = ''
+            if value['history_name'] and database['settings']['show_history_link']:
+                history_link = f' [-> {value["history_name"]}]'
+            body = (f'{display_name}{history_link}{extra_string}: '
                     f'{numerator:,}/{denominator:,} ({numerator / denominator:.2%})')
             if numerator >= denominator:  # Complete
                 box = '[x] '
-                text += ' DONE!!'
-            print(item_prefix + box + text + item_suffix)
+                body += ' DONE!!'
+            print(f' {item_prefix}{box}{body}{item_suffix}')
 
     for container_name, container_value in containers.items():
         container_items = {k: dictionary[k] for k in container_value['items'] if k in dictionary}
@@ -101,7 +102,7 @@ def print_daily_objectives(database):
     if daily_dict or optional_dict:
         print('>>> Dailies:', end='\n\n')
         if daily_dict:
-            print_base_dictionary(daily_dict, database['containers']['daily'])
+            print_base_dictionary(database, daily_dict, database['containers']['daily'])
             print()  # Extra newline
         print_optional_objectives(database)
 
@@ -110,7 +111,7 @@ def print_optional_objectives(database):
     dictionary = database['optional']
     if dictionary:
         print('(Optional)', end='\n\n')
-        print_base_dictionary(dictionary, database['containers']['optional'])
+        print_base_dictionary(database, dictionary, database['containers']['optional'])
         print()  # Extra newline
 
 
@@ -121,11 +122,11 @@ def print_todo_objectives(database):
         enforced_todo_dict = dict_management.get_enforced_todo_dict(database)
         if enforced_todo_dict:
             print("* '>' signifies enforced to-do; required for streak today", end='\n\n')
-            print_base_dictionary(enforced_todo_dict, database['containers']['todo'], item_prefix='> ')
+            print_base_dictionary(database, enforced_todo_dict, database['containers']['todo'], item_prefix='> ')
         else:
             print()  # Newline to make up for lack of enforced newline print
         unenforced_todo_dict = dict_management.get_unenforced_todo_dict(database)
-        print_base_dictionary(unenforced_todo_dict, database['containers']['todo'])
+        print_base_dictionary(database, unenforced_todo_dict, database['containers']['todo'])
         print()  # Extra newline
 
 
@@ -159,8 +160,8 @@ def get_cycle_sequence_string(obj_value):
 def print_active_cycle_objectives(database):
     dictionary = dict_management.get_active_cycle_dict(database)
     if dictionary:
-        print_base_dictionary(dictionary, database['containers']['cycle'],
-                              task_string_exec=lambda val: f' ({get_cycle_sequence_string(val)})')
+        print_base_dictionary(database, dictionary, database['containers']['cycle'],
+                              extra_string_exec=lambda val: f' ({get_cycle_sequence_string(val)})')
         print()  # Extra newline
 
 
@@ -170,14 +171,13 @@ def print_inactive_cycle_objectives(database):
         print('(Inactive cycles)', end='\n\n')
         for key, value in dictionary.items():
             display_name = value['display_name']
-            task_string = value['task_string']
             remaining_cooldown = value['remaining_cooldown']
             denominator = value['denominator']
             if value['display_mode'] == 'number':
-                print(f'{display_name} ({task_string}) (x/{denominator}): '
+                print(f'{display_name} (x/{denominator}): '
                       f'Every {value["cooldown_sequence"][0]}d, next in {remaining_cooldown}d')
             else:  # == 'week_day'
-                print(f'{display_name} ({task_string}) (x/{denominator}): '
+                print(f'{display_name} (x/{denominator}): '
                       f'{get_cycle_sequence_string(value).capitalize()}, next in {remaining_cooldown}d')
         print()  # Extra newline
 
@@ -186,7 +186,7 @@ def print_longterm_objectives(database):
     dictionary = database['longterm']
     if dictionary:
         print('>>> Long-term goals:', end='\n\n')
-        print_base_dictionary(dictionary, database['containers']['longterm'])
+        print_base_dictionary(database, dictionary, database['containers']['longterm'])
         print()  # Extra newline
 
 
@@ -195,11 +195,12 @@ def print_counter_objectives(database):
     if dictionary:
         print('>>> Counters', end='\n\n')
         for key, value in dictionary.items():
-            # {display_name, task_string, numerator}
             display_name = value['display_name']
-            task_string = value['task_string']
             numerator = value['numerator']
-            print(f'{display_name} ({task_string}): {numerator}')
+            history_link = ''
+            if value['history_name'] and database['settings']['show_history_link']:
+                history_link = f' [-> {value["history_name"]}]'
+            print(f'{display_name}{history_link}: {numerator}')
         print()  # Extra newline
 
 

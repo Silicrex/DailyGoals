@@ -37,7 +37,7 @@ def longterm_command(database, context, args):
     modes.mode_route(database, context, args)
 
 
-def counter_command(database, conteedxt, args):
+def counter_command(database, context, args):
     modes.mode_route(database, context, args)
 
 
@@ -165,11 +165,13 @@ def history_command(database, context, args):
         raise errors.InvalidCommandUsage(context['command'])
     os.system('cls')
     dict_name_input = args[0]
-    if dict_name_input not in documentation.get_goal_dictionary_names():
+    if dict_name_input not in documentation.get_numeric_dictionary_names():
         console_display.print_display(database)
-        print('Invalid mode, takes goals-based dictionary as input (ie daily)', end='\n\n')
+        print('Invalid mode', end='\n\n')
         return
-    history_interface.launch_history_interface(database, dict_name_input)
+    history_interface.launch_history_interface(database, dict_name_input)  # Enters history loop
+    console_display.print_display(database)
+    print('Returned to menu', end='\n\n')
 
 
 def help_command(_, context, args):  # Doesn't need database
@@ -198,17 +200,17 @@ def toggle_command(database, context, args):
 
     toggle_name = args[0]
     if arg_length == 1:  # Either toggling a specific setting or setting to defaults
-        if toggle_name in settings:
-            settings_management.toggle(database, toggle_name)
-        elif toggle_name == 'defaults':
+        if toggle_name not in documentation.get_toggles():
+            print("Invalid setting. See keywords with 'toggle'", end='\n\n')
+            return
+        if toggle_name == 'defaults':
             database['settings'] = file_management.get_template_dict()['settings']
             print('Default settings restored', end='\n\n')
         else:
-            print("Invalid setting. See keywords with 'toggle'", end='\n\n')
-            return
+            settings_management.toggle(database, toggle_name)
 
     elif arg_length == 2:  # Specified setting and manual value
-        if toggle_name not in settings:
+        if toggle_name not in documentation.get_toggles():
             print("Invalid setting. See keywords with 'toggle'", end='\n\n')
             return
         manual_value = args[1]
@@ -307,41 +309,6 @@ def endday_command(database, context, args):
     # Dicts: daily, optional, todo, cycle, longterm, counter, note, history
     # Streak point: daily, cycle
     # Total dailies completed: daily, optional, todo, cycle
-    def add_to_history(dict_name, obj_value):
-        numerator = obj_value['numerator']
-        denominator = obj_value['denominator']
-        command_history_dict = database['history'][dict_name]  # Corresponding history dict
-        task_string = f" ({obj_value['task_string']})" if obj_value['task_string'] else ''
-        denominator_string = f'{denominator:,}'
-        history_name = f"{obj_value['display_name']}{task_string} (/{denominator_string})"
-        if dict_name == 'cycle':  # Also has frequency in name
-            history_name += f' {console_display.get_cycle_sequence_string(obj_value)})'
-        history_key = history_name.lower()
-        percent_completed = round(numerator / denominator, 2)  # Tracks >100% completion
-        date = database['settings']['calendar_date'].copy()
-
-        if history_key not in command_history_dict:  # Create entry
-            command_history_dict.update({
-                history_key: {
-                    'display_name': history_name,
-                    'denominator': denominator,
-                    'times_completed': 0,
-                    'total_percent_completed': 0,
-                    'first_completed': date,
-                    'tags': []
-                }})
-
-        # Longterm is a one-and-done structure
-        if dict_name == 'longterm' and command_history_dict[history_key]['times_completed'] > 0:
-            obj_value['tag'] = None
-            return
-
-        if obj_value['tag']:
-            command_history_dict[history_key]['tags'].append((date, obj_value['tag']))
-            obj_value['tag'] = None
-
-        command_history_dict[history_key]['times_completed'] += 1
-        command_history_dict[history_key]['total_percent_completed'] += percent_completed
 
     if args:
         console_display.refresh_and_print(database, 'Unnecessary args!')
@@ -354,67 +321,13 @@ def endday_command(database, context, args):
     enforced_todo = dict_management.get_enforced_todo_dict(database)
     stats = database['stats']
 
-    streak_deserved = True
-
-    # Handle daily dict
-    for key, value in daily_dict.items():
-        objective_completed = value['numerator'] >= value['denominator']
-        if objective_completed:
-            stats['total_completed'] += 1
-            add_to_history('daily', value)
-        else:
-            streak_deserved = False
-        value['numerator'] = 0
-
-    # Handle optional dict
-    for key, value in database['optional'].items():
-        objective_completed = value['numerator'] >= value['denominator']
-        if objective_completed:
-            stats['total_completed'] += 1
-            add_to_history('optional', value)
-        value['numerator'] = 0
-
-    # Handle to-do dict
-    todo_delete_list = []
-    for key, value in database['todo'].items():
-        objective_completed = value['numerator'] >= value['denominator']
-        if objective_completed:
-            stats['total_completed'] += 1
-            add_to_history('todo', value)
-            todo_delete_list.append(key)  # Completed to-do's are deleted
-        elif value['enforced_todo']:  # If it's an enforced daily to-do, that is not completed, it breaks streak
-            streak_deserved = False
-    for key in todo_delete_list:
-        dict_management.remove_item(database, 'todo', key)
-
-    # Handle cycle dict
-    for key, value in active_cycle_dict.items():
-        # value has {display_name, task_string, denominator, numerator, cycle_frequency, current_offset}
-        objective_completed = value['numerator'] >= value['denominator']
-        if objective_completed:
-            stats['total_completed'] += 1
-            add_to_history('cycle', value)
-        else:
-            streak_deserved = False
-        value['numerator'] = 0
-    for key, value in cycle_dict.items():
-        if value['remaining_cooldown'] == 0:  # Was an active today
-            next_cooldown_index = value['cooldown_iterator']
-            cooldown_sequence = value['cooldown_sequence']
-            value['remaining_cooldown'] = cooldown_sequence[next_cooldown_index] - 1  # -1 to factor day change
-            value['cooldown_iterator'] = dict_management.roll_over_index(next_cooldown_index, len(cooldown_sequence))
-        else:
-            value['remaining_cooldown'] -= 1
-    dict_management.sort_dictionary(database, 'cycle')
-
-    # Handle longterm dict
-    for key, value in database['longterm'].items():
-        objective_completed = value['numerator'] >= value['denominator']
-        if objective_completed:
-            add_to_history('longterm', value)  # Works differently; does not track stats past 'has been done'
-
-    # Time to handle streak. First, make sure there are enforced dailies
-    if len(daily_dict) + len(enforced_todo) + len(active_cycle_dict) > 0:
+    # Handle streak
+    if dict_management.get_daily_count(database) > 0:  # There must be at least one daily item
+        streak_deserved = dict_management.check_streak(database)
+        if not streak_deserved and database['settings']['end_day_warning']:
+            if not console_display.confirm('Not all dailies have been completed. Proceed? (y/n)'):
+                console_display.refresh_and_print(database, 'Cancelled')
+                return
         if streak_deserved:
             stats['days_completed'] += 1
             stats['streak'] += 1  # Increment current streak
@@ -423,9 +336,69 @@ def endday_command(database, context, args):
         else:
             stats['streak'] = 0
 
-    # Increment month/day/year properly
+    # Handle daily dict
+    for key, obj_value in daily_dict.items():
+        objective_completed = obj_value['numerator'] >= obj_value['denominator']
+        if objective_completed:
+            stats['total_completed'] += 1
+            obj_value['streak'] += 1
+        else:
+            obj_value['streak'] = 0
+        dict_management.add_to_history(database, 'daily', obj_value)
+        obj_value['numerator'] = 0
+
+    # Handle optional dict
+    for key, obj_value in database['optional'].items():
+        objective_completed = obj_value['numerator'] >= obj_value['denominator']
+        if objective_completed:
+            stats['total_completed'] += 1
+            obj_value['streak'] += 1
+        else:
+            obj_value['streak'] = 0
+        dict_management.add_to_history(database, 'optional', obj_value)
+        obj_value['numerator'] = 0
+
+    # Handle to-do dict
+    todo_delete_list = []
+    for key, obj_value in database['todo'].items():
+        objective_completed = obj_value['numerator'] >= obj_value['denominator']
+        if objective_completed:
+            stats['total_completed'] += 1
+            todo_delete_list.append(key)  # Completed to-do's are deleted
+        dict_management.add_to_history(database, 'todo', obj_value)
+    for key in todo_delete_list:
+        dict_management.remove_item(database, 'todo', key)
+
+    # Handle cycle dict
+    for key, obj_value in active_cycle_dict.items():
+        objective_completed = obj_value['numerator'] >= obj_value['denominator']
+        if objective_completed:
+            stats['total_completed'] += 1
+            obj_value['streak'] += 1
+        else:
+            obj_value['streak'] = 0
+        dict_management.add_to_history(database, 'cycle', obj_value)
+        obj_value['numerator'] = 0
+    for key, obj_value in cycle_dict.items():
+        if obj_value['remaining_cooldown'] == 0:  # Was an active today
+            next_cooldown_index = obj_value['cooldown_iterator']
+            cooldown_sequence = obj_value['cooldown_sequence']
+            obj_value['remaining_cooldown'] = cooldown_sequence[next_cooldown_index] - 1  # -1 to factor day change
+            obj_value['cooldown_iterator'] = dict_management.roll_over_index(next_cooldown_index, len(cooldown_sequence))
+        else:
+            obj_value['remaining_cooldown'] -= 1
+    dict_management.sort_dictionary(database, 'cycle')
+
+    # Handle longterm dict
+    for key, obj_value in database['longterm'].items():
+        dict_management.add_to_history(database, 'longterm', obj_value)
+
+    # Handle counter dict
+    for key, obj_value in database['counter'].items():
+        dict_management.add_to_history(database, 'counter', obj_value)
+
+    # Increment month/day/year & week day
     date_logic.increment_date(database)
-    # Increment week day
     calendar_date['week_day'] = date_logic.next_week_day(calendar_date['week_day'])
 
     # Update welcome message

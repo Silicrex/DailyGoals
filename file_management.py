@@ -37,7 +37,8 @@ def get_template_dict():  # Database structure
             'optional': {},
             'todo': {},
             'cycle': {},
-            'longterm': {}, },
+            'longterm': {},
+            'counter': {} },
         # Stats/settings
         'stats': {
             'total_completed': 0,  # Total completed dailies integer
@@ -59,7 +60,11 @@ def get_template_dict():  # Database structure
             'note': True,  # Always display notes
             'auto_match': False,  # Automatically match first objective when searching
             'history_auto_match': False,  # auto_match but for history interface
-            'track_history': True, }  # Tracks completed objectives
+            'single_line_tag_input': False,  # Switch between multi-line and single-line tag input
+            'show_history_link': True,  # Toggle objectives always showing their History item link
+            'history_keys_per_page': 5,  # History items to display per page
+            'tags_keys_per_page': 5,  # Tags to display per page
+            'end_day_warning': True}  # Warning when ending day if dailies are not all completed?
     }
     return template_dict
 

@@ -1,6 +1,7 @@
 import file_management
 import console_display
 import documentation
+import date_logic
 
 
 def get_display_list(database):
@@ -87,12 +88,14 @@ def update_item(database, dict_name, objective_name, update_value):
     objective['numerator'] += update_value
 
     # If counter, check if history values need updating
-    if dict_name == 'counter':
+    if dict_name == 'counter' and objective['history_name']:
         new_value = objective['numerator']
-        if new_value > objective['highest_value']:
-            objective['highest_value'] = new_value
-        elif new_value < objective_name['lowest_value']:
-            objective['lowest_value'] = new_value
+        history_key = objective['history_name'].lower()
+        history_value = database['history']['counter'][history_key]
+        if new_value > history_value['highest_value']:
+            history_value['highest_value'] = new_value
+        elif new_value < history_value['lowest_value']:
+            history_value['lowest_value'] = new_value
 
     # Handle link
     linked_to = objective['link']['linked_to']
@@ -142,6 +145,88 @@ def remove_item(database, dict_name, objective_name):
     remove_from_container(database, dict_name, objective_name)
 
     dictionary.pop(objective_name)
+
+
+def get_daily_count(database):
+    enforced_containers = [name_to_container(database, name) for name in documentation.get_enforced_dict_names()]
+    lengths = map(lambda x: len(x), enforced_containers)
+    return sum(lengths)
+
+
+def check_streak(database):
+    enforced_containers = [name_to_container(database, name) for name in documentation.get_enforced_dict_names()]
+    for container in enforced_containers:
+        for key, value in container.items():
+            if value['numerator'] < value['denominator']:
+                return False
+    return True
+
+
+# History ------------------------------------------------------------------------------------------
+
+def add_to_history(database, dict_name, obj_value):
+    def apply_tag(history_val):
+        history_val['tags'].update({date_string: obj_value['tag']})
+        obj_value['tag'] = None
+
+    history_dict = database['history'][dict_name]  # Corresponding history dict
+    history_name = obj_value['history_name']
+    date = database['settings']['calendar_date'].copy()
+    date_string = date_logic.string_date(date)
+    if not history_name:  # No history tracking for this item
+        return
+    if dict_name == 'counter':  # Everything else for Counter History is handled elsewhere
+        if obj_value['tag']:
+            apply_tag(history_dict[history_name.lower()])
+        return
+
+    history_key = history_name.lower()
+
+    if history_key not in history_dict:  # Create entry
+        if dict_name == 'longterm':
+            history_dict.update({
+                history_key: {
+                    'display_name': history_name,
+                    'first_completed': None,
+                    'tags': {}
+                }})
+        else:
+            history_dict.update({
+                history_key: {
+                    'display_name': history_name,
+                    'numerator': 0,
+                    'times_completed': 0,
+                    'first_completed': None,
+                    'tags': {}
+                }})
+
+    history_value = history_dict[history_key]
+    completed = obj_value['numerator'] >= obj_value['denominator']
+    if completed and not history_value['first_completed']:
+        history_value['first_completed'] = date
+    if obj_value['tag']:
+        apply_tag(history_value)
+
+    if dict_name == 'longterm':
+        return
+    elif dict_name == 'todo':
+        if completed:
+            history_value['numerator'] += obj_value['numerator']
+            history_value['times_completed'] += 1
+    else:
+        history_value['numerator'] += obj_value['numerator']
+        if completed:
+            history_value['times_completed'] += 1
+
+
+def create_counter_history(database, history_name):
+    database['history']['counter'].update({
+        history_name.lower(): {
+            'display_name': history_name,
+            'highest_value': 0,
+            'lowest_value': 0,
+            'tags': {}
+        }})
 
 
 # Links ------------------------------------------------------------------------------------------
@@ -376,7 +461,7 @@ def sort_dictionary(database, dict_name):
     else:
         temp_list = sorted(temp_list, key=completion_then_alpha_sort)
 
-    database[dict_name] = dict(temp_list)  # Assignment via method to preserve object
+    database[dict_name] = dict(temp_list)  # Assignment via index to preserve object
 
 
 def roll_over_index(n, length):

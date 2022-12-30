@@ -9,23 +9,31 @@ import pages
 
 
 def launch_history_interface(database, dict_name):
-    keys_per_page = 5
+    keys_per_page = database['settings']['history_keys_per_page']
     if dict_name in {'longterm', 'counter'}:  # Special Pages subclasses
-        pm = getattr(pages, dict_name.capitalize() + 'Pages')(database, dict_name)  # Page manager
+        pm = getattr(pages, dict_name.capitalize() + 'Pages')(database, dict_name)  # ie LongtermPages()
     else:
         pm = pages.HistoryPages(database, dict_name)  # Page manager
     pm.set_keys_per_page(keys_per_page)
-    pm.print_display()
+    launch_pages_interface(database, pm, dict_name)
 
+
+def launch_tags_interface(database, objective_name, dictionary):
+    keys_per_page = database['settings']['tags_keys_per_page']
+    pm = pages.TagPages(objective_name, dictionary)
+    pm.set_keys_per_page(keys_per_page)
+    launch_pages_interface(database, pm, 'tags')
+
+
+def launch_pages_interface(database, pm, mode):
+    pm.print_display()
     while True:
         user_input = input().lower().split()
         if not user_input or user_input[0] in {'exit', 'e'}:  # Exit
-            console_display.print_display(database)
-            print('Returned to menu', end='\n\n')
             return
+        print()  # Newline to separate input from print
         input_length = len(user_input)
         command = user_input[0]
-        print()  # Newline to separate input from print
 
         if input_length > 2:
             pm.print_display()
@@ -34,31 +42,27 @@ def launch_history_interface(database, dict_name):
 
         # Page commands ------------------------------------------------------------------------------------------
         if command in {'next', 'n'}:
-            pages_to_next = 1  # Default
+            value = 1  # Default
             if input_length == 2:  # Specific value given
                 second_parameter = user_input[1]
                 if not second_parameter.isnumeric():
                     pm.print_display()
                     print('Invalid parameter. Only allows positive integers', end='\n\n')
                     continue
-                pages_to_next = eval(second_parameter)
-            pm.current_page += pages_to_next
-            if pm.current_page > pm.total_pages:
-                pm.current_page = pm.total_pages
+                value = eval(second_parameter)
+            pm.next_page(value)
             pm.print_display()
 
-        elif command in {'previous', 'p'}:
-            pages_to_previous = 1  # Default
+        elif command in {'previous', 'prev', 'p'}:
+            value = 1  # Default
             if input_length == 2:  # Specific value given
                 second_parameter = user_input[1]
                 if not second_parameter.isnumeric():
                     pm.print_display()
                     print('Invalid parameter. Only allows positive integers', end='\n\n')
                     continue
-                pages_to_previous = eval(second_parameter)
-            pm.current_page -= pages_to_previous
-            if pm.current_page < 1:
-                pm.current_page = 1
+                value = eval(second_parameter)
+            pm.prev_page(value)
             pm.print_display()
 
         elif command in {'page', 'pg'}:
@@ -66,26 +70,22 @@ def launch_history_interface(database, dict_name):
                 pm.print_display()
                 print('Missing required arg!', end='\n\n')
                 continue
-            page_index = user_input[1]
+            value = user_input[1]
             try:
-                page_index = eval(page_index)
+                value = eval(value)
             except (NameError, SyntaxError):
                 pm.print_display()
                 print('Invalid page, must be an integer', end='\n\n')
                 continue
-            if not isinstance(page_index, int):
+            if not isinstance(value, int):
                 pm.print_display()
                 print('Invalid page, must be an integer', end='\n\n')
                 continue
 
-            if page_index < 0:  # For negative indexing
-                page_index += pm.total_pages + 1  # ie 5 pages and -1 index.. -1 + 5 + 1 = 5th page.
+            if value < 0:  # For negative indexing
+                value += pm.total_pages + 1  # ie 5 pages and -1 index.. -1 + 5 + 1 = 5th page.
                 # -1 at the end because negative indexing starts at -1, not -0; so an offset correction is needed
-            pm.current_page = page_index
-            if pm.current_page > pm.total_pages:
-                pm.current_page = pm.total_pages
-            elif pm.current_page < 1:  # If 0 was given or a negative index exceeding total keys
-                pm.current_page = 1
+            pm.set_page(value)
             pm.print_display()
 
         elif command in {'find', 'f'}:
@@ -107,7 +107,7 @@ def launch_history_interface(database, dict_name):
             pm.print_display()
 
         # Tags ------------------------------------------------------------------------------------------
-        elif command in {'tags', 'tag'}:
+        elif command in {'tags', 'tag', 't'} and mode != 'tags':
             # ex input: tags wanikani
 
             print()  # Newline to separate input from print
@@ -119,16 +119,13 @@ def launch_history_interface(database, dict_name):
                 print('Item could not be found', end='\n\n')
                 continue
             tags = pm.dictionary[item_name]['tags']
-            os.system('cls')
-            pm.print_item(pm.keys.index(item_name))  # print_item() goes by index, not by name
-            print(f'Tags: {len(tags)}', end='\n\n')
-            for tag in tags:
-                print(f'[{date_logic.string_date(database, tag[0])}]:\n{tag[1]}', end='\n\n')  # Date:\ntag
+            launch_tags_interface(database, item_name, tags)
+            pm.print_display()
 
         # Misc commands/not found --------------------------------------------------------------------------------------
         elif command == 'help':
             pm.print_display()
-            documentation.print_history_commands()
+            pm.print_help()
 
         else:
             pm.print_display()
