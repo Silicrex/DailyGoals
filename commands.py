@@ -399,7 +399,6 @@ def endday_command(database, context, args):
 
     # Increment month/day/year & week day
     date_logic.increment_date(database)
-    calendar_date['week_day'] = date_logic.next_week_day(calendar_date['week_day'])
 
     # Update welcome message
     database['welcome_message'] = welcome_messages.get_welcome(current_welcome=database['welcome_message'])

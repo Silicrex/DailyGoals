@@ -14,10 +14,12 @@ def valid_date(month, day, year):
             return False
 
 
-def increment_date(database):
-    day = database['settings']['calendar_date']['day']
-    month = database['settings']['calendar_date']['month']
-    year = database['settings']['calendar_date']['year']
+def increment_date(database):  # Takes and mutates a calendar_date dict
+    calendar_date = database['settings']['calendar_date']
+    day = calendar_date['day']
+    month = calendar_date['month']
+    year = calendar_date['year']
+    week_day = calendar_date['week_day']
     if day < 28:
         day += 1
     # Else, month matters
@@ -45,9 +47,14 @@ def increment_date(database):
         else:  # It was either the 28th on a non-leap-year or it was the 29th on a leap year
             month += 1
             day = 1
-    database['settings']['calendar_date']['day'] = day
-    database['settings']['calendar_date']['month'] = month
-    database['settings']['calendar_date']['year'] = year
+    if week_day < 7:
+        week_day += 1
+    else:  # It's 7
+        week_day = 1
+    calendar_date['day'] = day
+    calendar_date['month'] = month
+    calendar_date['year'] = year
+    calendar_date['week_day'] = week_day
 
 
 def check_leap_year(year):
@@ -58,13 +65,6 @@ def check_leap_year(year):
         else:
             leap_year = True
     return leap_year
-
-
-def next_week_day(week_day):
-    if week_day < 7:
-        return week_day + 1
-    else:  # It's 7
-        return 1
 
 
 def get_week_days():
@@ -106,7 +106,7 @@ def string_date(calendar_date):
     # date = dict with year, month, day, week_day
     year = calendar_date['year']
     month = calendar_date['month']
-    day = calendar_date['week_day']
+    day = calendar_date['day']
     week_day = convert_day_number(calendar_date['week_day'])
     if day in {1, 21, 31}:
         suffix = 'st'
