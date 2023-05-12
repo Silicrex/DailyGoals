@@ -37,10 +37,10 @@ def get_modes(command):
         command = 'goal'  # For any of the normal goal dictionaries other than daily (which have the same modes)
     modes_dict = {
         'goal': {'add', 'complete', 'reset', 'remove', 'rehistory', 'set', 'setall', 'update', 'rename', 'denominator',
-                 'containeradd', 'containerdelete', 'containeredit', 'containermove', 'tag', 'link', 'unlink',
+                 'groupadd', 'groupremove', 'groupchange', 'groupposition', 'tag', 'link', 'unlink',
                  'viewlink', 'pause'},
-        'counter': {'add', 'reset', 'remove', 'set', 'setall', 'update', 'rename', 'containercreate', 'rehistory',
-                    'containerdelete', 'containeredit', 'containermove', 'tag', 'link', 'unlink', 'viewlink', 'pause'},
+        'counter': {'add', 'reset', 'remove', 'set', 'setall', 'update', 'rename', 'groupadd', 'rehistory',
+                    'groupremove', 'groupchange', 'groupposition', 'tag', 'link', 'unlink', 'viewlink', 'pause'},
         'note': {'add', 'remove', 'edit', 'position', 'swap'}
     }
     return modes_dict[command]
@@ -69,7 +69,7 @@ def get_mode_alias():
 
 
 def get_toggles():  # Container of toggle names the user can freely toggle
-    return {'date_switch', 'welcome', 'display_total', 'daily', 'optional', 'todo', 'cycle', 'full_cycle', 'longterm',
+    return {'date_switch', 'welcome', 'display_total', 'daily', 'optional', 'todo', 'cycle', 'longterm',
             'counter', 'note', 'auto_match', 'history_auto_match', 'show_history_link', 'end_day_warning',
             'single_line_tag_input'}
 

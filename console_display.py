@@ -3,7 +3,7 @@ import date_logic
 import dict_management
 import documentation
 
-version_number = ['PRE-RELEASE']
+version_number = 'PRE-RELEASE'
 
 
 def print_display(database):
@@ -48,94 +48,201 @@ def refresh_and_print(database, message):  # Refresh display then print message
     print(message, end='\n\n')
 
 
+# Sorting -------------------------------------------------------------------
+
+def completion_then_alpha_sort(obj):
+    # obj[1] refers to dictionary value in tuple (obj_name, dict value)
+    # False sorts before True in ascending. a sorts before z. Sorts incomplete to top, then alphabetically.
+    # (completion bool, name)
+    return obj[1]['numerator'] >= obj[1]['denominator'], obj[0]
+
+
+def cycle_sort(obj):
+    # (current offset, completion bool, name)
+    # 0 sorts before 1, False before True, a before z. Sorts by offset, then completion bool, then name
+    return obj[1]['remaining_cooldown'], obj[1]['numerator'] >= obj[1]['denominator'], obj[0]
+
+
+def todo_sort(obj):
+    # Puts enforced daily to-do objectives on top (False sorts before True, so invert with not)
+    # enforced_todo -> completed or not -> name
+    return not obj[1]['enforced_todo'], obj[1]['numerator'] >= obj[1]['denominator'], obj[0]
+
+
+def alpha_sort(obj):
+    return obj[0]  # Just by the name
+
+
+# Item printing --------------------------------------------------------
+
 def print_dictionary(database, dict_name):
-    globals()['print_' + dict_name + '_objectives'](database)
+    globals()['print_' + dict_name](database)
 
 
-def print_base_dictionary(database, dictionary, containers, *, item_prefix='', item_suffix='', extra_string_exec=None):
+def print_groups(database, dictionary, groups, display_order, print_items, sort_key, *, extra_string_func=None,
+                 prefix_func=None, suffix_func=None):
     """Given a dictionary of objectives, print them out with detailed information.
 
     :param dict database: The database
     :param dict dictionary: The dictionary of objectives
-    :param dict containers: The dictionary of containers for the above dict type
-    :param str item_prefix: String printed before each item
-    :param str item_suffix: String printed after each time
-    :param function extra_string_exec: Function that takes a dict and returns a string.
+    :param dict groups: The Groups dict for the corresponding dict type
+    :param list display_order: A list of the order to display Groups in, not including the default
+    :param function print_items: Function that prints a dict of objectives, called within a group.
+    Signature: (database, items_dict, extra_string_exec, item_prefix, item_suffix)
+    :param function sort_key: Sorting function that takes an obj_value
+    :param function prefix_func: Function that takes an obj_value and returns a string to prefix the print
+    :param function suffix_func: Function that takes an obj_value and returns a string to suffix the print
+    :param function extra_string_func: Function that takes a dict and returns a string.
     Extra text to be inserted after the item name is generated according to this based on the item's value
     :return:
     """
-    def print_items(items_dict):
-        for key, value in items_dict.items():
-            display_name = value['display_name']
-            extra_string = ''
-            if extra_string_exec:
-                extra_string = extra_string_exec(value)
-            denominator = value['denominator']
-            numerator = value['numerator']
-            box = '[ ] '
-            history_link = ''
-            if value['history_name'] and database['settings']['show_history_link']:
-                history_link = f' [-> {value["history_name"]}]'
-            body = (f'{display_name}{history_link}{extra_string}: '
-                    f'{numerator:,}/{denominator:,} ({numerator / denominator:.2%})')
-            if numerator >= denominator:  # Complete
-                box = '[x] '
-                body += ' DONE!!'
-            print(f' {item_prefix}{box}{body}{item_suffix}')
-
-    for container_name, container_value in containers.items():
-        container_items = {k: dictionary[k] for k in container_value['items'] if k in dictionary}
-        if container_name != '_default':
-            print(f"[{container_value['display_name']}] ({len(container_value['items'])} items)", end='')
-            if container_value['expanded']:
-                print()
+    display_order = ['_Default'] + display_order
+    for group_name, group_value in {k: groups[k] for k in display_order}.items():
+        group_items = {k: dictionary[k] for k in group_value['items'] if k in dictionary}
+        if group_name != '_Default':  # Exclude the default 'groupless' container
+            items_len = len(group_value['items'])
+            print(f"[{group_value['display_name']}] ({items_len} {pluralize('item', items_len)})", end='')
+            if group_value['expanded']:
+                print()  # Newline
             else:
                 print(' (Minimized)')
                 continue
-        print_items(container_items)
+        sorted_items = dict_management.sort_dict(group_items, sort_key)
+        print_items(database, sorted_items, extra_string_func, prefix_func, suffix_func)
         print()
 
 
-def print_daily_objectives(database):
-    daily_dict = database['daily']
-    optional_dict = database['optional']
-    if daily_dict or optional_dict:
+def print_items_generic(database, items_dict, extra_string_func, prefix_func, suffix_func):
+    for key, value in items_dict.items():
+        display_name = value['display_name']
+        extra_string = '' if not extra_string_func else extra_string_func(value)
+        prefix = '' if not prefix_func else prefix_func(value)
+        suffix = '' if not suffix_func else suffix_func(value)
+        denominator = value['denominator']
+        numerator = value['numerator']
+        history_link = ''
+        if value['history_name'] and database['settings']['show_history_link']:
+            history_link = f' [-> {value["history_name"]}]'
+        body = (f'{display_name}{history_link}{extra_string}: '
+                f'{numerator:,}/{denominator:,} ({numerator / denominator:.2%})')
+        box = '[ ] '
+        if numerator >= denominator:  # Complete
+            box = '[x] '
+            body += ' DONE!!'
+        print(f' {prefix}{box}{body}{suffix}')
+
+
+def print_items_counters(database, items_dict, extra_string_func, prefix_func, suffix_func):
+    for key, value in items_dict.items():
+        display_name = value['display_name']
+        extra_string = '' if not extra_string_func else extra_string_func(value)
+        prefix = '' if not prefix_func else prefix_func(value)
+        suffix = '' if not suffix_func else suffix_func(value)
+        numerator = value['numerator']
+        history_link = ''
+        if value['history_name'] and database['settings']['show_history_link']:
+            history_link = f' [-> {value["history_name"]}]'
+        print(f'{prefix}{display_name}{history_link}{extra_string}: {numerator}{suffix}')
+
+
+def print_daily(database):
+    dictionary = database['daily']
+    groups = database['groups']['daily']
+    groups_display = database['groups_display']['daily']
+    if dictionary or database['optional']:
         print('>>> Dailies:', end='\n\n')
-        if daily_dict:
-            print_base_dictionary(database, daily_dict, database['containers']['daily'])
+        if dictionary:
+            print_groups(database, dictionary, groups, groups_display, print_items_generic, completion_then_alpha_sort)
             print()  # Extra newline
-        print_optional_objectives(database)
+        print_optional(database)
 
 
-def print_optional_objectives(database):
+def print_optional(database):
     dictionary = database['optional']
+    groups = database['groups']['optional']
+    groups_display = database['groups_display']['optional']
     if dictionary:
         print('(Optional)', end='\n\n')
-        print_base_dictionary(database, dictionary, database['containers']['optional'])
+        print_groups(database, dictionary, groups, groups_display, print_items_generic, completion_then_alpha_sort)
         print()  # Extra newline
 
 
-def print_todo_objectives(database):
+def print_todo(database):
     dictionary = database['todo']
+    groups = database['groups']['todo']
+    groups_display = database['groups_display']['todo']
     if dictionary:
         print('>>> To-dos:')
-        enforced_todo_dict = dict_management.get_enforced_todo_dict(database)
+        enforced_todo_dict = dict_management.get_enforced_todo(database)
         if enforced_todo_dict:
-            print("* '>' signifies enforced to-do; required for streak today", end='\n\n')
-            print_base_dictionary(database, enforced_todo_dict, database['containers']['todo'], item_prefix='> ')
-        else:
-            print()  # Newline to make up for lack of enforced newline print
-        unenforced_todo_dict = dict_management.get_unenforced_todo_dict(database)
-        print_base_dictionary(database, unenforced_todo_dict, database['containers']['todo'])
+            print("* '>' signifies enforced to-do; required for streak today")
+        print()
+        print_groups(database, dictionary, groups, groups_display, print_items_generic, todo_sort,
+                     prefix_func=lambda x: '> ' if x['enforced_todo'] else '')
         print()  # Extra newline
 
 
-def print_cycle_objectives(database):
+def print_cycle(database):
     dictionary = database['cycle']
     if dictionary:
         print('>>> Cycles', end='\n\n')
-        print_active_cycle_objectives(database)
-        print_inactive_cycle_objectives(database)
+        print_active_cycle(database)
+        print_inactive_cycle(database)
+
+
+def print_active_cycle(database):
+    active_cycle_dict = dict_management.get_active_cycle(database)
+    inactive_cycle_dict = dict_management.get_inactive_cycle(database)
+    groups = database['groups']['cycle']
+    groups_display = database['groups_display']['cycle']
+    if active_cycle_dict:
+        print_groups(database, active_cycle_dict, groups, groups_display, print_items_generic, cycle_sort,
+                     extra_string_func=lambda val: f' ({get_cycle_sequence_string(val)})')
+        if not inactive_cycle_dict:  # Inactive print will cover if exists
+            print()  # Extra newline
+
+
+def print_inactive_cycle(database, preview_len=None):
+    inactive_cycle_dict = dict_management.get_inactive_cycle(database)
+    if preview_len is None:
+        preview_len = database['settings']['cycle_preview']
+    if inactive_cycle_dict:
+        print('(Inactive cycles)', end='\n\n')
+        for key, value in inactive_cycle_dict.items():
+            display_name = value['display_name']
+            remaining_cooldown = value['remaining_cooldown']
+            denominator = value['denominator']
+            if value['display_mode'] == 'number':
+                print(f' {display_name} (x/{denominator}): '
+                      f'Every {value["cooldown_sequence"][0]}d, next in {remaining_cooldown}d')
+            else:  # == 'week_day'
+                print(f' {display_name} (x/{denominator}): '
+                      f'{get_cycle_sequence_string(value).capitalize()}, next in {remaining_cooldown}d')
+        print(end='\n\n')  # Extra newline
+
+
+def print_longterm(database):
+    dictionary = database['longterm']
+    groups = database['groups']['longterm']
+    groups_display = database['groups_display']['longterm']
+    if dictionary:
+        print('>>> Long-term goals:', end='\n\n')
+        print_groups(database, dictionary, groups, groups_display, print_items_generic, alpha_sort)
+        print()  # Extra newline
+
+
+def print_counter(database):
+    dictionary = database['counter']
+    groups = database['groups']['counter']
+    groups_display = database['groups_display']['counter']
+    if dictionary:
+        print('>>> Counters', end='\n\n')
+        print_groups(database, dictionary, groups, groups_display, print_items_counters, alpha_sort)
+        print()  # Extra newline
+
+
+def print_note(database):
+    pass
 
 
 def get_cycle_sequence_string(obj_value):
@@ -155,57 +262,6 @@ def get_cycle_sequence_string(obj_value):
         return obj_value['frequency_description']
     else:
         quit('Invalid cycle display mode..')
-
-
-def print_active_cycle_objectives(database):
-    dictionary = dict_management.get_active_cycle_dict(database)
-    if dictionary:
-        print_base_dictionary(database, dictionary, database['containers']['cycle'],
-                              extra_string_exec=lambda val: f' ({get_cycle_sequence_string(val)})')
-        print()  # Extra newline
-
-
-def print_inactive_cycle_objectives(database):
-    dictionary = dict_management.get_inactive_cycle_dict(database)
-    if dictionary:
-        print('(Inactive cycles)', end='\n\n')
-        for key, value in dictionary.items():
-            display_name = value['display_name']
-            remaining_cooldown = value['remaining_cooldown']
-            denominator = value['denominator']
-            if value['display_mode'] == 'number':
-                print(f'{display_name} (x/{denominator}): '
-                      f'Every {value["cooldown_sequence"][0]}d, next in {remaining_cooldown}d')
-            else:  # == 'week_day'
-                print(f'{display_name} (x/{denominator}): '
-                      f'{get_cycle_sequence_string(value).capitalize()}, next in {remaining_cooldown}d')
-        print()  # Extra newline
-
-
-def print_longterm_objectives(database):
-    dictionary = database['longterm']
-    if dictionary:
-        print('>>> Long-term goals:', end='\n\n')
-        print_base_dictionary(database, dictionary, database['containers']['longterm'])
-        print()  # Extra newline
-
-
-def print_counter_objectives(database):
-    dictionary = database['counter']
-    if dictionary:
-        print('>>> Counters', end='\n\n')
-        for key, value in dictionary.items():
-            display_name = value['display_name']
-            numerator = value['numerator']
-            history_link = ''
-            if value['history_name'] and database['settings']['show_history_link']:
-                history_link = f' [-> {value["history_name"]}]'
-            print(f'{display_name}{history_link}: {numerator}')
-        print()  # Extra newline
-
-
-def print_note_objectives(database):
-    pass
 
 
 def print_stats(database):

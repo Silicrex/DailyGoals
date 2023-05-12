@@ -15,7 +15,7 @@
 # TODO: Add ability to attach a url?
 # TODO: Setting for sorting counter by numerator
 # TODO: Option to combine history entries
-# TODO: PLURALIZE CONTAINER ITEMS, show list of options in containeredit, fix extra newline
+# TODO: show list of options in groupchange
 # TODO: Way to view links. When you link, should also specify dict type
 # TODO: Break command, indicate a daily isn't needed today
 # TODO: Fix display settings stuff
@@ -23,18 +23,26 @@
 # TODO: Make database a cross-file global variable?
 
 # TODO: Pause system
+# TODO: Link renaming should be a different function than removing
 # TODO: Individual item streak backend
-# TODO: Fix display order
+# TODO: Fix display order (GitHub Issue #15)
 # TODO: Pluralize items in minimized container display
 # TODO: Figure out weird history forced automatch
 # TODO: Fix container grabbing _default in key_search
-# TODO: Way to toggle 'expand' on contaniners
-# TODO: Fix counter History situation..
+# TODO: Way to toggle 'expand' on containers
 # TODO: Add way to rename history item & update references
 # TODO: Move toggles to a toggle section?
 # TODO: can't tag an item without a history link
-# TODO: Tags input accepts multiple words
-# TODO: Counters don't work with containers
+# TODO: Tags input accepts multiple words (GitHub Issue #16)
+# TODO: Counters don't work with containers (GitHub Issue #17)
+# TODO: Automatch for toggle settings
+# TODO: Give backup an arg for name
+# TODO: Add todo by DATE
+# TODO: Individual Group sort override
+# TODO: Indicate when an item is linked
+# TODO: Setting for cycle preview
+# TODO: Start cd for mode 2 cycles
+# TODO: Full cycle toggle redesign (currently broken)
 import file_management  # For loading/saving
 import commands  # Command functions and formatting
 import console_display  # To print the initial console display
@@ -50,7 +58,7 @@ def main():
     database = file_management.load_data()  # If json successfully loaded, use that. Else default to base template
 
     # Update backup right after loading (to save state before user performs any actions)
-    file_management.update(database, 'data_autobackup.json')
+    file_management.save(database, 'data_autobackup.json')
 
     # Used to pass around non-persisted/contextual data, ie command used,
     context_template = {'last_printed': None, 'command': ''}

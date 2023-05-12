@@ -34,8 +34,8 @@ def add_mode(database, context, args):
         console_display.refresh_and_print(database, 'Unnecessary arguments!')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
-    if dict_name in {'counter', 'cycle', 'todo'}:  # Different processes
-        special_add_function = globals()['add_' + dict_name + '_mode']  # ie add_cycle_mode, gets corresponding func
+    if dict_name in {'todo', 'counter', 'cycle'}:  # Different processes
+        special_add_function = globals()[dict_name + '_add_mode']  # ie cycle_add_mode, gets corresponding func
         special_add_function(database, dict_name)
         return
 
@@ -55,14 +55,50 @@ def add_mode(database, context, args):
                                        'link': {'linked_to': [], 'linked_from': []},
                                        'history_name': history_name,
                                        'tag': None}})
-    dict_management.add_to_container(database, dict_name, objective_key)  # Add to default container
-    # Save, sort, and print display
-    dict_management.sort_dictionary(database, dict_name)
-    file_management.update(database)
+    dict_management.default_group(database, dict_name, objective_key)  # Add to default container
+    # Save and print display
+    file_management.save(database)
     console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully added!')
 
 
-def add_cycle_mode(database, dict_name):
+def todo_add_mode(database, dict_name):
+    dictionary = database[dict_name]
+    objective_name = get_name()
+    objective_key = objective_name.lower()
+    if objective_key in dictionary:
+        console_display.refresh_and_print(database, 'Objective by that name already exists. Returning to menu')
+        return
+    denominator = get_denominator()
+    while True:
+        print('> Should this todo objective count towards daily requirement? (y/n) (blank = n)', end='\n\n')
+        user_input = input().lower()
+        print()  # Extra newline
+
+        if user_input in {'yes', 'y'}:
+            enforced_todo = True
+            print('Item will count towards streak', end='\n\n')
+            break
+        elif user_input in {'no', 'n', ''}:
+            enforced_todo = False
+            print('Item will not count towards streak', end='\n\n')
+            break
+    history_name = get_history_name(database, dict_name)
+    start_timer = get_start_timer()
+    dictionary.update({objective_key: {'display_name': objective_name,
+                                       'denominator': denominator,
+                                       'numerator': 0,
+                                       'enforced_todo': enforced_todo,
+                                       'pause_timer': start_timer,
+                                       'link': {'linked_to': [], 'linked_from': []},
+                                       'history_name': history_name,
+                                       'tag': None}})
+    dict_management.default_group(database, 'todo', objective_key)  # Add to default container
+    # Save and print display
+    file_management.save(database)
+    console_display.refresh_and_print(database, 'Todo item successfully added!')
+
+
+def cycle_add_mode(database, dict_name):
     def calculate_cooldown_sequence(days_list):
         def next_index():
             if i == len(days_list) - 1:
@@ -111,12 +147,7 @@ def add_cycle_mode(database, dict_name):
         cooldown_sequence = [int(repeat_input)]
 
         # Get initial cooldown and set cooldown iterator
-        offset_input = input('> In how many days should this item start activating? (ie 0 = today)\n\n')
-        print()  # Extra newline
-        if not offset_input.isnumeric():
-            console_display.refresh_and_print(database, 'Invalid input. Expected positive integer days')
-            return
-        start_offset = int(offset_input)
+        start_offset = get_start_timer()
         cooldown_iterator = 0
 
     elif mode_input == '2':  # Every certain week day(s)
@@ -286,14 +317,13 @@ def add_cycle_mode(database, dict_name):
                                        'link': {'linked_to': [], 'linked_from': []},
                                        'history_name': history_name,
                                        'tag': None}})
-    dict_management.add_to_container(database, 'cycle', objective_key)  # Add to default container
-    # Save, sort, and print display
-    dict_management.sort_dictionary(database, 'cycle')
-    file_management.update(database)
+    dict_management.default_group(database, 'cycle', objective_key)  # Add to default container
+    # Save and print display
+    file_management.save(database)
     console_display.refresh_and_print(database, 'Cycle item successfully added!')
 
 
-def add_counter_mode(database, dict_name):
+def counter_add_mode(database, dict_name):
     dictionary = database[dict_name]
     objective_name = get_name()
     objective_key = objective_name.lower()
@@ -309,43 +339,13 @@ def add_counter_mode(database, dict_name):
                                        'tag': None}})
     if history_name:
         dict_management.create_counter_history(database, history_name)
-    dict_management.add_to_container(database, 'counter', objective_key)  # Add to default container
-    # Save, sort, and print display
-    dict_management.sort_dictionary(database, 'counter')
-    file_management.update(database)
+    dict_management.default_group(database, 'counter', objective_key)  # Add to default container
+    # Save and print display
+    file_management.save(database)
     console_display.refresh_and_print(database, 'Counter item successfully added!')
 
 
-def add_todo_mode(database, dict_name):
-    dictionary = database[dict_name]
-    objective_name = get_name()
-    objective_key = objective_name.lower()
-    if objective_key in dictionary:
-        console_display.refresh_and_print(database, 'Objective by that name already exists. Returning to menu')
-        return
-    denominator = get_denominator()
-    if console_display.confirm('> Should this todo objective count towards daily requirement? (y/n)'):
-        enforced_todo = True
-    else:
-        enforced_todo = False
-    history_name = get_history_name(database, dict_name)
-    start_timer = get_start_timer()
-    dictionary.update({objective_key: {'display_name': objective_name,
-                                       'denominator': denominator,
-                                       'numerator': 0,
-                                       'enforced_todo': enforced_todo,
-                                       'pause_timer': start_timer,
-                                       'link': {'linked_to': [], 'linked_from': []},
-                                       'history_name': history_name,
-                                       'tag': None}})
-    dict_management.add_to_container(database, 'todo', objective_key)  # Add to default container
-    # Save, sort, and print display
-    dict_management.sort_dictionary(database, 'todo')
-    file_management.update(database)
-    console_display.refresh_and_print(database, 'Todo item successfully added!')
-
-
-def add_note_mode(database, context, args):
+def note_add_mode(database, context, args):
     # ex input: note add
     # ex input: note add 0
     if len(args) > 1:
@@ -380,9 +380,9 @@ def add_note_mode(database, context, args):
             continue
         break
     dictionary.insert(note_index, note_input)
-    ### add_to_container(database, 'note', objective_key)
+    ### add_to_groups(database, 'note', objective_key)
     # Save and print display
-    file_management.update(database)
+    file_management.save(database)
     console_display.refresh_and_print(database, 'Note item successfully added!')
 
 
@@ -485,15 +485,14 @@ def update_mode(database, context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])  # Invalid update value
 
     if dict_name == 'cycle':  # Can't update inactive item
-        if objective_name not in dict_management.get_active_cycle_dict(database):
+        if objective_name not in dict_management.get_active_cycle(database):
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
     dict_management.update_item(database, dict_name, objective_name, update_value)
 
-    # Save, sort, and print display
-    dict_management.sort_dictionary(database, dict_name)
-    file_management.update(database)
+    # Save and print display
+    file_management.save(database)
     console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully updated!')
 
 
@@ -517,7 +516,7 @@ def set_mode(database, context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if dict_name == 'cycle':
-        if objective_name not in dict_management.get_active_cycle_dict(database):  # Can't update inactive item
+        if objective_name not in dict_management.get_active_cycle(database):  # Can't update inactive item
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
@@ -525,9 +524,8 @@ def set_mode(database, context, args):
     difference = set_value - current_value  # Used to make handling links easier
     dict_management.update_item(database, dict_name, objective_name, difference)
 
-    # Save, sort, and print display
-    dict_management.sort_dictionary(database, dict_name)
-    file_management.update(database)
+    # Save and print display
+    file_management.save(database)
     console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully updated!')
 
 
@@ -547,14 +545,13 @@ def complete_mode(database, context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if dict_name == 'cycle':
-        if objective_name not in dict_management.get_active_cycle_dict(database):  # Can't update inactive item
+        if objective_name not in dict_management.get_active_cycle(database):  # Can't update inactive item
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
     dict_management.complete_item(database, dict_name, objective_name)
-    # Save, sort, and print display
-    dict_management.sort_dictionary(database, dict_name)
-    file_management.update(database)
+    # Save and print display
+    file_management.save(database)
     console_display.refresh_and_print(database, f'{dict_name.capitalize()} item marked as complete!')
 
 
@@ -574,14 +571,13 @@ def reset_mode(database, context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if dict_name == 'cycle':
-        if objective_name not in dict_management.get_active_cycle_dict(database):  # Can't update inactive item
+        if objective_name not in dict_management.get_active_cycle(database):  # Can't update inactive item
             console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
             return
 
     dict_management.reset_item(database, dict_name, objective_name)
-    # Save, sort, and print display
-    dict_management.sort_dictionary(database, dict_name)
-    file_management.update(database)
+    # Save and print display
+    file_management.save(database)
     console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully updated!')
 
 
@@ -598,9 +594,9 @@ def setall_mode(database, context, args):
     setall_value = args[0]
 
     if dict_name == 'cycle':
-        context['dictionary'] = dictionary = dict_management.get_active_cycle_dict(database)
+        context['dictionary'] = dictionary = dict_management.get_active_cycle(database)
     elif dict_name == 'counter':
-        setall_counter_mode(database, dict_name, setall_value)
+        counter_setall_mode(database, dict_name, setall_value)
         return
 
     if setall_value not in {'complete', 'reset'}:
@@ -617,13 +613,12 @@ def setall_mode(database, context, args):
     elif setall_value == 'reset':
         for key in dictionary:
             dict_management.reset_item(database, dict_name, key)
-    # Save, sort, and print display
-    dict_management.sort_dictionary(database, dict_name)
-    file_management.update(database)
+    # Save and print display
+    file_management.save(database)
     console_display.refresh_and_print(database, f'{dict_name.capitalize()} items successfully updated!')
 
 
-def setall_counter_mode(database, dict_name, setall_value):
+def counter_setall_mode(database, dict_name, setall_value):
     dictionary = database[dict_name]
     if not (setall_value := format_integer(setall_value)):  # Enforces non-zero integer. Accepts extension ie 1k
         raise errors.InvalidCommandUsage('counter', 'setall')
@@ -640,9 +635,8 @@ def setall_counter_mode(database, dict_name, setall_value):
         difference = setall_value - current_value  # Used to make handling links easier
         dict_management.update_item(database, dict_name, counter, difference)
 
-    # Save, sort, and print display
-    dict_management.sort_dictionary(database, 'counter')
-    file_management.update(database)
+    # Save and print display
+    file_management.save(database)
     console_display.refresh_and_print(database, f'Counter items successfully updated!')
 
 
@@ -657,7 +651,7 @@ def rename_mode(database, context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
+    if not (item_key := dict_management.key_search(database, dictionary, input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
@@ -666,22 +660,19 @@ def rename_mode(database, context, args):
         console_display.refresh_and_print(database, f'That name is already in use for [{context["mode"]}]. '
                                                     'Returning to menu')
         return
-    dictionary[new_name] = dictionary.pop(objective_name)
+    dictionary[new_name] = dictionary.pop(item_key)
 
     # Handle links
-    dict_management.remove_from_linked_from(database, dict_name, objective_name, rename_value=new_name)
-    dict_management.remove_from_linked_to(database, dict_name, objective_name, rename_value=new_name)
+    dict_management.remove_from_linked_from(database, dict_name, item_key, rename_value=new_name)
+    dict_management.remove_from_linked_to(database, dict_name, item_key, rename_value=new_name)
 
-    # Handle containers
-    command_containers = database['containers'][dict_name]
-    current_container = dict_management.find_current_container(command_containers, objective_name)
-    container_items = command_containers[current_container]['items']
-    container_items.remove(objective_name)
-    container_items.append(new_name)
+    # Handle Group
+    current_group = dict_management.get_group(database, dict_name, item_key)
+    current_group['items'].remove(item_key)
+    current_group['items'].append(new_name)
 
-    # Save, sort, and print display
-    dict_management.sort_dictionary(database, dict_name)
-    file_management.update(database)
+    # Save and print display
+    file_management.save(database)
     console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully renamed!')
 
 
@@ -702,7 +693,7 @@ def rehistory_mode(database, context, args):
     if dict_name == 'counter':
         dict_management.create_counter_history(database, new_history_name)
     # Save and print display
-    file_management.update(database)
+    file_management.save(database)
     console_display.refresh_and_print(database, f'Successfully changed History link to [{new_history_name}]!')
 
 
@@ -723,9 +714,8 @@ def denominator_mode(database, context, args):
     if not (new_denominator := get_denominator()):
         return
     dictionary[objective_name]['denominator'] = new_denominator
-    # Save, sort, and print display
-    dict_management.sort_dictionary(database, dict_name)
-    file_management.update(database)
+    # Save and print display
+    file_management.save(database)
     console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully updated!')
 
 
@@ -764,6 +754,7 @@ def tag_mode(database, context, args):
                 if console_display.confirm('\nAre you finished (y/n)? (Will insert as a literal line otherwise)'):
                     return '\n'.join(lines)
             lines.append(user_input)
+
     # -------------------------------------------------------------------------------------------
     # ex input: daily tag wanikani
     dict_name = context['command']
@@ -787,7 +778,7 @@ def tag_mode(database, context, args):
         tag_input_func = get_tag_lines
     objective['tag'] = tag_input_func()
     # Save and print display
-    file_management.update(database)
+    file_management.save(database)
     console_display.refresh_and_print(database, f'[{objective_name}] successfully tagged!')
 
 
@@ -818,8 +809,7 @@ def link_mode(database, context, args):
     if not link_input_string:
         console_display.refresh_and_print(database, 'Cancelled')
         return
-    if not (linked_objective_name := dict_management.key_search(database, database[type_string],
-                                                                link_input_string)):
+    if not (linked_objective_name := dict_management.key_search(database, database[type_string], link_input_string)):
         console_display.refresh_and_print(database, 'Objective not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
@@ -854,7 +844,7 @@ def link_mode(database, context, args):
     database[type_string][linked_objective_name]['link']['linked_from'].append([dict_name, objective_name])
 
     # Save and print display
-    file_management.update(database)
+    file_management.save(database)
     console_display.refresh_and_print(database, f'[{objective_name}] successfully linked to [{linked_objective_name}]! '
                                                 f'Link sequence: {dict_management.format_link_chain(link_chain)}')
 
@@ -885,7 +875,7 @@ def unlink_mode(database, context, args):
     link['linked_to'] = []
 
     # Save and print display
-    file_management.update(database)
+    file_management.save(database)
     console_display.refresh_and_print(database, f'[{objective_name}] successfully unlinked!')
 
 
@@ -925,7 +915,7 @@ def pause_mode(database, context, args):
 
     user_response = input('> Enter a response corresponding to a selection mode\n'
                           '  [A] Single objective\n'
-                          '  [B] Container\n\n').lower()
+                          '  [B] Group\n\n').lower()
     if user_response not in {'a', 'b'}:
         console_display.refresh_and_print(database, 'Invalid response')
         return
@@ -939,15 +929,15 @@ def pause_mode(database, context, args):
             raise errors.InvalidCommandUsage(dict_name, context['mode'])
         pause_list.append(objective_name)
     else:  # == 'b'
-        input_container_name = input('> What container would you like to pause? (Blank input = cancel)\n\n').lower()
-        if not input_container_name:
+        input_string = input('> What Group would you like to pause? (Blank input = cancel)\n\n').lower()
+        if not input_string:
             console_display.refresh_and_print(database, 'Cancelled')
             return
-        if not (container_name := dict_management.key_search(database, database['containers'][dict_name],
-                                                             input_container_name)):
+        if not (container_name := dict_management.key_search(database, database['groups'][dict_name],
+                                                             input_string)):
             console_display.refresh_and_print(database, 'Container not found')
             raise errors.InvalidCommandUsage(dict_name, context['mode'])
-        for objective in database['containers'][dict_name][container_name]:
+        for objective in database['groups'][dict_name][container_name]:
             pause_list.append(objective)
     duration_input = input('> How many days should the objective be paused for? (-1 = indefinite, 0 = cancel)\n\n')
     if not (duration_input == '-1' or duration_input.isnumeric()):
@@ -961,7 +951,7 @@ def pause_mode(database, context, args):
         dictionary[objective]['pause_timer'] = duration
 
     # Save and print display
-    file_management.update(database)
+    file_management.save(database)
     console_display.refresh_and_print(database, 'Items successfully paused!')
 
 
@@ -979,148 +969,158 @@ def remove_mode(database, context, args):
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
         print('Objective name not found', end='\n\n')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    dict_management.remove_item(database, dict_name, objective_name)
+    dict_management.remove_item(database, dict_name, objective_name)  # Link, Group handled here
 
     # Save and print display
-    file_management.update(database)
+    file_management.save(database)
     console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully removed!')
 
 
-# Containers ------------------------------------------------------------------------------------------
+# Groups ------------------------------------------------------------------------------------------
 
-def containeradd_mode(database, context, args):
-    # ex input: daily containercreate
+def groupadd_mode(database, context, args):
+    # ex input: daily groupadd
+    # Creates a new Group
     dict_name = context['command']
-    command_containers = database['containers'][dict_name]  # Corresponding containers dict
+    groups = database['groups'][dict_name]  # Corresponding Groups dict
+    groups_display = database['groups_display'][dict_name]
 
     if args:
         console_display.refresh_and_print(database, 'Unnecessary arguments!')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
-    container_name = get_name('> Enter a name for the container (must be unique to goal type)')
-    container_key = container_name.lower()
-    if container_key in command_containers:
-        console_display.refresh_and_print(database, 'Container by that name already exists. Returning to menu')
+    group_name = get_name('> Enter a name for the Group (must be unique to goal type)')
+    group_key = group_name.lower()
+    if group_key in groups:
+        console_display.refresh_and_print(database, 'Group by that name already exists. Returning to menu')
         return
-    command_containers.update({container_key: {'display_name': container_name, 'expanded': True, 'items': []}})
+    groups.update({group_key: {'display_name': group_name, 'manual_order': [], 'sort_override': None, 'expanded': True,
+                               'items': []}})
+    groups_display.append(group_key)
     # Save and print display
-    file_management.update(database)
-    console_display.refresh_and_print(database, f'[{dict_name.capitalize()}] container successfully created!')
+    file_management.save(database)
+    console_display.refresh_and_print(database, f'[{dict_name.capitalize()}] Group successfully created!')
 
 
-def containerdelete_mode(database, context, args):
-    # ex input: daily containerdelete
+def groupremove_mode(database, context, args):
+    # ex input: daily groupremove
     dict_name = context['command']
-    command_containers = database['containers'][dict_name]  # Corresponding containers dict
+    groups = database['groups'][dict_name]
+    groups_display = database['groups_display'][dict_name]
 
     if args:
         console_display.refresh_and_print(database, 'Unnecessary arguments!')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
-    input_string = input('> What container would you like to delete?\n\n').lower()
-    if not (container_key := dict_management.key_search(database, command_containers, input_string)):
-        console_display.refresh_and_print(database, 'Container name not found')
+    input_string = input('> What Group would you like to delete?\n\n').lower()
+    if not (group_key := dict_management.key_search(database, groups, input_string, ignore_list=['_Default'])):
+        console_display.refresh_and_print(database, 'Group name not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
-    for objective_key in command_containers[container_key].items():
-        command_containers['_default']['items'].append(objective_key)
-    command_containers.remove(container_key)
+    for item_key in groups[group_key]['items']:
+        dict_management.default_group(database, dict_name, item_key)  # Back to default
+    groups.pop(group_key)
+    groups_display.remove(group_key)
     # Save and print display
-    file_management.update(database)
-    console_display.refresh_and_print(database, f'Successfully deleted [{container_key}]'
-                                                f'and moved objectives back to default!')
+    file_management.save(database)
+    console_display.refresh_and_print(database, f'Successfully deleted Group and returned items to default!')
 
 
-def containeredit_mode(database, context, args):
-    # ex input: daily containeradd
+def groupchange_mode(database, context, args):
+    # ex input: daily groupchange
     dict_name = context['command']
     dictionary = database[dict_name]
-    command_containers = database['containers'][dict_name]  # Corresponding containers dict
+    groups = database['groups'][dict_name]  # Corresponding Groups dict
 
     if args:
         console_display.refresh_and_print(database, 'Unnecessary arguments!')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
-    input_string = input('> What item would you like to change the container of?\n\n').lower()
-    if not (objective_key := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Objective name not found')
+    input_string = input('> What item would you like to change the Group of?\n\n').lower()
+    if not (item_key := dict_management.key_search(database, dictionary, input_string)):
+        console_display.refresh_and_print(database, 'Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     print()  # Extra newline
-    input_string = input('> What container would you like to move this item to? '
-                         '(BLANK INPUT = REMOVE FROM CONTAINER)\n\n').lower()
-    if input_string == '':  # Then put back into _default
-        destination_name = '_default'
-    elif not (destination_name := dict_management.key_search(database, command_containers, input_string)):
-        console_display.refresh_and_print(database, 'Container name not found')
+    input_string = input('> What Group would you like to move this item to? '
+                         '(BLANK INPUT = REMOVE FROM GROUPS)\n\n').lower()
+    if input_string == '':  # Then put back into default
+        dict_management.remove_from_groups(database, dict_name, item_key)
+        dict_management.default_group(database, dict_name, item_key)
+    elif not (destination_name := dict_management.key_search(database, groups, input_string, ignore_list=['_Default'])):
+        console_display.refresh_and_print(database, 'Group not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
+    else:
+        dict_management.move_to_group(database, dict_name, item_key, destination_name)
 
-    dict_management.move_to_container(database, dict_name, objective_key, destination_name)
     # Save and print display
-    file_management.update(database)
-    console_display.refresh_and_print(database, f'Successfully moved [{objective_key}] to [{destination_name}]!')
+    file_management.save(database)
+    console_display.refresh_and_print(database, f'Successfully moved [{item_key}]!')
 
 
-def containermove_mode(database, context, args):
-    # ex input: daily containermove
+def groupposition_mode(database, context, args):
+    # ex input: daily groupposition
 
     dict_name = context['command']
-    command_containers = database['containers'][dict_name]  # Corresponding containers dict
+    groups = database['groups'][dict_name]  # Corresponding group dict
+    groups_display = database['groups_display'][dict_name]
 
     if args:
         console_display.refresh_and_print(database, 'Unnecessary arguments!')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
-    input_string = input('What container would you like to reposition?\n\n').lower()
-    if not (container_key := dict_management.key_search(database, command_containers, input_string)):
-        console_display.refresh_and_print(database, 'Container name not found')
+    input_string = input('What Group would you like to reposition?\n\n').lower()
+    if not (group_key := dict_management.key_search(database, groups, input_string, ignore_list=['_Default'])):
+        console_display.refresh_and_print(database, 'Group not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    if container_key == '_default':
-        console_display.refresh_and_print(database, 'Cannot move the default container. Returning to menu')
-        return
-    current_index = command_containers.index(container_key)
+    current_index = groups_display.index(group_key)
 
-    input_string = input("'up' to move 1 up, 'down' to move 1 down. Can specify number like: up 2\n"
-                         "'set <number>' ie 'set 5' for manually setting index (1 = first container below defaults)\n"
-                         "Out-of-range values automatically adjusted to boundaries\n\n").lower()
+    input_string = input("- 'up' to move 1 up, 'down' to move 1 down. Can specify number like: up 2\n"
+                         "- 'set <number>' ie 'set 5' for manually setting index (1 = first below default section)\n"
+                         "- Out-of-range values automatically adjusted to boundaries\n"
+                         "- Negative indexing works\n\n").lower()
     input_list = input_string.split()
     input_length = len(input_list)
-    if input_length == 2:
-        if not input_list[1].isnumeric():
-            console_display.refresh_and_print(database, 'Invalid second arg; should be an integer. '
-                                                        'Returning to menu')
-            raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    elif input_list != 1:
+    if not input_string or input_length > 2:
         console_display.refresh_and_print(database, 'Invalid number of args. Returning to menu')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
+    if input_length == 2:
+        try:
+            int(input_list[1])
+        except ValueError:
+            console_display.refresh_and_print(database, 'Invalid second arg; should be an integer. '
+                                                        'Returning to menu')
+            return
     arg1 = input_list[0]
     if arg1 in {'up', 'u', 'down', 'd'}:
         move_amount = 1  # Default to 1
-        if len(input_list) == 2:
-            move_amount = input_list[1]
-        if arg1 in {'up', 'u'}:
-            move_amount *= -1  # Up = lower index
+        if input_length == 2:
+            move_amount = int(input_list[1])
+        if arg1 in {'up', 'u'}:  # Make negative since up = lower index
+            move_amount *= -1
         new_index = current_index + move_amount
     elif arg1 in {'set', 's'}:
-        if len(input_list) != 2:
+        if input_length != 2:
             console_display.refresh_and_print(database, 'Invalid number of args. Returning to menu')
             raise errors.InvalidCommandUsage(dict_name, context['mode'])
-        new_index = input_list[1]
+        new_index = int(input_list[1]) - 1  # -1 to fix for 0-index
     else:
         console_display.refresh_and_print(database, 'Invalid first arg. Returning to menu')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
-    if new_index <= 0:
-        new_index = 1
-    elif new_index >= len(command_containers):
-        new_index = len(command_containers) - 1
+    if new_index == current_index:
+        console_display.refresh_and_print(database, 'Group is already in that position')
+        return
+    if new_index < 0:
+        new_index = 0
+    elif new_index >= len(groups):
+        new_index = len(groups) - 1
 
-    container_copy = command_containers[current_index].copy()
-    command_containers.remove(container_key)
-    command_containers.insert(container_copy, new_index)
+    groups_display.remove(group_key)
+    groups_display.insert(new_index, group_key)
     # Save and print display
-    file_management.update(database)
-    console_display.refresh_and_print(database, f'Successfully repositioned [{container_key}]!')
+    file_management.save(database)
+    console_display.refresh_and_print(database, f'Successfully repositioned [{group_key}]!')
 
 
 # Misc utility ------------------------------------------------------------------------------------------

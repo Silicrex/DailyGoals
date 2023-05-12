@@ -86,7 +86,7 @@ def delete_command(database, context, args):
         return
     if not dict_management.delete_dictionary(database, delete_mode_input):
         return
-    file_management.update(database)
+    file_management.save(database)
     console_display.print_display(database)
     print('Successfully deleted the specified', end='\n\n')
 
@@ -218,7 +218,7 @@ def toggle_command(database, context, args):
             print("Invalid manual value. Expected 'on' or 'off'", end='\n\n')
             return
         settings_management.toggle(database, toggle_name, manual_value)
-    file_management.update(database)
+    file_management.save(database)
 
 
 def setdate_command(database, context, args):
@@ -263,7 +263,7 @@ def setdate_command(database, context, args):
     database['settings']['calendar_date']['day'] = day
     database['settings']['calendar_date']['year'] = year
 
-    file_management.update(database)
+    file_management.save(database)
     console_display.refresh_and_print(database, 'Date successfully changed')
 
 
@@ -284,7 +284,7 @@ def setday_command(database, context, args):
     database['cycle'].clear()
     database['settings']['calendar_date']['week_day'] = week_day_number
 
-    file_management.update(database)
+    file_management.save(database)
     console_display.refresh_and_print(database, 'Week day successfully changed')
 
 
@@ -314,11 +314,9 @@ def endday_command(database, context, args):
         console_display.refresh_and_print(database, 'Unnecessary args!')
         raise errors.InvalidCommandUsage(context['command'])
 
-    calendar_date = database['settings']['calendar_date']
     daily_dict = database['daily']
     cycle_dict = database['cycle']
-    active_cycle_dict = dict_management.get_active_cycle_dict(database)
-    enforced_todo = dict_management.get_enforced_todo_dict(database)
+    active_cycle_dict = dict_management.get_active_cycle(database)
     stats = database['stats']
 
     # Handle streak
@@ -387,7 +385,6 @@ def endday_command(database, context, args):
             obj_value['cooldown_iterator'] = dict_management.roll_over_index(next_cooldown_index, len(cooldown_sequence))
         else:
             obj_value['remaining_cooldown'] -= 1
-    dict_management.sort_dictionary(database, 'cycle')
 
     # Handle longterm dict
     for key, obj_value in database['longterm'].items():
@@ -404,7 +401,7 @@ def endday_command(database, context, args):
     database['welcome_message'] = welcome_messages.get_welcome(current_welcome=database['welcome_message'])
 
     # Save, sort, and print display
-    file_management.update(database)
+    file_management.save(database)
     console_display.refresh_and_print(database, 'See you tomorrow! :D')
 
 
@@ -413,7 +410,7 @@ def backup_command(database, context, args):
     if args:
         print('Unnecessary arguments!', end='\n\n')
         raise errors.InvalidCommandUsage(context['command'])
-    file_management.update(database, file_name='data_manualbackup.json')
+    file_management.save(database, file_name='data_manualbackup.json')
     print('Manual backup successfully created and saved to [data_manualbackup.json]', end='\n\n')
 
 

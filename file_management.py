@@ -1,8 +1,9 @@
 import os  # To check if json file exists yet
 import json  # For dumping/loading database
 
-import console_display
 import welcome_messages
+
+PROGRAM_VERSION = 'PRE-RELEASE'
 
 
 def get_template_dict():  # Database structure
@@ -10,6 +11,7 @@ def get_template_dict():  # Database structure
         # Welcome
         'welcome_message': None,
         # Main data
+        'version': PROGRAM_VERSION,
         'daily': {},  # Dailies dictionary
         'optional': {},  # Optional dailies dictionary
         'todo': {},  # To-do dictionary
@@ -17,28 +19,43 @@ def get_template_dict():  # Database structure
         'longterm': {},  # Long-term dictionary
         'counter': {},  # Counter dictionary
         'note': [],  # Notes list
-        'containers': {  # Organizational display structure
+        'groups': {  # Organizational display structure
             'daily': {
-                '_default': {'display_name': None, 'expanded': True, 'items': []}},
+                '_Default': {'display_name': None, 'manual_order': [], 'sort_override': None, 'expanded': True,
+                             'items': []}},
             'optional': {
-                '_default': {'display_name': None, 'expanded': True, 'items': []}},
+                '_Default': {'display_name': None, 'manual_order': [], 'sort_override': None, 'expanded': True,
+                             'items': []}},
             'todo': {
-                '_default': {'display_name': None, 'expanded': True, 'items': []}},
+                '_Default': {'display_name': None, 'manual_order': [], 'sort_override': None, 'expanded': True,
+                             'items': []}},
             'cycle': {
-                '_default': {'display_name': None, 'expanded': True, 'items': []}},
+                '_Default': {'display_name': None, 'manual_order': [], 'sort_override': None, 'expanded': True,
+                             'items': []}},
             'longterm': {
-                '_default': {'display_name': None, 'expanded': True, 'items': []}},
+                '_Default': {'display_name': None, 'manual_order': [], 'sort_override': None, 'expanded': True,
+                             'items': []}},
             'counter': {
-                '_default': {'display_name': None, 'expanded': True, 'items': []}},
+                '_Default': {'display_name': None, 'manual_order': [], 'sort_override': None, 'expanded': True,
+                             'items': []}},
             'note': {
-                '_default': {'display_name': None, 'expanded': True, 'items': []}}, },
+                '_Default': {'display_name': None, 'manual_order': [], 'sort_override': None, 'expanded': True,
+                             'items': []}}, },
+        'groups_display': {
+            'daily': [],
+            'optional': [],
+            'todo': [],
+            'cycle': [],
+            'longterm': [],
+            'counter': [],
+            'note': [], },
         'history': {  # Completed objectives
             'daily': {},
             'optional': {},
             'todo': {},
             'cycle': {},
             'longterm': {},
-            'counter': {} },
+            'counter': {}},
         # Stats/settings
         'stats': {
             'total_completed': 0,  # Total completed dailies integer
@@ -51,13 +68,20 @@ def get_template_dict():  # Database structure
             'welcome': True,  # Toggle welcome messages
             'display_total': True,  # Always display total completed dailies in header
             'daily': True,  # Always display dailies
+            'daily_sort': 'completion_then_alpha_sort',
             'optional': True,  # Always display optionals
+            'optional_sort': 'completion_then_alpha_sort',
             'todo': True,  # Always display todos
+            'todo_sort': 'todo_sort',
             'cycle': True,  # Always display cycles
-            'full_cycle': False,  # Always display active AND inactive cycles
+            'cycle_sort': 'cycle_sort',
+            'cycle_preview': 7,  # Amount of days to preview
             'longterm': True,  # Always display long-terms
+            'longterm_sort': 'completion_then_alpha_sort',
             'counter': True,  # Always display counters
+            'counter_sort': 'alpha_sort',
             'note': True,  # Always display notes
+            'note_sort': None,
             'auto_match': False,  # Automatically match first objective when searching
             'history_auto_match': False,  # auto_match but for history interface
             'single_line_tag_input': False,  # Switch between multi-line and single-line tag input
@@ -80,7 +104,7 @@ def load_data():
     else:  # If data.json doesn't exist, create new one
         database = get_template_dict()
         database['welcome_message'] = welcome_messages.get_welcome()  # First-time-user welcome text
-        update(database)
+        save(database)
     return database
 
 
@@ -96,6 +120,6 @@ def load_backup():
             quit()
 
 
-def update(database, file_name='data.json'):  # By default, write to primary json file
+def save(database, file_name='data.json'):  # By default, write to primary json file
     with open(file_name, 'w') as file:
         json.dump(database, file, indent=4)

@@ -12,34 +12,38 @@ def get_display_list(database):
     # Add toggle to list if the toggle is on
 
 
-def name_to_container(database, name):
+def get_container(database, name):
     if name == 'active_cycle':
-        return get_active_cycle_dict(database)
+        return get_active_cycle(database)
     elif name == 'inactive_cycle':
-        return get_inactive_cycle_dict(database)
+        return get_inactive_cycle(database)
     elif name == 'enforced_todo':
-        return get_enforced_todo_dict(database)
+        return get_enforced_todo(database)
     elif name == 'unenforced_todo':
-        return get_unenforced_todo_dict(database)
+        return get_unenforced_todo(database)
     else:
         return database[name]
 
 
-def key_search(database, dictionary, input_string, *, force_manual_match=False):
+def key_search(database, dictionary, input_string, *, force_manual_match=False, ignore_list=None):
     """Take an input string and find a dict key resembling it.
-    Key must itself be a dict and have the value 'display_name'
+    Key must itself be a key to another dict which has the element 'display_name'
 
     :param dict database:
     :param dict dictionary: Dictionary to search in
     :param str input_string: Input string to try matching
     :param bool force_manual_match: Override setting and force manual matching instead of auto matching.
+    :param ignore_list: None or a container of str to ignore in the search
     :return str | bool: Returns found key str, else False.
     """
     # Search by in, then startswith, then substring
     if input_string in dictionary:  # If the search term is a key, just return it back
         return input_string
-    auto_match = database['settings']['auto_match'] if not force_manual_match else False  # Bool
+    auto_match = database['settings']['auto_match'] if not force_manual_match else False
     keys = list(dictionary.keys())
+    if ignore_list:
+        for ignore_key in [x for x in ignore_list if x in keys]:
+            keys.remove(ignore_key)
     keys.sort()  # Alphabetize list of keys
     keys_seen = set()  # Track keys already suggested
     for key in keys:  # Search for via startswith()
@@ -141,20 +145,20 @@ def remove_item(database, dict_name, objective_name):
     if linked_from:  # If any objectives link to this one, remove it from their linked_to
         remove_from_linked_to(database, dict_name, objective_name)
 
-    # Handle containers
-    remove_from_container(database, dict_name, objective_name)
+    # Handle groups
+    remove_from_groups(database, dict_name, objective_name)
 
     dictionary.pop(objective_name)
 
 
 def get_daily_count(database):
-    enforced_containers = [name_to_container(database, name) for name in documentation.get_enforced_dict_names()]
+    enforced_containers = [get_container(database, name) for name in documentation.get_enforced_dict_names()]
     lengths = map(lambda x: len(x), enforced_containers)
     return sum(lengths)
 
 
 def check_streak(database):
-    enforced_containers = [name_to_container(database, name) for name in documentation.get_enforced_dict_names()]
+    enforced_containers = [get_container(database, name) for name in documentation.get_enforced_dict_names()]
     for container in enforced_containers:
         for key, value in container.items():
             if value['numerator'] < value['denominator']:
@@ -307,32 +311,28 @@ def remove_from_linked_from(database, dict_name, objective_name, *, rename_value
             break
 
 
-# Containers ------------------------------------------------------------------------------------------
+# Groups ------------------------------------------------------------------------------------------
 
-def add_to_container(database, dict_name, objective_key, container_name='_default'):
-    database['containers'][dict_name][container_name]['items'].append(objective_key)
-
-
-def find_current_container(command_containers, objective_key):
-    for container_name, container_value in command_containers.items():
-        if objective_key in container_value['items']:
-            return container_name
+def default_group(database, dict_name, item_key):  # Init into the Groups system
+    database['groups'][dict_name]['_Default']['items'].append(item_key)
 
 
-def move_to_container(database, dict_name, objective_key, destination_name):
-    command_containers = database['containers'][dict_name]
-    current_container = find_current_container(command_containers, objective_key)
-    if current_container == destination_name:
-        console_display.refresh_and_print(database, 'Item is already in that container!')
-        return
-    command_containers[destination_name]['items'].append(objective_key)
-    command_containers[current_container]['items'].remove(objective_key)
+def get_group(database, dict_name, item_key):
+    groups = database['groups'][dict_name]
+    for group_name, group_value in groups.items():
+        if item_key in group_value['items']:
+            return groups[group_name]
 
 
-def remove_from_container(database, dict_name, objective_key):
-    command_containers = database['containers'][dict_name]
-    current_container = find_current_container(command_containers, objective_key)
-    command_containers[current_container]['items'].remove(objective_key)
+def move_to_group(database, dict_name, item_key, destination_name):
+    target = database['groups'][dict_name][destination_name]
+    current = get_group(database, dict_name, item_key)
+    target['items'].append(item_key)
+    current['items'].remove(item_key)
+
+
+def remove_from_groups(database, dict_name, item_key):
+    get_group(database, dict_name, item_key)['items'].remove(item_key)
 
 
 # ------------------------------------------------------------------------------------------
@@ -341,7 +341,7 @@ def change_all_daily_dicts(database, context, mode):
     enforced_dictionary_names = documentation.get_enforced_dict_names()
     enforced_dict_total_items = 0
     for dict_name in enforced_dictionary_names:
-        enforced_dict_total_items += len(name_to_container(database, dict_name))
+        enforced_dict_total_items += len(get_container(database, dict_name))
     if enforced_dict_total_items == 0:
         console_display.refresh_and_print(database, 'There are no active daily objectives')
         return
@@ -356,15 +356,14 @@ def change_all_daily_dicts(database, context, mode):
     
     for dict_name in enforced_dictionary_names:
         context['command'] = dict_name
-        dictionary = name_to_container(database, dict_name)
+        dictionary = get_container(database, dict_name)
         for key in dictionary:
             if mode == 'complete':
                 complete_item(database, dict_name, key)
             else:
                 reset_item(database, dict_name, key)
-        sort_dictionary(database, dict_name)
 
-    file_management.update(database)
+    file_management.save(database)
     console_display.print_display(database)
     print('Dictionaries successfully updated', end='\n\n')
 
@@ -401,67 +400,30 @@ def delete_dictionary(database, mode):
         return True
 
 
-def get_enforced_todo_dict(database):
+def get_enforced_todo(database):
     todo_dict = database['todo']
     return {k: todo_dict[k] for k in todo_dict if todo_dict[k]['enforced_todo']}
 
 
-def get_unenforced_todo_dict(database):
+def get_unenforced_todo(database):
     todo_dict = database['todo']
     return {k: todo_dict[k] for k in todo_dict if not todo_dict[k]['enforced_todo']}
 
 
-def get_active_cycle_dict(database):
+def get_active_cycle(database):
     cycle_dict = database['cycle']
     return {k: cycle_dict[k] for k in cycle_dict if cycle_dict[k]['remaining_cooldown'] == 0}
 
 
-def get_inactive_cycle_dict(database):
+def get_inactive_cycle(database):
     cycle_dict = database['cycle']
     return {k: cycle_dict[k] for k in cycle_dict if cycle_dict[k]['remaining_cooldown'] != 0}
 
 
-def sort_dictionary(database, dict_name):
-    def completion_then_alpha_sort(obj):
-        # obj[1] refers to dictionary value in tuple (obj_name, dict value)
-        # False sorts before True in ascending. a sorts before z. Sorts incomplete to top, then alphabetically.
-        # (completion bool, name)
-        return obj[1]['numerator'] >= obj[1]['denominator'], obj[0]
-
-    def cycle_sort(obj):
-        # (current offset, completion bool, name)
-        # 0 sorts before 1, False before True, a before z. Sorts by offset, then completion bool, then name
-        return obj[1]['remaining_cooldown'], obj[1]['numerator'] >= obj[1]['denominator'], obj[0]
-
-    def todo_sort(obj):
-        # Puts enforced daily to-do objectives on top (False sorts before True, so invert with not)
-        # enforced_todo -> completed or not -> name
-        return not obj[1]['enforced_todo'], obj[1]['numerator'] >= obj[1]['denominator'], obj[0]
-
-    def alpha_sort(obj):
-        return obj[0]  # Just by the name
-
-    if dict_name == 'active_cycle':  # Since active_cycle is a subset, not a full dict, sort the real full one
-        dictionary = database['cycle']
-        dict_name = 'cycle'
-    elif dict_name == 'enforced_todo':
-        dictionary = database['todo']
-        dict_name = 'todo'
-    else:
-        dictionary = database[dict_name]
-
-    temp_list = list(dictionary.items())  # ie: [(name, {dict_elements}])
-
-    if dict_name == 'cycle':
-        temp_list = sorted(temp_list, key=cycle_sort)
-    elif dict_name == 'counter':
-        temp_list = sorted(temp_list, key=alpha_sort)
-    elif dict_name == 'todo':
-        temp_list = sorted(temp_list, key=todo_sort)
-    else:
-        temp_list = sorted(temp_list, key=completion_then_alpha_sort)
-
-    database[dict_name] = dict(temp_list)  # Assignment via index to preserve object
+def sort_dict(dictionary, key):
+    temp_list = list(dictionary.items())
+    temp_list.sort(key=key)
+    return dict(temp_list)
 
 
 def roll_over_index(n, length):
