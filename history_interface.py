@@ -35,7 +35,7 @@ def launch_pages_interface(database, pm, mode):
         input_length = len(user_input)
         command = user_input[0]
 
-        if input_length > 2:
+        if input_length > 2 and command != 'tag':
             pm.print_display()
             print('Unnecessary arguments!', end='\n\n')
             continue

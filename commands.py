@@ -159,21 +159,6 @@ def stats_command(database, context, args):
     console_display.print_stats(database)
 
 
-def history_command(database, context, args):
-    if len(args) != 1:
-        print('Missing required argument!', end='\n\n')
-        raise errors.InvalidCommandUsage(context['command'])
-    os.system('cls')
-    dict_name_input = args[0]
-    if dict_name_input not in documentation.get_numeric_dictionary_names():
-        console_display.print_display(database)
-        print('Invalid mode', end='\n\n')
-        return
-    history_interface.launch_history_interface(database, dict_name_input)  # Enters history loop
-    console_display.print_display(database)
-    print('Returned to menu', end='\n\n')
-
-
 def help_command(_, context, args):  # Doesn't need database
     if args:
         print('Unnecessary arguments!', end='\n\n')

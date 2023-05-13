@@ -3,7 +3,9 @@ import file_management
 import date_logic
 import console_display
 import documentation
+import history_interface
 import errors
+import os
 
 
 # Base core dict functions need to take (database, context, args)
@@ -410,10 +412,11 @@ def get_history_name(database, dictionary_name):
             print('Opted to disable History tracking for this item', end='\n\n')
             return None
         valid_key = True
-        for objective_name in dictionary:
-            if dictionary[objective_name]['history_name'].lower() == history_name.lower():
+        for item_key in dictionary:
+            name = dictionary[item_key]['history_name']
+            if name and name.lower() == history_name.lower():
                 valid_key = False
-                print(f'That History key is already used by [{objective_name}]', end='\n\n')
+                print(f'That History key is already used by [{item_key}]', end='\n\n')
                 break
         if valid_key:
             if history_name.lower() in history_dict:
@@ -676,6 +679,20 @@ def rename_mode(database, context, args):
     console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully renamed!')
 
 
+def history_mode(database, context, args):
+    # ex input: daily history
+    dict_name = context['command']
+
+    if args:
+        print('Unnecessary arguments, returning to menu', end='\n\n')
+        raise errors.InvalidCommandUsage(context['command'], context['mode'])
+
+    os.system('cls')
+    history_interface.launch_history_interface(database, dict_name)  # Enters history loop
+    console_display.print_display(database)
+    print('Returned to menu', end='\n\n')
+
+
 def rehistory_mode(database, context, args):
     # ex input: daily rehistory objective
     dict_name = context['command']
@@ -769,6 +786,10 @@ def tag_mode(database, context, args):
         console_display.refresh_and_print(database, 'Objective name not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     objective = dictionary[objective_name]
+
+    if not objective['history_name']:
+        console_display.refresh_and_print(database, 'Item does not have a History link to store a tag in')
+        return
 
     # Control which method to get the tag string with
     parsed_input_mode = database['settings']['single_line_tag_input']

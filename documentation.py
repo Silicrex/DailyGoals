@@ -38,9 +38,10 @@ def get_modes(command):
     modes_dict = {
         'goal': {'add', 'complete', 'reset', 'remove', 'rehistory', 'set', 'setall', 'update', 'rename', 'denominator',
                  'groupadd', 'groupremove', 'groupchange', 'groupposition', 'tag', 'link', 'unlink',
-                 'viewlink', 'pause'},
+                 'viewlink', 'pause', 'history'},
         'counter': {'add', 'reset', 'remove', 'set', 'setall', 'update', 'rename', 'groupadd', 'rehistory',
-                    'groupremove', 'groupchange', 'groupposition', 'tag', 'link', 'unlink', 'viewlink', 'pause'},
+                    'groupremove', 'groupchange', 'groupposition', 'tag', 'link', 'unlink', 'viewlink', 'pause',
+                    'history'},
         'note': {'add', 'remove', 'edit', 'position', 'swap'}
     }
     return modes_dict[command]
