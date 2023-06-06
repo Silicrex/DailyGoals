@@ -118,18 +118,17 @@ def print_items_generic(database, items_dict, extra_string_func, prefix_func, su
         extra_string = '' if not extra_string_func else extra_string_func(value)
         prefix = '' if not prefix_func else prefix_func(value)
         suffix = '' if not suffix_func else suffix_func(value)
+        linked = ' [Linked]' if value['link']['linked_to'] else ''
+        tagged = ' [Tagged]' if value['tag'] else ''
         denominator = value['denominator']
         numerator = value['numerator']
         history_link = ''
         if value['history_name'] and database['settings']['show_history_link']:
             history_link = f' [-> {value["history_name"]}]'
-        body = (f'{display_name}{history_link}{extra_string}: '
+        body = (f'{display_name}{extra_string}: '
                 f'{numerator:,}/{denominator:,} ({numerator / denominator:.2%})')
-        box = '[ ] '
-        if numerator >= denominator:  # Complete
-            box = '[x] '
-            body += ' DONE!!'
-        print(f' {prefix}{box}{body}{suffix}')
+        box = '[x] ' if numerator >= denominator else '[ ] '
+        print(f' {prefix}{box}{body}{suffix}{history_link}{linked}{tagged}')
 
 
 def print_items_counters(database, items_dict, extra_string_func, prefix_func, suffix_func):

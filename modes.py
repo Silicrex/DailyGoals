@@ -41,23 +41,26 @@ def add_mode(database, context, args):
         special_add_function(database, dict_name)
         return
 
-    objective_name = get_name()
-    objective_key = objective_name.lower()
-    if objective_key in dictionary:
+    item_name = get_name()
+    if not item_name:
+        console_display.refresh_and_print(database, 'Cancelled')
+        return
+    item_key = item_name.lower()
+    if item_key in dictionary:
         console_display.refresh_and_print(database, 'Objective by that name already exists. Returning to menu')
         return
     denominator = get_denominator()
     history_name = get_history_name(database, dict_name)
     start_timer = get_start_timer()
-    dictionary.update({objective_key: {'display_name': objective_name,
-                                       'denominator': denominator,
-                                       'numerator': 0,
-                                       'streak': 0,
-                                       'pause_timer': start_timer,
-                                       'link': {'linked_to': [], 'linked_from': []},
-                                       'history_name': history_name,
-                                       'tag': None}})
-    dict_management.default_group(database, dict_name, objective_key)  # Add to default container
+    dictionary.update({item_key: {'display_name': item_name,
+                                  'denominator': denominator,
+                                  'numerator': 0,
+                                  'streak': 0,
+                                  'pause_timer': start_timer,
+                                  'link': {'linked_to': [], 'linked_from': []},
+                                  'history_name': history_name,
+                                  'tag': None}})
+    dict_management.default_group(database, dict_name, item_key)  # Add to default container
     # Save and print display
     file_management.save(database)
     console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully added!')
@@ -65,9 +68,12 @@ def add_mode(database, context, args):
 
 def todo_add_mode(database, dict_name):
     dictionary = database[dict_name]
-    objective_name = get_name()
-    objective_key = objective_name.lower()
-    if objective_key in dictionary:
+    item_name = get_name()
+    if not item_name:
+        console_display.refresh_and_print(database, 'Cancelled')
+        return
+    item_key = item_name.lower()
+    if item_key in dictionary:
         console_display.refresh_and_print(database, 'Objective by that name already exists. Returning to menu')
         return
     denominator = get_denominator()
@@ -86,15 +92,15 @@ def todo_add_mode(database, dict_name):
             break
     history_name = get_history_name(database, dict_name)
     start_timer = get_start_timer()
-    dictionary.update({objective_key: {'display_name': objective_name,
-                                       'denominator': denominator,
-                                       'numerator': 0,
-                                       'enforced_todo': enforced_todo,
-                                       'pause_timer': start_timer,
-                                       'link': {'linked_to': [], 'linked_from': []},
-                                       'history_name': history_name,
-                                       'tag': None}})
-    dict_management.default_group(database, 'todo', objective_key)  # Add to default container
+    dictionary.update({item_key: {'display_name': item_name,
+                                  'denominator': denominator,
+                                  'numerator': 0,
+                                  'enforced_todo': enforced_todo,
+                                  'pause_timer': start_timer,
+                                  'link': {'linked_to': [], 'linked_from': []},
+                                  'history_name': history_name,
+                                  'tag': None}})
+    dict_management.default_group(database, 'todo', item_key)  # Add to default container
     # Save and print display
     file_management.save(database)
     console_display.refresh_and_print(database, 'Todo item successfully added!')
@@ -116,9 +122,12 @@ def cycle_add_mode(database, dict_name):
         return seq
 
     dictionary = database[dict_name]
-    objective_name = get_name()
-    objective_key = objective_name.lower()
-    if objective_key in dictionary:
+    item_name = get_name()
+    if not item_name:
+        console_display.refresh_and_print(database, 'Cancelled')
+        return
+    item_key = item_name.lower()
+    if item_key in dictionary:
         console_display.refresh_and_print(database, 'Objective by that name already exists. Returning to menu')
         return
     denominator = get_denominator()
@@ -304,22 +313,22 @@ def cycle_add_mode(database, dict_name):
         console_display.refresh_and_print(database, 'Invalid mode number')
         return
 
-    dictionary.update({objective_key: {'display_name': objective_name,
-                                       'denominator': denominator,
-                                       'numerator': 0,
-                                       'streak': 0,
-                                       'week_days': abbreviations,  # Only for week_day mode
-                                       'week_cooldown': week_cooldown,
-                                       'cooldown_sequence': cooldown_sequence,
-                                       'cooldown_iterator': cooldown_iterator,
-                                       'frequency_description': frequency_description,
-                                       'remaining_cooldown': start_offset,
-                                       'display_mode': display_mode,
-                                       'pause_timer': 0,
-                                       'link': {'linked_to': [], 'linked_from': []},
-                                       'history_name': history_name,
-                                       'tag': None}})
-    dict_management.default_group(database, 'cycle', objective_key)  # Add to default container
+    dictionary.update({item_key: {'display_name': item_name,
+                                  'denominator': denominator,
+                                  'numerator': 0,
+                                  'streak': 0,
+                                  'week_days': abbreviations,  # Only for week_day mode
+                                  'week_cooldown': week_cooldown,
+                                  'cooldown_sequence': cooldown_sequence,
+                                  'cooldown_iterator': cooldown_iterator,
+                                  'frequency_description': frequency_description,
+                                  'remaining_cooldown': start_offset,
+                                  'display_mode': display_mode,
+                                  'pause_timer': 0,
+                                  'link': {'linked_to': [], 'linked_from': []},
+                                  'history_name': history_name,
+                                  'tag': None}})
+    dict_management.default_group(database, 'cycle', item_key)  # Add to default container
     # Save and print display
     file_management.save(database)
     console_display.refresh_and_print(database, 'Cycle item successfully added!')
@@ -327,21 +336,24 @@ def cycle_add_mode(database, dict_name):
 
 def counter_add_mode(database, dict_name):
     dictionary = database[dict_name]
-    objective_name = get_name()
-    objective_key = objective_name.lower()
-    if objective_key in dictionary:
+    item_name = get_name()
+    if not item_name:
+        console_display.refresh_and_print(database, 'Cancelled')
+        return
+    item_key = item_name.lower()
+    if item_key in dictionary:
         console_display.refresh_and_print(database, 'Counter by that name already exists. Returning to menu')
         return
     history_name = get_history_name(database, dict_name)
-    dictionary.update({objective_key: {'display_name': objective_name,
-                                       'numerator': 0,
-                                       'pause_timer': 0,
-                                       'link': {'linked_to': [], 'linked_from': []},
-                                       'history_name': history_name,
-                                       'tag': None}})
+    dictionary.update({item_key: {'display_name': item_name,
+                                  'numerator': 0,
+                                  'pause_timer': 0,
+                                  'link': {'linked_to': [], 'linked_from': []},
+                                  'history_name': history_name,
+                                  'tag': None}})
     if history_name:
         dict_management.create_counter_history(database, history_name)
-    dict_management.default_group(database, 'counter', objective_key)  # Add to default container
+    dict_management.default_group(database, 'counter', item_key)  # Add to default container
     # Save and print display
     file_management.save(database)
     console_display.refresh_and_print(database, 'Counter item successfully added!')
@@ -388,14 +400,13 @@ def note_add_mode(database, context, args):
     console_display.refresh_and_print(database, 'Note item successfully added!')
 
 
-def get_name(prompt='> Enter a name for the objective (must be unique to goal type)', blank_allowed=False):
+def get_name(prompt='> Enter a name for the objective (must be unique to goal type, blank = cancel)'):
     while True:
         print(prompt, end='\n\n')
         name = input().strip()  # Get input and remove leading/trailing spaces
         print()  # Extra newline
-        if not name and not blank_allowed:
-            print('Name cannot be blank')
-            continue
+        if not name:
+            return
         if not name.isascii():
             print('Please only use ASCII characters')
             continue
@@ -407,7 +418,7 @@ def get_history_name(database, dictionary_name):
     history_dict = database['history'][dictionary_name]
     while True:
         history_name = get_name(prompt="> Enter a name for the matching History item title (unique to goal type; "
-                                       "persistent; blank = don't track item)", blank_allowed=True)
+                                       "persistent; blank = don't track item)")
         if not history_name:
             print('Opted to disable History tracking for this item', end='\n\n')
             return None
@@ -659,6 +670,9 @@ def rename_mode(database, context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     new_name = get_name()
+    if not new_name:
+        console_display.refresh_and_print(database, 'Cancelled')
+        return
     if new_name in dictionary:
         console_display.refresh_and_print(database, f'That name is already in use for [{context["mode"]}]. '
                                                     'Returning to menu')
@@ -741,7 +755,9 @@ def tag_mode(database, context, args):
     # #1 is using a backslash-escape syntax. The user pressing 'enter' submits the string they typed to be parsed
     # #2 is  getting lines in a loop and using a keyword to stop, with a check for if they wanted to insert the keyword
     def get_parsed_tag():
-        tag = get_name('> Enter a tag (use "\\n" for  newline, backslashes are escapable)')
+        tag = get_name('> Enter a tag (use "\\n" for  newline, backslashes are escapable, blank to cancel')
+        if not tag:
+            return None
         final = []  # Hold the final, parsed and evaluate string
         search_start = 0
         while True:
@@ -762,14 +778,19 @@ def tag_mode(database, context, args):
         return ''.join(final)
 
     def get_tag_lines():
-        print('Write your tag! Press enter for newlines. '
-              'Enter "done" when completed (will confirm if you want to stop or insert that literally)', end='\n\n')
+        print('Write your tag! Press enter for newlines.'
+              'Enter "done" when completed (will confirm if you want to stop or insert that literally,'
+              'submit blank to cancel)', end='\n\n')
         lines = []
         while True:
             user_input = input()
             if user_input == "done":
                 if console_display.confirm('\nAre you finished (y/n)? (Will insert as a literal line otherwise)'):
-                    return '\n'.join(lines)
+                    final = '\n'.join(lines)
+                    if not final:
+                        return None
+                    else:
+                        return final
             lines.append(user_input)
 
     # -------------------------------------------------------------------------------------------
@@ -785,11 +806,16 @@ def tag_mode(database, context, args):
     if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
         console_display.refresh_and_print(database, 'Objective name not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    objective = dictionary[objective_name]
+    item = dictionary[objective_name]
 
-    if not objective['history_name']:
+    if not item['history_name']:
         console_display.refresh_and_print(database, 'Item does not have a History link to store a tag in')
         return
+    elif item['tag']:
+        console_display.refresh_and_print(database, f'Item is currently tagged:\n{item["tag"]}')
+        if not console_display.confirm('Overwrite? (y/n)'):
+            console_display.refresh_and_print(database, 'Cancelled')
+            return
 
     # Control which method to get the tag string with
     parsed_input_mode = database['settings']['single_line_tag_input']
@@ -797,7 +823,11 @@ def tag_mode(database, context, args):
         tag_input_func = get_parsed_tag
     else:
         tag_input_func = get_tag_lines
-    objective['tag'] = tag_input_func()
+    tag_input = tag_input_func()
+    if tag_input is None:
+        console_display.refresh_and_print(database, 'Cancelled')
+        return
+    item['tag'] = tag_input
     # Save and print display
     file_management.save(database)
     console_display.refresh_and_print(database, f'[{objective_name}] successfully tagged!')
@@ -1011,6 +1041,9 @@ def groupadd_mode(database, context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     group_name = get_name('> Enter a name for the Group (must be unique to goal type)')
+    if not group_name:
+        console_display.refresh_and_print(database, 'Cancelled')
+        return
     group_key = group_name.lower()
     if group_key in groups:
         console_display.refresh_and_print(database, 'Group by that name already exists. Returning to menu')

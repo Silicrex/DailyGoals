@@ -25,16 +25,11 @@
 # TODO: Pause system
 # TODO: Link renaming should be a different function than removing
 # TODO: Individual item streak backend
-# TODO: Fix display order (GitHub Issue #15)
 # TODO: Pluralize items in minimized container display
 # TODO: Figure out weird history forced automatch
-# TODO: Fix container grabbing _default in key_search
 # TODO: Way to toggle 'expand' on containers
 # TODO: Add way to rename history item & update references
 # TODO: Move toggles to a toggle section?
-# TODO: can't tag an item without a history link
-# TODO: Tags input accepts multiple words (GitHub Issue #16)
-# TODO: Counters don't work with containers (GitHub Issue #17)
 # TODO: Automatch for toggle settings
 # TODO: Give backup an arg for name
 # TODO: Add todo by DATE
@@ -43,6 +38,9 @@
 # TODO: Setting for cycle preview
 # TODO: Start cd for mode 2 cycles
 # TODO: Full cycle toggle redesign (currently broken)
+# TODO: If there is already a tag, should print it in tag mode
+# TODO: Option for linking to be chaining or not?
+# TODO: Avoid scenarios where you have to close to cancel? (ie submitting a tag)
 import file_management  # For loading/saving
 import commands  # Command functions and formatting
 import console_display  # To print the initial console display
