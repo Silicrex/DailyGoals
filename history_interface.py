@@ -108,7 +108,7 @@ def launch_pages_interface(database, pm, mode):
 
         # Tags ------------------------------------------------------------------------------------------
         elif command in {'tags', 'tag', 't'} and mode != 'tags':
-            # ex input: tags wanikani
+            # ex input: tags itemname
 
             print()  # Newline to separate input from print
             item_name = ' '.join(user_input[1:])

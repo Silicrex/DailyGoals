@@ -47,7 +47,7 @@ def add_mode(database, context, args):
         return
     item_key = item_name.lower()
     if item_key in dictionary:
-        console_display.refresh_and_print(database, 'Objective by that name already exists. Returning to menu')
+        console_display.refresh_and_print(database, 'Item by that name already exists. Returning to menu')
         return
     denominator = get_denominator()
     history_name = get_history_name(database, dict_name)
@@ -74,11 +74,11 @@ def todo_add_mode(database, dict_name):
         return
     item_key = item_name.lower()
     if item_key in dictionary:
-        console_display.refresh_and_print(database, 'Objective by that name already exists. Returning to menu')
+        console_display.refresh_and_print(database, 'Item by that name already exists. Returning to menu')
         return
     denominator = get_denominator()
     while True:
-        print('> Should this todo objective count towards daily requirement? (y/n) (blank = n)', end='\n\n')
+        print('> Should this todo item count towards daily requirement? (y/n) (blank = n)', end='\n\n')
         user_input = input().lower()
         print()  # Extra newline
 
@@ -128,7 +128,7 @@ def cycle_add_mode(database, dict_name):
         return
     item_key = item_name.lower()
     if item_key in dictionary:
-        console_display.refresh_and_print(database, 'Objective by that name already exists. Returning to menu')
+        console_display.refresh_and_print(database, 'Item by that name already exists. Returning to menu')
         return
     denominator = get_denominator()
     history_name = get_history_name(database, dict_name)
@@ -299,11 +299,10 @@ def cycle_add_mode(database, dict_name):
             break
         while True:
             frequency_description = input("> Enter a description of the frequency.\n  "
-                                          "This is a string that will be displayed in the objective title to indicate "
-                                          "the objective's frequency,\n  and is also used for the objective's History "
-                                          "Mode key. (BLANK = CANCEL)\n\n")
+                                          "This is a string that will be displayed in the item title to indicate "
+                                          "the item's frequency (BLANK = CANCEL)\n\n")
             if not frequency_description:
-                if console_display.confirm('Cancel creation of this objective? (y/n)'):
+                if console_display.confirm('Cancel creation of this item? (y/n)'):
                     console_display.refresh_and_print(database, 'Cancelled')
                     return
                 continue
@@ -394,13 +393,13 @@ def note_add_mode(database, context, args):
             continue
         break
     dictionary.insert(note_index, note_input)
-    ### add_to_groups(database, 'note', objective_key)
+    ### add_to_groups(database, 'note', item_key)
     # Save and print display
     file_management.save(database)
     console_display.refresh_and_print(database, 'Note item successfully added!')
 
 
-def get_name(prompt='> Enter a name for the objective (must be unique to goal type, blank = cancel)'):
+def get_name(prompt='> Enter a name for the item (must be unique to goal type, blank = cancel)'):
     while True:
         print(prompt, end='\n\n')
         name = input().strip()  # Get input and remove leading/trailing spaces
@@ -468,28 +467,28 @@ def get_start_timer():
 
 # Updating/editing items ------------------------------------------------------------------------------------------
 def update_mode(database, context, args):
-    # ex input: daily update wanikani 50
+    # ex input: daily update itemname 50
     # ex input: daily update clean dishes
 
-    # Spaces in names complicates. Prioritize searching for objective name over valid update value.
-    # Can have a case where obj name is something like "Do number 9". Command could potentially be
-    # "daily update do number 9" to increment it by one, or "daily update do number 9 1" for specified.
+    # Spaces in names complicates. Prioritize searching for item name over valid update value.
+    # Can have a case where item name is something like "Do number 9". Prioritizes updating an item named that by 1
+    # rather than updating an item named "Do number" by 9
 
     dict_name = context['command']  # Cycle handled differently
     dictionary = database[dict_name]
 
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an objective to update')
+        console_display.refresh_and_print(database, 'Must provide an item to update')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     full_string = ' '.join(args).lower()  # Lowercase string of entire rest of input
-    # Search for full string as an objective name; assuming no update value specified
-    if (objective_name := dict_management.key_search(database, dictionary, full_string)) in dictionary:
+    # Search for full string as an item name; assuming no update value specified
+    if (item_name := dict_management.key_search(database, dictionary, full_string)) in dictionary:
         update_value = '1'  # str because format_integer takes a string
-    else:  # Objective wasn't found. Assume update value was specified
+    else:  # Item wasn't found. Assume update value was specified
         sub_string = ' '.join(args[:-1]).lower()  # Last element should be update value
-        if not (objective_name := dict_management.key_search(database, dictionary, sub_string)):
-            console_display.refresh_and_print(database, 'Objective name not found')
+        if not (item_name := dict_management.key_search(database, dictionary, sub_string)):
+            console_display.refresh_and_print(database, 'Item not found')
             raise errors.InvalidCommandUsage(dict_name, context['mode'])
         update_value = args[-1]  # Worked out this way, proceed
 
@@ -499,11 +498,11 @@ def update_mode(database, context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])  # Invalid update value
 
     if dict_name == 'cycle':  # Can't update inactive item
-        if objective_name not in dict_management.get_active_cycle(database):
-            console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
+        if item_name not in dict_management.get_active_cycle(database):
+            console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle items')
             return
 
-    dict_management.update_item(database, dict_name, objective_name, update_value)
+    dict_management.update_item(database, dict_name, item_name, update_value)
 
     # Save and print display
     file_management.save(database)
@@ -511,18 +510,18 @@ def update_mode(database, context, args):
 
 
 def set_mode(database, context, args):
-    # ex input: daily set wanikani 50
+    # ex input: daily set itemname 50
 
     dict_name = context['command']  # Cycle handled differently
     dictionary = database[dict_name]
 
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an objective to update and set value')
+        console_display.refresh_and_print(database, 'Must provide an item to update and set value')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args[:-1]).lower()  # Last element should be set value
-    if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Objective name not found')
+    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
+        console_display.refresh_and_print(database, 'Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if not (set_value := format_integer(args[-1])):  # Enforces non-zero integer. Accepts extension ie 1k
@@ -530,13 +529,13 @@ def set_mode(database, context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if dict_name == 'cycle':
-        if objective_name not in dict_management.get_active_cycle(database):  # Can't update inactive item
-            console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
+        if item_name not in dict_management.get_active_cycle(database):  # Can't update inactive item
+            console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle items')
             return
 
-    current_value = dictionary[objective_name]['numerator']
+    current_value = dictionary[item_name]['numerator']
     difference = set_value - current_value  # Used to make handling links easier
-    dict_management.update_item(database, dict_name, objective_name, difference)
+    dict_management.update_item(database, dict_name, item_name, difference)
 
     # Save and print display
     file_management.save(database)
@@ -544,52 +543,52 @@ def set_mode(database, context, args):
 
 
 def complete_mode(database, context, args):
-    # ex input: daily complete wanikani
+    # ex input: daily complete itemname
 
     dict_name = context['command']
     dictionary = database[dict_name]
 
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an objective to set as complete')
+        console_display.refresh_and_print(database, 'Must provide an item to set as complete')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Objective name not found')
+    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
+        console_display.refresh_and_print(database, 'Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if dict_name == 'cycle':
-        if objective_name not in dict_management.get_active_cycle(database):  # Can't update inactive item
-            console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
+        if item_name not in dict_management.get_active_cycle(database):  # Can't update inactive item
+            console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle items')
             return
 
-    dict_management.complete_item(database, dict_name, objective_name)
+    dict_management.complete_item(database, dict_name, item_name)
     # Save and print display
     file_management.save(database)
     console_display.refresh_and_print(database, f'{dict_name.capitalize()} item marked as complete!')
 
 
 def reset_mode(database, context, args):
-    # ex input: daily reset wanikani
+    # ex input: daily reset itemname
 
     dict_name = context['command']
     dictionary = database[dict_name]
 
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an objective to reset')
+        console_display.refresh_and_print(database, 'Must provide an item to reset')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Objective name not found')
+    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
+        console_display.refresh_and_print(database, 'Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if dict_name == 'cycle':
-        if objective_name not in dict_management.get_active_cycle(database):  # Can't update inactive item
-            console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle objectives')
+        if item_name not in dict_management.get_active_cycle(database):  # Can't update inactive item
+            console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle items')
             return
 
-    dict_management.reset_item(database, dict_name, objective_name)
+    dict_management.reset_item(database, dict_name, item_name)
     # Save and print display
     file_management.save(database)
     console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully updated!')
@@ -655,38 +654,43 @@ def counter_setall_mode(database, dict_name, setall_value):
 
 
 def rename_mode(database, context, args):
-    # ex input: daily rename wanikani
+    # ex input: daily rename itemname
 
     dict_name = context['command']
     dictionary = database[dict_name]
 
-    if not args:  # arg = name of objective to rename
-        console_display.refresh_and_print(database, 'Must provide an objective to rename')
+    if not args:
+        console_display.refresh_and_print(database, 'Must provide an item to rename')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
     if not (item_key := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Objective name not found')
+        console_display.refresh_and_print(database, 'Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     new_name = get_name()
+    new_key = new_name.lower()
     if not new_name:
         console_display.refresh_and_print(database, 'Cancelled')
         return
-    if new_name in dictionary:
-        console_display.refresh_and_print(database, f'That name is already in use for [{context["mode"]}]. '
-                                                    'Returning to menu')
+    if new_key in dictionary:
+        console_display.refresh_and_print(database, f'That name is already in use. Returning to menu')
         return
-    dictionary[new_name] = dictionary.pop(item_key)
 
     # Handle links
-    dict_management.remove_from_linked_from(database, dict_name, item_key, rename_value=new_name)
-    dict_management.remove_from_linked_to(database, dict_name, item_key, rename_value=new_name)
+    if dictionary[item_key]['link']['linked_to']:
+        dict_management.rename_linked_from(database, dict_name, item_key, new_key)
+    if dictionary[item_key]['link']['linked_from']:
+        dict_management.rename_linked_to(database, dict_name, item_key, new_key)
+
+    # Implement rename
+    dictionary[new_key] = dictionary.pop(item_key)
+    dictionary[new_key]['display_name'] = new_name
 
     # Handle Group
     current_group = dict_management.get_group(database, dict_name, item_key)
     current_group['items'].remove(item_key)
-    current_group['items'].append(new_name)
+    current_group['items'].append(new_key)
 
     # Save and print display
     file_management.save(database)
@@ -708,19 +712,19 @@ def history_mode(database, context, args):
 
 
 def rehistory_mode(database, context, args):
-    # ex input: daily rehistory objective
+    # ex input: daily rehistory itemname
     dict_name = context['command']
     dictionary = database[dict_name]
 
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an objective to change the History link of')
+        console_display.refresh_and_print(database, 'Must provide an item to change the History link of')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     input_string = ' '.join(args).lower()
-    if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Objective not found')
+    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
+        console_display.refresh_and_print(database, 'Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     new_history_name = get_history_name(database, dict_name)
-    dictionary[objective_name]['history_name'] = new_history_name
+    dictionary[item_name]['history_name'] = new_history_name
     if dict_name == 'counter':
         dict_management.create_counter_history(database, new_history_name)
     # Save and print display
@@ -729,22 +733,22 @@ def rehistory_mode(database, context, args):
 
 
 def denominator_mode(database, context, args):
-    # ex input: daily denominator wanikani
+    # ex input: daily denominator itemname
     dict_name = context['command']
     dictionary = database[dict_name]
 
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an objective to change the denominator of')
+        console_display.refresh_and_print(database, 'Must provide an item to change the denominator of')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Objective name not found')
+    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
+        console_display.refresh_and_print(database, 'Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if not (new_denominator := get_denominator()):
         return
-    dictionary[objective_name]['denominator'] = new_denominator
+    dictionary[item_name]['denominator'] = new_denominator
     # Save and print display
     file_management.save(database)
     console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully updated!')
@@ -794,19 +798,19 @@ def tag_mode(database, context, args):
             lines.append(user_input)
 
     # -------------------------------------------------------------------------------------------
-    # ex input: daily tag wanikani
+    # ex input: daily tag itemname
     dict_name = context['command']
     dictionary = database[dict_name]
 
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an objective to tag')
+        console_display.refresh_and_print(database, 'Must provide an item to tag')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Objective name not found')
+    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
+        console_display.refresh_and_print(database, 'Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    item = dictionary[objective_name]
+    item = dictionary[item_name]
 
     if not item['history_name']:
         console_display.refresh_and_print(database, 'Item does not have a History link to store a tag in')
@@ -830,46 +834,45 @@ def tag_mode(database, context, args):
     item['tag'] = tag_input
     # Save and print display
     file_management.save(database)
-    console_display.refresh_and_print(database, f'[{objective_name}] successfully tagged!')
+    console_display.refresh_and_print(database, f'[{item_name}] successfully tagged!')
 
 
 def link_mode(database, context, args):
-    # ex input: daily link wanikani
+    # ex input: daily link itemname
     dict_name = context['command']
     dictionary = database[dict_name]
 
     # Input validation
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an objective to link')
+        console_display.refresh_and_print(database, 'Must provide an item to link')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    objective_input_string = ' '.join(args).lower()
-    if not (objective_name := dict_management.key_search(database, dictionary, objective_input_string)):
-        console_display.refresh_and_print(database, 'Objective name not found')
+    item_input_string = ' '.join(args).lower()
+    if not (item_name := dict_management.key_search(database, dictionary, item_input_string)):
+        console_display.refresh_and_print(database, 'Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    type_string = input('> What objective type would you like to link this objective to? '
+    type_string = input('> What type of item would you like to link this item to? '
                         '(Blank input = cancel)\n\n').lower()
     if not type_string:
         console_display.refresh_and_print(database, 'Cancelled')
         return
     if type_string not in documentation.get_numeric_dictionary_names():
-        console_display.refresh_and_print(database, 'Invalid objective type')
+        console_display.refresh_and_print(database, 'Invalid item type')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     print()  # Extra newline
-    link_input_string = input('> What objective would you like to link this objective to? '
-                              '(Blank input = cancel)\n\n').lower()
+    link_input_string = input('> What item would you like to link this item to? (Blank input = cancel)\n\n').lower()
     if not link_input_string:
         console_display.refresh_and_print(database, 'Cancelled')
         return
-    if not (linked_objective_name := dict_management.key_search(database, database[type_string], link_input_string)):
-        console_display.refresh_and_print(database, 'Objective not found')
+    if not (linked_item_name := dict_management.key_search(database, database[type_string], link_input_string)):
+        console_display.refresh_and_print(database, 'Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
-    origin = [dict_name, objective_name]
-    new_link = [type_string, linked_objective_name]
+    origin = [dict_name, item_name]
+    new_link = [type_string, linked_item_name]
 
     # Make sure link is not to itself or circular
     if origin == new_link:
-        console_display.refresh_and_print(database, 'Cannot link an objective to itself')
+        console_display.refresh_and_print(database, 'Cannot link an item to itself')
         return
     link_chain = dict_management.test_link_chain(database, origin, new_link)
     if link_chain[0] == link_chain[-1]:  # Circular behavior
@@ -878,77 +881,77 @@ def link_mode(database, context, args):
         return
 
     # Check if it's already linked
-    link = dictionary[objective_name]['link']
+    link = dictionary[item_name]['link']
     linked_to = link['linked_to']
 
     if linked_to:
-        if linked_to == [type_string, linked_objective_name]:  # Already linked to given input
+        if linked_to == [type_string, linked_item_name]:  # Already linked to given input
             console_display.refresh_and_print(database, 'This link already exists')
             return
         # A different link was inputted, overwrite previous
-        dict_management.remove_from_linked_from(database, dict_name, objective_name)  # Undo link from other side
+        dict_management.remove_from_linked_from(database, dict_name, item_name)  # Undo link from other side
 
-    # Set this objective's linked_to
-    link['linked_to'] = [type_string, linked_objective_name]
+    # Set this item's linked_to
+    link['linked_to'] = [type_string, linked_item_name]
 
-    # Set the linked objective's linked_from
-    database[type_string][linked_objective_name]['link']['linked_from'].append([dict_name, objective_name])
+    # Set the linked item's linked_from
+    database[type_string][linked_item_name]['link']['linked_from'].append([dict_name, item_name])
 
     # Save and print display
     file_management.save(database)
-    console_display.refresh_and_print(database, f'[{objective_name}] successfully linked to [{linked_objective_name}]! '
+    console_display.refresh_and_print(database, f'[{item_name}] successfully linked to [{linked_item_name}]! '
                                                 f'Link sequence: {dict_management.format_link_chain(link_chain)}')
 
 
 def unlink_mode(database, context, args):
-    # ex input: daily unlink wanikani
+    # ex input: daily unlink itemname
     dict_name = context['command']
     dictionary = database[dict_name]
 
     # Input validation
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an objective to unlink')
+        console_display.refresh_and_print(database, 'Must provide an item to unlink')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     input_string = ' '.join(args).lower()
-    if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Objective name not found')
+    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
+        console_display.refresh_and_print(database, 'Item name not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    link = dictionary[objective_name]['link']
+    link = dictionary[item_name]['link']
     linked_to = link['linked_to']
     if not linked_to:
-        console_display.refresh_and_print(database, 'Objective is not linked')
+        console_display.refresh_and_print(database, 'Item is not linked')
         return
 
-    # Remove from the objective it's linked to
-    dict_management.remove_from_linked_from(database, dict_name, objective_name)
+    # Remove from the item it's linked to
+    dict_management.remove_from_linked_from(database, dict_name, item_name)
 
-    # Reset this objective's link
+    # Reset this item's link
     link['linked_to'] = []
 
     # Save and print display
     file_management.save(database)
-    console_display.refresh_and_print(database, f'[{objective_name}] successfully unlinked!')
+    console_display.refresh_and_print(database, f'[{item_name}] successfully unlinked!')
 
 
 def viewlink_mode(database, context, args):
-    # ex input: daily viewlink wanikani
+    # ex input: daily viewlink itemname
     dict_name = context['command']
     dictionary = database[dict_name]
 
     # Input validation
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an objective to view the link chain of')
+        console_display.refresh_and_print(database, 'Must provide an item to view the link chain of')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     input_string = ' '.join(args).lower()
-    if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Objective name not found')
+    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
+        console_display.refresh_and_print(database, 'Item name not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    linked_to = dictionary[objective_name]['link']['linked_to']
+    linked_to = dictionary[item_name]['link']['linked_to']
     if not linked_to:
-        console_display.refresh_and_print(database, 'Objective is not linked')
+        console_display.refresh_and_print(database, 'Item is not linked')
         return
 
-    link_chain = dict_management.get_link_chain(database, dict_name, objective_name)
+    link_chain = dict_management.get_link_chain(database, dict_name, item_name)
     console_display.refresh_and_print(database, f'Link: {dict_management.format_link_chain(link_chain)}')
 
 
@@ -957,7 +960,7 @@ def pause_mode(database, context, args):
 
     dict_name = context['command']
     dictionary = database[dict_name]
-    pause_list = []  # Objectives to pause
+    pause_list = []  # Items to pause
 
     # Input validation
     if args:
@@ -965,20 +968,20 @@ def pause_mode(database, context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     user_response = input('> Enter a response corresponding to a selection mode\n'
-                          '  [A] Single objective\n'
+                          '  [A] Single item\n'
                           '  [B] Group\n\n').lower()
     if user_response not in {'a', 'b'}:
         console_display.refresh_and_print(database, 'Invalid response')
         return
     if user_response == 'a':
-        input_objective_name = input('> What objective would you like to pause? (Blank input = cancel)\n\n').lower()
-        if not input_objective_name:
+        input_item_name = input('> What item would you like to pause? (Blank input = cancel)\n\n').lower()
+        if not input_item_name:
             console_display.refresh_and_print(database, 'Cancelled')
             return
-        if not (objective_name := dict_management.key_search(database, dictionary, input_objective_name)):
-            console_display.refresh_and_print(database, 'Objective not found')
+        if not (item_name := dict_management.key_search(database, dictionary, input_item_name)):
+            console_display.refresh_and_print(database, 'Item not found')
             raise errors.InvalidCommandUsage(dict_name, context['mode'])
-        pause_list.append(objective_name)
+        pause_list.append(item_name)
     else:  # == 'b'
         input_string = input('> What Group would you like to pause? (Blank input = cancel)\n\n').lower()
         if not input_string:
@@ -988,9 +991,9 @@ def pause_mode(database, context, args):
                                                              input_string)):
             console_display.refresh_and_print(database, 'Container not found')
             raise errors.InvalidCommandUsage(dict_name, context['mode'])
-        for objective in database['groups'][dict_name][container_name]:
-            pause_list.append(objective)
-    duration_input = input('> How many days should the objective be paused for? (-1 = indefinite, 0 = cancel)\n\n')
+        for item in database['groups'][dict_name][container_name]:
+            pause_list.append(item)
+    duration_input = input('> How many days should the item be paused for? (-1 = indefinite, 0 = cancel)\n\n')
     if not (duration_input == '-1' or duration_input.isnumeric()):
         console_display.refresh_and_print(database, 'Invalid input. Expected -1 or a positive integer')
         return
@@ -998,8 +1001,8 @@ def pause_mode(database, context, args):
         console_display.refresh_and_print(database, 'Cancelled')
         return
     duration = int(duration_input)
-    for objective in pause_list:
-        dictionary[objective]['pause_timer'] = duration
+    for item in pause_list:
+        dictionary[item]['pause_timer'] = duration
 
     # Save and print display
     file_management.save(database)
@@ -1008,19 +1011,19 @@ def pause_mode(database, context, args):
 
 # Removing items ------------------------------------------------------------------------------------------
 def remove_mode(database, context, args):
-    # ex input: daily remove wanikani
+    # ex input: daily remove itemname
     dict_name = context['command']
     dictionary = database[dict_name]
 
     if not args:
-        print('Must provide an objective to remove', end='\n\n')
+        print('Must provide an item to remove', end='\n\n')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (objective_name := dict_management.key_search(database, dictionary, input_string)):
-        print('Objective name not found', end='\n\n')
+    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
+        console_display.refresh_and_print(database, 'Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    dict_management.remove_item(database, dict_name, objective_name)  # Link, Group handled here
+    dict_management.remove_item(database, dict_name, item_name)  # Link, Group handled here
 
     # Save and print display
     file_management.save(database)
@@ -1062,11 +1065,11 @@ def groupremove_mode(database, context, args):
     groups = database['groups'][dict_name]
     groups_display = database['groups_display'][dict_name]
 
-    if args:
-        console_display.refresh_and_print(database, 'Unnecessary arguments!')
+    if not args:
+        print('Must provide a Group to remove', end='\n\n')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
-    input_string = input('> What Group would you like to delete?\n\n').lower()
+    input_string = ' '.join(args).lower()
     if not (group_key := dict_management.key_search(database, groups, input_string, ignore_list=['_Default'])):
         console_display.refresh_and_print(database, 'Group name not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])

@@ -165,7 +165,7 @@ def get_module(module_name):
 
 
 def print_alias():
-    print("'update': special form '+<name> (value)', ie daily +wanikani 5\n")
+    print("'update': special form '+<name> (value)', ie daily +itemname 5\n")
 
 
 # Template:

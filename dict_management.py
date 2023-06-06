@@ -270,45 +270,65 @@ def get_link_chain(database, dict_name, objective_name):
 
 
 def format_link_chain(link_chain):
-    # ex: (Daily) wanikani -> (Optional) Extra work
+    # ex: (Daily) itemname -> (Optional) Extra work
     return ' -> '.join([f'({x[0].capitalize()}) {x[1]}' for x in link_chain])
 
 
-def remove_from_linked_to(database, dict_name, objective_name, *, rename_value=False):
-    """For a given objective with a link, remove it from the linked_to section of the objectives which link to it
+def remove_from_linked_to(database, dict_name, item_name):
+    """For a given item with a link to it, remove it from the linked_to section of the items which link to it
 
     :param database:
-    :param dict_name: Dict name of the objective being removed
-    :param objective_name: Name of the objective being removed
-    :param rename_value: (Optional) Instead of deleting, rename objective name to this value in link's data
+    :param dict_name: Dict name of the item being removed
+    :param item_name: Name of the item being removed
     :return: None
     """
-    linked_from = database[dict_name][objective_name]['link']['linked_from']
-    for pair in linked_from:  # pair = [linked_dict_name, linked_objective_name]
-        if rename_value:
-            pair[1] = rename_value
-        else:
-            database[pair[0]][pair[1]]['link']['linked_to'] = []
+    linked_from = database[dict_name][item_name]['link']['linked_from']
+    for pair in linked_from:  # pair = [linked_dict_name, linked_item_name]
+        database[pair[0]][pair[1]]['link']['linked_to'] = []
 
 
-def remove_from_linked_from(database, dict_name, objective_name, *, rename_value=False):
-    """For a given objective with a link, remove it from the linked_from section of the objective it links to
+def rename_linked_to(database, dict_name, item_name, rename_value):
+    """For a given item with a link to it, rename it in the linked_to section of the items which link to it
 
     :param database:
-    :param dict_name: Dict name of the objective being removed
-    :param objective_name: Name of the objective being removed
-    :param rename_value: (Optional) Instead of deleting, rename objective name to this value in link's data
+    :param dict_name: Dict name of the item being renamed
+    :param item_name: Name of the item being renamed
+    :param rename_value: What it is being renamed to
+    :return: None
+    """
+    linked_from = database[dict_name][item_name]['link']['linked_from']
+    for pair in linked_from:  # pair = [linked_dict_name, linked_item_name]
+        database[pair[0]][pair[1]]['link']['linked_to'][1] = rename_value
+
+
+def remove_from_linked_from(database, dict_name, item_name):
+    """For a given objective with an outward link, remove it from the linked_from section of the item it links to
+
+    :param database:
+    :param dict_name: Dict name of the item being removed
+    :param item_name: Name of the item being removed
     :return:
     """
-    linked_to = database[dict_name][objective_name]['link']['linked_to']
+    linked_to = database[dict_name][item_name]['link']['linked_to']
+    foreign_linked_from = database[linked_to[0]][linked_to[1]]['link']['linked_from']
+    foreign_linked_from.remove([dict_name, item_name])
+
+
+def rename_linked_from(database, dict_name, item_name, rename_value):
+    """For a given objective with an outward link, rename it in the linked_from section of the item it links to
+
+    :param database:
+    :param dict_name: Dict name of the item being renamed
+    :param item_name: Name of the item being renamed
+    :param rename_value: What it is being renamed to
+    :return:
+    """
+    linked_to = database[dict_name][item_name]['link']['linked_to']
     foreign_linked_from = database[linked_to[0]][linked_to[1]]['link']['linked_from']
     for pair in foreign_linked_from:
-        if pair == [dict_name, objective_name]:
-            if rename_value:
-                pair[1] = rename_value
-            else:
-                foreign_linked_from.remove(pair)
-            break
+        if pair == [dict_name, item_name]:
+            pair[1] = rename_value
+            return
 
 
 # Groups ------------------------------------------------------------------------------------------

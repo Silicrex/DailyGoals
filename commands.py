@@ -424,9 +424,9 @@ def alias_format(user_input):
         user_input[1] = mode_alias_dict[mode]  # Put full mode back into input list
     # Update shorthand
     elif mode.startswith('+') and len(user_input[1]) > 1:  # 2nd input starts with + and is more than just +
-        # ie `daily +wanikani` and `daily +wanikani 5` are the same as `daily update wanikani 5`
+        # ie `daily +itemname 5` is the same as `daily update itemname 5`
         # End result: replace + with 'update' and push everything else further. Works with spaced names
         user_input.insert(2, user_input[1][1:])  # Slice name connected to the + symbol, put at index 2
-        # daily +wanikani 5 -> daily +wanikani wanikani 5
+        # daily +itemname 5 -> daily +itemname itemname 5
         user_input[1] = 'update'  # Format like full command
-        # daily +wanikani wanikani 5 -> daily update wanikani 5
+        # daily +itemname itemname 5 -> daily update itemname 5
