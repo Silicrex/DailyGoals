@@ -57,7 +57,7 @@ def add_mode(database, context, args):
                                   'numerator': 0,
                                   'streak': 0,
                                   'pause_timer': start_timer,
-                                  'link': {'linked_to': [], 'linked_from': []},
+                                  'link': {'linked_to': [], 'linked_from': [], 'chaining': True},
                                   'history_name': history_name,
                                   'tag': None}})
     dict_management.default_group(database, dict_name, item_key)  # Add to default container
@@ -97,7 +97,7 @@ def todo_add_mode(database, dict_name):
                                   'numerator': 0,
                                   'enforced_todo': enforced_todo,
                                   'pause_timer': start_timer,
-                                  'link': {'linked_to': [], 'linked_from': []},
+                                  'link': {'linked_to': [], 'linked_from': [], 'chaining': True},
                                   'history_name': history_name,
                                   'tag': None}})
     dict_management.default_group(database, 'todo', item_key)  # Add to default container
@@ -324,7 +324,7 @@ def cycle_add_mode(database, dict_name):
                                   'remaining_cooldown': start_offset,
                                   'display_mode': display_mode,
                                   'pause_timer': 0,
-                                  'link': {'linked_to': [], 'linked_from': []},
+                                  'link': {'linked_to': [], 'linked_from': [], 'chaining': True},
                                   'history_name': history_name,
                                   'tag': None}})
     dict_management.default_group(database, 'cycle', item_key)  # Add to default container
@@ -347,7 +347,7 @@ def counter_add_mode(database, dict_name):
     dictionary.update({item_key: {'display_name': item_name,
                                   'numerator': 0,
                                   'pause_timer': 0,
-                                  'link': {'linked_to': [], 'linked_from': []},
+                                  'link': {'linked_to': [], 'linked_from': [], 'chaining': True},
                                   'history_name': history_name,
                                   'tag': None}})
     if history_name:
@@ -847,59 +847,82 @@ def link_mode(database, context, args):
         console_display.refresh_and_print(database, 'Must provide an item to link')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     item_input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(database, dictionary, item_input_string)):
+    if not (item_key := dict_management.key_search(database, dictionary, item_input_string)):
         console_display.refresh_and_print(database, 'Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    type_string = input('> What type of item would you like to link this item to? '
-                        '(Blank input = cancel)\n\n').lower()
-    if not type_string:
+    input_dict_name = input('> What type of item would you like to link this item to? '
+                            '(Blank input = cancel)\n\n').lower()
+    if not input_dict_name:
         console_display.refresh_and_print(database, 'Cancelled')
         return
-    if type_string not in documentation.get_numeric_dictionary_names():
+    if input_dict_name not in documentation.get_numeric_dictionary_names():
         console_display.refresh_and_print(database, 'Invalid item type')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     print()  # Extra newline
-    link_input_string = input('> What item would you like to link this item to? (Blank input = cancel)\n\n').lower()
-    if not link_input_string:
+
+    input_item_key = input('> What item would you like to link this item to? (Blank input = cancel)\n\n').lower()
+    if not input_item_key:
         console_display.refresh_and_print(database, 'Cancelled')
         return
-    if not (linked_item_name := dict_management.key_search(database, database[type_string], link_input_string)):
+    if not (input_item_key := dict_management.key_search(database, database[input_dict_name], input_item_key)):
         console_display.refresh_and_print(database, 'Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
+    print()
+    input_item_name = database[input_dict_name][input_item_key]['display_name']
 
-    origin = [dict_name, item_name]
-    new_link = [type_string, linked_item_name]
+    while True:
+        chain_input_string = input('> Would you like this link to trigger other links when applicable? '
+                                   '(y/n/blank to cancel)\n\n').lower()
+
+        if chain_input_string in {'yes', 'y'}:
+            chaining = True
+            break
+        elif chain_input_string in {'no', 'n'}:
+            chaining = False
+            break
+        elif not chain_input_string:
+            console_display.refresh_and_print(database, 'Cancelled')
+            return
+        print()
+
+    link = dictionary[item_key]['link']
+    link['chaining'] = chaining
+    origin = [dict_name, item_key, chaining]
+    next_link = [input_dict_name, input_item_key, database[input_dict_name][input_item_key]['link']['chaining']]
 
     # Make sure link is not to itself or circular
-    if origin == new_link:
+    if origin == next_link:
         console_display.refresh_and_print(database, 'Cannot link an item to itself')
         return
-    link_chain = dict_management.test_link_chain(database, origin, new_link)
+    link_chain = dict_management.get_link_chain(database, origin, next_link)
     if link_chain[0] == link_chain[-1]:  # Circular behavior
         console_display.refresh_and_print(database, f'Invalid link as it would be circular: '
                                                     f'{dict_management.format_link_chain(link_chain)}')
         return
 
     # Check if it's already linked
-    link = dictionary[item_name]['link']
     linked_to = link['linked_to']
 
     if linked_to:
-        if linked_to == [type_string, linked_item_name]:  # Already linked to given input
+        if linked_to == [input_dict_name, input_item_name]:  # Already linked to given input
             console_display.refresh_and_print(database, 'This link already exists')
             return
-        # A different link was inputted, overwrite previous
-        dict_management.remove_from_linked_from(database, dict_name, item_name)  # Undo link from other side
+        # A different link was inputted, confirm overwriting previous
+        if not console_display.confirm(f'This item is already linked to {dictionary[item_key]["link"]["linked_to"]}\n'
+                                       f'Overwrite this link? (y/n)'):
+            console_display.refresh_and_print(database, 'Cancelled')
+            return
+        dict_management.remove_from_linked_from(database, dict_name, item_key)  # Undo link from other side
 
     # Set this item's linked_to
-    link['linked_to'] = [type_string, linked_item_name]
+    link['linked_to'] = [input_dict_name, input_item_name]
 
     # Set the linked item's linked_from
-    database[type_string][linked_item_name]['link']['linked_from'].append([dict_name, item_name])
+    database[input_dict_name][input_item_name]['link']['linked_from'].append([dict_name, item_key])
 
     # Save and print display
     file_management.save(database)
-    console_display.refresh_and_print(database, f'[{item_name}] successfully linked to [{linked_item_name}]! '
+    console_display.refresh_and_print(database, f'[{item_key}] successfully linked to [{input_item_name}]! '
                                                 f'Link sequence: {dict_management.format_link_chain(link_chain)}')
 
 
@@ -951,7 +974,10 @@ def viewlink_mode(database, context, args):
         console_display.refresh_and_print(database, 'Item is not linked')
         return
 
-    link_chain = dict_management.get_link_chain(database, dict_name, item_name)
+    origin = [dict_name, item_name, dictionary[item_name]['link']['chaining']]
+    linked_dict_name, linked_item_name = linked_to
+    next_link = [linked_dict_name, linked_item_name, database[linked_dict_name][linked_item_name]['link']['chaining']]
+    link_chain = dict_management.get_link_chain(database, origin, next_link)
     console_display.refresh_and_print(database, f'Link: {dict_management.format_link_chain(link_chain)}')
 
 

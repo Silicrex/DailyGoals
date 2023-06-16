@@ -55,8 +55,9 @@ def key_search(database, dictionary, input_string, *, force_manual_match=False, 
             display_name = dictionary[key]['display_name']
             print(f"Could not find '{input_string}', but found '{display_name}'\n")
             while True:
-                print('Is this what you meant? (y/n/cancel)')
+                print('Is this what you meant? (y/n/cancel)', end='\n\n')
                 user_response = input().lower()
+                print()
                 if user_response in {'y', 'n', 'cancel'}:
                     break
             if user_response == 'y':
@@ -86,15 +87,24 @@ def key_search(database, dictionary, input_string, *, force_manual_match=False, 
     return False
 
 
-def update_item(database, dict_name, objective_name, update_value):
+def update_item(database, dict_name, item_name, update_value, *, chaining=True, depth=1):
+    """
+    :param database:
+    :param dict_name:
+    :param item_name:
+    :param update_value:
+    :param chaining: Used to indicate if a link should trigger a subsequent link
+    :param depth: Used to track the update depth for linked updates
+    :return: None
+    """
     dictionary = database[dict_name]
-    objective = dictionary[objective_name]
-    objective['numerator'] += update_value
+    item = dictionary[item_name]
+    item['numerator'] += update_value
 
     # If counter, check if history values need updating
-    if dict_name == 'counter' and objective['history_name']:
-        new_value = objective['numerator']
-        history_key = objective['history_name'].lower()
+    if dict_name == 'counter' and item['history_name']:
+        new_value = item['numerator']
+        history_key = item['history_name'].lower()
         history_value = database['history']['counter'][history_key]
         if new_value > history_value['highest_value']:
             history_value['highest_value'] = new_value
@@ -102,13 +112,16 @@ def update_item(database, dict_name, objective_name, update_value):
             history_value['lowest_value'] = new_value
 
     # Handle link
-    linked_to = objective['link']['linked_to']
-    if linked_to:
+    link = item['link']
+    linked_to = link['linked_to']
+    if linked_to and chaining:
         linked_dict_name = linked_to[0]
         linked_dict = database[linked_dict_name]
-        linked_objective_name = linked_to[1]
-        assert linked_objective_name in linked_dict  # Shouldn't be possible to return false
-        update_item(database, linked_dict_name, linked_objective_name, update_value)
+        linked_item_name = linked_to[1]
+        assert linked_item_name in linked_dict  # Shouldn't be possible to return False
+        depth = update_item(database, linked_dict_name, linked_item_name, update_value,
+                            chaining=link['chaining'], depth=depth+1)
+    return depth
 
 
 def complete_item(database, dict_name, objective_name):
@@ -235,43 +248,45 @@ def create_counter_history(database, history_name):
 
 # Links ------------------------------------------------------------------------------------------
 
-def test_link_chain(database, origin, new_link):
-    """Gets a list of the link sequence produced if given objectives are linked.
+def get_link_chain(database, origin, next_link):
+    """Gets a list of the link sequence produced if given items are linked.
 
     :param database:
-    :param list origin: Starting point [dict_name, objective_name]
-    :param list new_link: Proposed new link [dict_name, objective_name]
-    :return: List of lists [dict_name, obj_name] in order of the link sequence. If link is circular, chain ends with
-    origin being reached again
+    :param list origin: Starting point [dict_name, item_name, chaining]
+    :param list next_link: Proposed new link [dict_name, item_name, chaining]
+    :return: List of lists [dict_name, item_name, chaining] in order of the link sequence.
+    If link is circular, chain ends with origin being reached again
     """
-    chain = [origin, new_link]
-    to_dict, to_obj = new_link
-    while True:
-        # linked_to = [type_string, linked_objective_name]
-        foreign_linked_to = database[to_dict][to_obj]['link']['linked_to']
-        if not foreign_linked_to:  # Dead end, not circular
-            return chain
-        chain.append(foreign_linked_to)
-        if foreign_linked_to == origin:  # Ends up back at the start; is circular
-            return chain
-        # Check link of the link until you either hit a dead end (non-circular) or end up back at the start (circular)
-        to_dict, to_obj = foreign_linked_to
-
-
-def get_link_chain(database, dict_name, objective_name):
-    chain = [[dict_name, objective_name]]  # Start with origin, then append in order
-    while True:
-        # linked_to = [type_string, linked_objective_name]
-        linked_to = database[dict_name][objective_name]['link']['linked_to']
-        if not linked_to:  # Reached the end
-            return chain
-        chain.append(linked_to)  # It is linked, append that link to the chain
-        dict_name, objective_name = linked_to  # Move down a link
+    chain = [origin]  # Initialize chain list
+    prev = origin  # Need to track previous item as chaining is based on its setting
+    while True:  # Check link of the link until you either hit a dead end or end up back at the start
+        chain.append(next_link)
+        chaining = prev[2]
+        if not chaining:  # Chaining was disabled, so next_link's link doesn't matter
+            break
+        elif next_link == origin:  # Ends up back at the start and chaining is on; is circular
+            break
+        to_dict = next_link[0]
+        to_item = next_link[1]
+        linked_to = database[to_dict][to_item]['link']['linked_to']
+        if not linked_to:  # There is no further link
+            break
+        next_chaining = database[linked_to[0]][linked_to[1]]['link']['chaining']
+        prev = next_link
+        next_link = [linked_to[0], linked_to[1], next_chaining]  # Switch focus to next link in chain
+    return chain
 
 
 def format_link_chain(link_chain):
     # ex: (Daily) itemname -> (Optional) Extra work
-    return ' -> '.join([f'({x[0].capitalize()}) {x[1]}' for x in link_chain])
+    res = []
+    for link in link_chain:
+        dict_name, item_name, chaining = link
+        if chaining:
+            res.append(f'({dict_name.capitalize()}) {item_name}')
+        else:
+            res.append(f'({dict_name.capitalize()}; no chaining) {item_name}')
+    return ' -> '.join(res)
 
 
 def remove_from_linked_to(database, dict_name, item_name):
