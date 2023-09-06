@@ -1,6 +1,7 @@
 import os  # for os.system('cls')
 import console_display
 import date_logic
+from database import DB
 
 
 class Pages:
@@ -67,10 +68,9 @@ class Pages:
 
 
 class HistoryPages(Pages):
-    def __init__(self, database, dict_name):
-        self.database = database
+    def __init__(self, dict_name):
         self.dict_name = dict_name
-        super().__init__(database['history'][dict_name])
+        super().__init__(DB['history'][dict_name])
 
     def print_header(self):
         print(f"Entered the [{self.dict_name}] history interface\n"

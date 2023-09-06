@@ -103,8 +103,8 @@ def load_data():
                 database = load_backup()  # Either gets data or aborts program if failed
     else:  # If data.json doesn't exist, create new one
         database = get_template_dict()
-        database['welcome_message'] = welcome_messages.get_welcome()  # First-time-user welcome text
-        save(database)
+        DB['welcome_message'] = welcome_messages.get_welcome()  # First-time-user welcome text
+        save()
     return database
 
 
@@ -120,6 +120,9 @@ def load_backup():
             quit()
 
 
-def save(database, file_name='data.json'):  # By default, write to primary json file
+def save(file_name='data.json'):  # By default, write to primary json file
     with open(file_name, 'w') as file:
-        json.dump(database, file, indent=4)
+        json.dump(DB, file, indent=4)
+
+
+DB = load_data()

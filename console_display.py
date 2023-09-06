@@ -2,23 +2,24 @@ import os
 import date_logic
 import dict_management
 import documentation
+from database import DB
 
 version_number = 'PRE-RELEASE'
 
 
-def print_display(database):
+def print_display():
     os.system('cls')
-    settings = database['settings']
-    stats = database['stats']
+    settings = DB['settings']
+    stats = DB['stats']
 
     # Print top header/welcome message
     print(f"[Daily] ('help' for commands) (v{version_number})")
     if settings['welcome']:
-        print(database['welcome_message'])
+        print(DB['welcome_message'])
     print()  # Extra newline
 
     # Print date: - 01/01/2022 Sunday -
-    calendar_date = database['settings']['calendar_date']  # Date dictionary
+    calendar_date = DB['settings']['calendar_date']  # Date dictionary
     print(f"- {date_logic.string_date(calendar_date)} -", end='\n\n')
 
     # Streak/total header
@@ -28,11 +29,11 @@ def print_display(database):
     print('\n')  # Extra two newlines
 
     # Print dicts
-    display_list = dict_management.get_display_list(database)
+    display_list = dict_management.get_display_list()
     if not display_list:  # If display_list is empty
         overall_item_length = 0
         for dictionary in documentation.get_dictionary_names():
-            overall_item_length += len(database[dictionary])
+            overall_item_length += len(DB[dictionary])
         if overall_item_length == 0:
             print("No items exist! Create some with '<type> add' (ex: daily add)!", end='\n\n')
         else:
@@ -40,12 +41,13 @@ def print_display(database):
         return
 
     for dict_name in display_list:
-        print_dictionary(database, dict_name)
+        print_dictionary(dict_name)
 
 
-def refresh_and_print(database, message):  # Refresh display then print message
-    print_display(database)
-    print(message, end='\n\n')
+def refresh_display(message=''):  # Refresh display then print message
+    print_display()
+    if message:
+        print(message, end='\n\n')
 
 
 # Sorting -------------------------------------------------------------------
@@ -75,20 +77,19 @@ def alpha_sort(obj):
 
 # Item printing --------------------------------------------------------
 
-def print_dictionary(database, dict_name):
-    globals()['print_' + dict_name](database)
+def print_dictionary(dict_name):
+    globals()['print_' + dict_name]()
 
 
-def print_groups(database, dictionary, groups, display_order, print_items, sort_key, *, extra_string_func=None,
+def print_groups(dictionary, groups, display_order, print_items, sort_key, *, extra_string_func=None,
                  prefix_func=None, suffix_func=None):
     """Given a dictionary of objectives, print them out with detailed information.
 
-    :param dict database: The database
     :param dict dictionary: The dictionary of objectives
     :param dict groups: The Groups dict for the corresponding dict type
     :param list display_order: A list of the order to display Groups in, not including the default
     :param function print_items: Function that prints a dict of objectives, called within a group.
-    Signature: (database, items_dict, extra_string_exec, item_prefix, item_suffix)
+    Signature: (DB, items_dict, extra_string_exec, item_prefix, item_suffix)
     :param function sort_key: Sorting function that takes an obj_value
     :param function prefix_func: Function that takes an obj_value and returns a string to prefix the print
     :param function suffix_func: Function that takes an obj_value and returns a string to suffix the print
@@ -108,11 +109,11 @@ def print_groups(database, dictionary, groups, display_order, print_items, sort_
                 print(' (Minimized)')
                 continue
         sorted_items = dict_management.sort_dict(group_items, sort_key)
-        print_items(database, sorted_items, extra_string_func, prefix_func, suffix_func)
+        print_items(sorted_items, extra_string_func, prefix_func, suffix_func)
         print()
 
 
-def print_items_generic(database, items_dict, extra_string_func, prefix_func, suffix_func):
+def print_items_generic(items_dict, extra_string_func, prefix_func, suffix_func):
     for key, value in items_dict.items():
         display_name = value['display_name']
         extra_string = '' if not extra_string_func else extra_string_func(value)
@@ -123,7 +124,7 @@ def print_items_generic(database, items_dict, extra_string_func, prefix_func, su
         denominator = value['denominator']
         numerator = value['numerator']
         history_link = ''
-        if value['history_name'] and database['settings']['show_history_link']:
+        if value['history_name'] and DB['settings']['show_history_link']:
             history_link = f' [-> {value["history_name"]}]'
         body = (f'{display_name}{extra_string}: '
                 f'{numerator:,}/{denominator:,} ({numerator / denominator:.2%})')
@@ -131,7 +132,7 @@ def print_items_generic(database, items_dict, extra_string_func, prefix_func, su
         print(f' {prefix}{box}{body}{suffix}{history_link}{linked}{tagged}')
 
 
-def print_items_counters(database, items_dict, extra_string_func, prefix_func, suffix_func):
+def print_items_counters(items_dict, extra_string_func, prefix_func, suffix_func):
     for key, value in items_dict.items():
         display_name = value['display_name']
         extra_string = '' if not extra_string_func else extra_string_func(value)
@@ -139,72 +140,72 @@ def print_items_counters(database, items_dict, extra_string_func, prefix_func, s
         suffix = '' if not suffix_func else suffix_func(value)
         numerator = value['numerator']
         history_link = ''
-        if value['history_name'] and database['settings']['show_history_link']:
+        if value['history_name'] and DB['settings']['show_history_link']:
             history_link = f' [-> {value["history_name"]}]'
         print(f'{prefix}{display_name}{history_link}{extra_string}: {numerator}{suffix}')
 
 
-def print_daily(database):
-    dictionary = database['daily']
-    groups = database['groups']['daily']
-    groups_display = database['groups_display']['daily']
-    if dictionary or database['optional']:
+def print_daily():
+    dictionary = DB['daily']
+    groups = DB['groups']['daily']
+    groups_display = DB['groups_display']['daily']
+    if dictionary or DB['optional']:
         print('>>> Dailies:', end='\n\n')
         if dictionary:
-            print_groups(database, dictionary, groups, groups_display, print_items_generic, completion_then_alpha_sort)
+            print_groups(dictionary, groups, groups_display, print_items_generic, completion_then_alpha_sort)
             print()  # Extra newline
-        print_optional(database)
+        print_optional()
 
 
-def print_optional(database):
-    dictionary = database['optional']
-    groups = database['groups']['optional']
-    groups_display = database['groups_display']['optional']
+def print_optional():
+    dictionary = DB['optional']
+    groups = DB['groups']['optional']
+    groups_display = DB['groups_display']['optional']
     if dictionary:
         print('(Optional)', end='\n\n')
-        print_groups(database, dictionary, groups, groups_display, print_items_generic, completion_then_alpha_sort)
+        print_groups(dictionary, groups, groups_display, print_items_generic, completion_then_alpha_sort)
         print()  # Extra newline
 
 
-def print_todo(database):
-    dictionary = database['todo']
-    groups = database['groups']['todo']
-    groups_display = database['groups_display']['todo']
+def print_todo():
+    dictionary = DB['todo']
+    groups = DB['groups']['todo']
+    groups_display = DB['groups_display']['todo']
     if dictionary:
         print('>>> To-dos:')
-        enforced_todo_dict = dict_management.get_enforced_todo(database)
+        enforced_todo_dict = dict_management.get_enforced_todo()
         if enforced_todo_dict:
             print("* '>' signifies enforced to-do; required for streak today")
         print()
-        print_groups(database, dictionary, groups, groups_display, print_items_generic, todo_sort,
+        print_groups(dictionary, groups, groups_display, print_items_generic, todo_sort,
                      prefix_func=lambda x: '> ' if x['enforced_todo'] else '')
         print()  # Extra newline
 
 
-def print_cycle(database):
-    dictionary = database['cycle']
+def print_cycle():
+    dictionary = DB['cycle']
     if dictionary:
         print('>>> Cycles', end='\n\n')
-        print_active_cycle(database)
-        print_inactive_cycle(database)
+        print_active_cycle()
+        print_inactive_cycle()
 
 
-def print_active_cycle(database):
-    active_cycle_dict = dict_management.get_active_cycle(database)
-    inactive_cycle_dict = dict_management.get_inactive_cycle(database)
-    groups = database['groups']['cycle']
-    groups_display = database['groups_display']['cycle']
+def print_active_cycle():
+    active_cycle_dict = dict_management.get_active_cycle()
+    inactive_cycle_dict = dict_management.get_inactive_cycle()
+    groups = DB['groups']['cycle']
+    groups_display = DB['groups_display']['cycle']
     if active_cycle_dict:
-        print_groups(database, active_cycle_dict, groups, groups_display, print_items_generic, cycle_sort,
+        print_groups(active_cycle_dict, groups, groups_display, print_items_generic, cycle_sort,
                      extra_string_func=lambda val: f' ({get_cycle_sequence_string(val)})')
         if not inactive_cycle_dict:  # Inactive print will cover if exists
             print()  # Extra newline
 
 
-def print_inactive_cycle(database, preview_len=None):
-    inactive_cycle_dict = dict_management.get_inactive_cycle(database)
+def print_inactive_cycle(preview_len=None):
+    inactive_cycle_dict = dict_management.get_inactive_cycle()
     if preview_len is None:
-        preview_len = database['settings']['cycle_preview']
+        preview_len = DB['settings']['cycle_preview']
     if inactive_cycle_dict:
         print('(Inactive cycles)', end='\n\n')
         for key, value in inactive_cycle_dict.items():
@@ -220,27 +221,27 @@ def print_inactive_cycle(database, preview_len=None):
         print(end='\n\n')  # Extra newline
 
 
-def print_longterm(database):
-    dictionary = database['longterm']
-    groups = database['groups']['longterm']
-    groups_display = database['groups_display']['longterm']
+def print_longterm():
+    dictionary = DB['longterm']
+    groups = DB['groups']['longterm']
+    groups_display = DB['groups_display']['longterm']
     if dictionary:
         print('>>> Long-term goals:', end='\n\n')
-        print_groups(database, dictionary, groups, groups_display, print_items_generic, alpha_sort)
+        print_groups(dictionary, groups, groups_display, print_items_generic, alpha_sort)
         print()  # Extra newline
 
 
-def print_counter(database):
-    dictionary = database['counter']
-    groups = database['groups']['counter']
-    groups_display = database['groups_display']['counter']
+def print_counter():
+    dictionary = DB['counter']
+    groups = DB['groups']['counter']
+    groups_display = DB['groups_display']['counter']
     if dictionary:
         print('>>> Counters', end='\n\n')
-        print_groups(database, dictionary, groups, groups_display, print_items_counters, alpha_sort)
+        print_groups(dictionary, groups, groups_display, print_items_counters, alpha_sort)
         print()  # Extra newline
 
 
-def print_note(database):
+def print_note():
     pass
 
 
@@ -263,17 +264,17 @@ def get_cycle_sequence_string(obj_value):
         quit('Invalid cycle display mode..')
 
 
-def print_stats(database):
+def print_stats():
     os.system('cls')
-    print(f"Total completed daily goals: {database['stats']['total_completed']}\n"
-          f"Days completed: {database['stats']['days_completed']}\n"
-          f"Current streak: {database['stats']['streak']}\n"
-          f"Best streak: {database['stats']['best_streak']}", end='\n\n')
+    print(f"Total completed daily goals: {DB['stats']['total_completed']}\n"
+          f"Days completed: {DB['stats']['days_completed']}\n"
+          f"Current streak: {DB['stats']['streak']}\n"
+          f"Best streak: {DB['stats']['best_streak']}", end='\n\n')
 
 
-def print_settings(database):
+def print_settings():
     os.system('cls')
-    settings = database['settings']
+    settings = DB['settings']
     print(f">>> Main display dictionary toggles\n\n"
           f"Daily: {settings['daily']}\n"
           f"Todo: {settings['todo']}\n"

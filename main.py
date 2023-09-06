@@ -23,7 +23,6 @@
 # TODO: Make database a cross-file global variable?
 
 # TODO: Pause system
-# TODO: Link renaming should be a different function than removing
 # TODO: Individual item streak backend
 # TODO: Pluralize items in minimized container display
 # TODO: Figure out weird history forced automatch
@@ -39,12 +38,14 @@
 # TODO: Start cd for mode 2 cycles
 # TODO: Full cycle toggle redesign (currently broken)
 # TODO: If there is already a tag, should print it in tag mode
-# TODO: Option for linking to be chaining or not?
 # TODO: Avoid scenarios where you have to close to cancel? (ie submitting a tag)
-import file_management  # For loading/saving
+# TODO: Completion links
+# TODO: Enter a loop for a counter so blank input increments
+# TODO: Update toggle/settings help menu. Consolidate their location (currently documentation/console_display)
 import commands  # Command functions and formatting
-import console_display  # To print the initial console display
 import errors
+from console_display import refresh_display
+from database import save
 
 # main gets input
 # -> checks for validity and matching command. If found, pass to commands.py
@@ -52,25 +53,22 @@ import errors
 
 
 def main():
-    # Load the database from file
-    database = file_management.load_data()  # If json successfully loaded, use that. Else default to base template
-
-    # Update backup right after loading (to save state before user performs any actions)
-    file_management.save(database, 'data_autobackup.json')
+    # Make backup before user performs any actions
+    save('data_autobackup.json')
 
     # Used to pass around non-persisted/contextual data, ie command used,
     context_template = {'last_printed': None, 'command': ''}
     # last_printed is used to tell what display to print after a command is used
 
-    console_display.print_display(database)  # Initial main screen print
+    refresh_display()  # Initial main screen print
 
     while True:  # Main loop
         user_input = input().lower()  # Lower for string comparisons
         if not user_input:  # It's possible to enter nothing- continue loop
-            console_display.print_display(database)
+            refresh_display()
             continue
         if not user_input.isascii():
-            console_display.refresh_and_print(database, 'Please only use ASCII characters')
+            refresh_display('Please only use ASCII characters')
             continue
 
         user_input = user_input.split()  # Split into a list of space-separated terms
@@ -86,12 +84,12 @@ def main():
             # Command functions have '_command' appended to name, ie daily_command()
             command_function = getattr(commands, command + '_command')
         except AttributeError:  # If function is not found
-            console_display.refresh_and_print(database, "Invalid command! Use 'help' for help!")
+            refresh_display("Invalid command! Use 'help' for help!")
             continue
 
         # Continue to command execution
         try:
-            command_function(database, context, user_input[1:])  # (database, context, args)
+            command_function(context, user_input[1:])  # (context, args)
         except errors.InvalidCommandUsage as error:
             print(f'help for {error.command} {error.subcommand} :)')  # Placeholder, will implement info lookup
 

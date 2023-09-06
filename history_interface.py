@@ -1,31 +1,26 @@
-import os  # For os.system('cls')
-
-import date_logic
-import documentation
-import console_display
 import dict_management  # For key_search
-import file_management  # For saving
+from database import DB
 import pages
 
 
-def launch_history_interface(database, dict_name):
-    keys_per_page = database['settings']['history_keys_per_page']
+def launch_history_interface(dict_name):
+    keys_per_page = DB['settings']['history_keys_per_page']
     if dict_name in {'longterm', 'counter'}:  # Special Pages subclasses
-        pm = getattr(pages, dict_name.capitalize() + 'Pages')(database, dict_name)  # ie LongtermPages()
+        pm = getattr(pages, dict_name.capitalize() + 'Pages')(dict_name)  # ie LongtermPages()
     else:
-        pm = pages.HistoryPages(database, dict_name)  # Page manager
+        pm = pages.HistoryPages(dict_name)  # Page manager
     pm.set_keys_per_page(keys_per_page)
-    launch_pages_interface(database, pm, dict_name)
+    launch_pages_interface(pm, dict_name)
 
 
-def launch_tags_interface(database, objective_name, dictionary):
-    keys_per_page = database['settings']['tags_keys_per_page']
+def launch_tags_interface(objective_name, dictionary):
+    keys_per_page = DB['settings']['tags_keys_per_page']
     pm = pages.TagPages(objective_name, dictionary)
     pm.set_keys_per_page(keys_per_page)
-    launch_pages_interface(database, pm, 'tags')
+    launch_pages_interface(pm, 'tags')
 
 
-def launch_pages_interface(database, pm, mode):
+def launch_pages_interface(pm, mode):
     pm.print_display()
     while True:
         user_input = input().lower().split()
@@ -112,14 +107,14 @@ def launch_pages_interface(database, pm, mode):
 
             print()  # Newline to separate input from print
             item_name = ' '.join(user_input[1:])
-            history_auto_match = database['settings']['history_auto_match']
-            if not (item_name := dict_management.key_search(database, pm.dictionary, item_name,
+            history_auto_match = DB['settings']['history_auto_match']
+            if not (item_name := dict_management.key_search(pm.dictionary, item_name,
                                                             force_manual_match=history_auto_match)):
                 pm.print_display()
                 print('Item could not be found', end='\n\n')
                 continue
             tags = pm.dictionary[item_name]['tags']
-            launch_tags_interface(database, item_name, tags)
+            launch_tags_interface(item_name, tags)
             pm.print_display()
 
         # Misc commands/not found --------------------------------------------------------------------------------------

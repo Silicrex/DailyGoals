@@ -1,3 +1,6 @@
+from database import DB
+
+
 def valid_date(month, day, year):
     # Given month 1-12, day 1-31
     if month in {1, 3, 5, 7, 8, 10, 12}:  # 31 days
@@ -14,8 +17,8 @@ def valid_date(month, day, year):
             return False
 
 
-def increment_date(database):  # Takes and mutates a calendar_date dict
-    calendar_date = database['settings']['calendar_date']
+def increment_date():  # Takes and mutates a calendar_date dict
+    calendar_date = DB['settings']['calendar_date']
     day = calendar_date['day']
     month = calendar_date['month']
     year = calendar_date['year']

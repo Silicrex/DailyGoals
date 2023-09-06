@@ -1,19 +1,19 @@
 import dict_management
-import file_management
 import date_logic
-import console_display
 import documentation
 import history_interface
 import errors
 import os
+from console_display import refresh_display, confirm
+from database import DB, save
 
 
-# Base core dict functions need to take (database, context, args)
+# Base core dict functions need to take (context, args)
 
-def mode_route(database, context, args):
+def mode_route(context, args):
     command = context['command']
     if not args:  # Needs to at least have a mode specified
-        console_display.refresh_and_print(database, 'Mode must be given')
+        refresh_display('Mode must be given')
         raise errors.InvalidCommandUsage(command)
     mode = args[0]
     context['mode'] = mode
@@ -21,36 +21,36 @@ def mode_route(database, context, args):
     if mode in valid_modes:  # If valid mode, retrieve corresponding function
         mode_function = globals()[mode + '_mode']  # ie 'add' goes to add_mode()
     else:
-        console_display.refresh_and_print(database, 'Invalid mode')
+        refresh_display('Invalid mode')
         raise errors.InvalidCommandUsage(command)
-    mode_function(database, context, args[1:])  # Mode was args[0]
+    mode_function(context, args[1:])  # Mode was args[0]
 
 
 # Adding items ------------------------------------------------------------------------------------------
-def add_mode(database, context, args):
+def add_mode(context, args):
     # ex input: daily add
     dict_name = context['command']
-    dictionary = database[dict_name]
+    dictionary = DB[dict_name]
 
     if args:
-        console_display.refresh_and_print(database, 'Unnecessary arguments!')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if dict_name in {'todo', 'counter', 'cycle'}:  # Different processes
         special_add_function = globals()[dict_name + '_add_mode']  # ie cycle_add_mode, gets corresponding func
-        special_add_function(database, dict_name)
+        special_add_function(dict_name)
         return
 
     item_name = get_name()
     if not item_name:
-        console_display.refresh_and_print(database, 'Cancelled')
+        refresh_display('Cancelled')
         return
     item_key = item_name.lower()
     if item_key in dictionary:
-        console_display.refresh_and_print(database, 'Item by that name already exists. Returning to menu')
+        refresh_display('Item by that name already exists. Returning to menu')
         return
     denominator = get_denominator()
-    history_name = get_history_name(database, dict_name)
+    history_name = get_history_name(dict_name)
     start_timer = get_start_timer()
     dictionary.update({item_key: {'display_name': item_name,
                                   'denominator': denominator,
@@ -60,21 +60,21 @@ def add_mode(database, context, args):
                                   'link': {'linked_to': [], 'linked_from': [], 'chaining': True},
                                   'history_name': history_name,
                                   'tag': None}})
-    dict_management.default_group(database, dict_name, item_key)  # Add to default container
+    dict_management.default_group(dict_name, item_key)  # Add to default container
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully added!')
+    save()
+    refresh_display(f'{dict_name.capitalize()} item successfully added!')
 
 
-def todo_add_mode(database, dict_name):
-    dictionary = database[dict_name]
+def todo_add_mode(dict_name):
+    dictionary = DB[dict_name]
     item_name = get_name()
     if not item_name:
-        console_display.refresh_and_print(database, 'Cancelled')
+        refresh_display('Cancelled')
         return
     item_key = item_name.lower()
     if item_key in dictionary:
-        console_display.refresh_and_print(database, 'Item by that name already exists. Returning to menu')
+        refresh_display('Item by that name already exists. Returning to menu')
         return
     denominator = get_denominator()
     while True:
@@ -90,7 +90,7 @@ def todo_add_mode(database, dict_name):
             enforced_todo = False
             print('Item will not count towards streak', end='\n\n')
             break
-    history_name = get_history_name(database, dict_name)
+    history_name = get_history_name(dict_name)
     start_timer = get_start_timer()
     dictionary.update({item_key: {'display_name': item_name,
                                   'denominator': denominator,
@@ -100,13 +100,13 @@ def todo_add_mode(database, dict_name):
                                   'link': {'linked_to': [], 'linked_from': [], 'chaining': True},
                                   'history_name': history_name,
                                   'tag': None}})
-    dict_management.default_group(database, 'todo', item_key)  # Add to default container
+    dict_management.default_group('todo', item_key)  # Add to default container
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, 'Todo item successfully added!')
+    save()
+    refresh_display('Todo item successfully added!')
 
 
-def cycle_add_mode(database, dict_name):
+def cycle_add_mode(dict_name):
     def calculate_cooldown_sequence(days_list):
         def next_index():
             if i == len(days_list) - 1:
@@ -121,24 +121,24 @@ def cycle_add_mode(database, dict_name):
             seq.append(days_list[next_index()] - n)
         return seq
 
-    dictionary = database[dict_name]
+    dictionary = DB[dict_name]
     item_name = get_name()
     if not item_name:
-        console_display.refresh_and_print(database, 'Cancelled')
+        refresh_display('Cancelled')
         return
     item_key = item_name.lower()
     if item_key in dictionary:
-        console_display.refresh_and_print(database, 'Item by that name already exists. Returning to menu')
+        refresh_display('Item by that name already exists. Returning to menu')
         return
     denominator = get_denominator()
-    history_name = get_history_name(database, dict_name)
+    history_name = get_history_name(dict_name)
     mode_input = input('> Enter a number corresponding to a mode for item setup\n'
                        '  [1] Every x days\n'
                        '  [2] Certain week day(s)\n'
                        '  [3] Advanced (manually insert cooldown sequence)\n\n')
     print()  # Extra newline
     if mode_input not in {'1', '2', '3'}:
-        console_display.refresh_and_print(database, 'Invalid mode response')
+        refresh_display('Invalid mode response')
         return
 
     # Variables that are not used in every mode but need to be set
@@ -153,7 +153,7 @@ def cycle_add_mode(database, dict_name):
         repeat_input = input('> Every how many days should this item activate? (ie 2 = every other day)\n\n')
         print()  # Extra newline
         if not repeat_input.isnumeric():
-            console_display.refresh_and_print(database, 'Invalid input. Should be positive integer days')
+            refresh_display('Invalid input. Should be positive integer days')
             return
         cooldown_sequence = [int(repeat_input)]
 
@@ -183,7 +183,7 @@ def cycle_add_mode(database, dict_name):
             day_numbers.sort()
             print(f'Successfully added {date_logic.convert_day_number(day_number)}\n')
         if not day_numbers:
-            console_display.refresh_and_print(database, 'Exited as no days were provided')
+            refresh_display('Exited as no days were provided')
             return
         for day_number in day_numbers:
             abbreviations.append(date_logic.get_week_day_abbreviation(day_number))
@@ -194,13 +194,13 @@ def cycle_add_mode(database, dict_name):
                                     '(0 = every week, 1 = every other week)\n\n')
         print()  # Extra newline
         if not week_cooldown_input.isnumeric():
-            console_display.refresh_and_print(database, 'Invalid input, expected positive integer')
+            refresh_display('Invalid input, expected positive integer')
             return
         week_cooldown = int(week_cooldown_input)
         cooldown_sequence[-1] += week_cooldown * 7  # Weeks to days, add to end of cycle
 
         # Get initial offset and set cooldown iterator
-        current_day = database['settings']['calendar_date']['week_day']
+        current_day = DB['settings']['calendar_date']['week_day']
 
         cooldown_iterator = None  # Init variables so intellisense doesn't complain
         nearest_active_offset = None
@@ -232,7 +232,7 @@ def cycle_add_mode(database, dict_name):
             start_offset = next_week_offset + offset_input * 7
             cooldown_iterator = 0
         else:
-            console_display.refresh_and_print(database, "Invalid input, expected 'a', 'b', or a positive integer")
+            refresh_display("Invalid input, expected 'a', 'b', or a positive integer")
             return
 
     elif mode_input == '3':  # Manually provide cooldown sequence
@@ -255,7 +255,7 @@ def cycle_add_mode(database, dict_name):
         cooldown_sequence = []
         start_offset = input('> In how many days should the first activation be? (0 = today)\n\n')
         if not start_offset.isnumeric():
-            console_display.refresh_and_print(database, 'Invalid response, expected 0 or positive integer')
+            refresh_display('Invalid response, expected 0 or positive integer')
             return
         start_offset = int(start_offset)
         print()  # Extra newline
@@ -280,14 +280,14 @@ def cycle_add_mode(database, dict_name):
             cooldown_sequence.append(cooldown)
             print(f'Successfully added {cooldown}\n')
         if not cooldown_sequence:
-            console_display.refresh_and_print(database, 'Exited as cooldown sequence was not provided')
+            refresh_display('Exited as cooldown sequence was not provided')
             return
         while True:
             cooldown_iterator_input = input('> Enter the index (starting from 0) in the cooldown sequence list that '
                                             'the first-activation timer was\n  tuned to transition into\n\n').lower()
             print()  # Extra newline
             if cooldown_iterator_input == 'cancel':
-                console_display.refresh_and_print(database, 'Cancelled')
+                refresh_display('Cancelled')
                 return
             elif not cooldown_iterator_input.isnumeric():
                 print('Invalid response, should be 0 or an integer. Try again or say "cancel" to exit\n')
@@ -302,14 +302,14 @@ def cycle_add_mode(database, dict_name):
                                           "This is a string that will be displayed in the item title to indicate "
                                           "the item's frequency (BLANK = CANCEL)\n\n")
             if not frequency_description:
-                if console_display.confirm('Cancel creation of this item? (y/n)'):
-                    console_display.refresh_and_print(database, 'Cancelled')
+                if confirm('Cancel creation of this item? (y/n)'):
+                    refresh_display('Cancelled')
                     return
                 continue
             break
 
     else:
-        console_display.refresh_and_print(database, 'Invalid mode number')
+        refresh_display('Invalid mode number')
         return
 
     dictionary.update({item_key: {'display_name': item_name,
@@ -327,23 +327,23 @@ def cycle_add_mode(database, dict_name):
                                   'link': {'linked_to': [], 'linked_from': [], 'chaining': True},
                                   'history_name': history_name,
                                   'tag': None}})
-    dict_management.default_group(database, 'cycle', item_key)  # Add to default container
+    dict_management.default_group('cycle', item_key)  # Add to default container
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, 'Cycle item successfully added!')
+    save()
+    refresh_display('Cycle item successfully added!')
 
 
-def counter_add_mode(database, dict_name):
-    dictionary = database[dict_name]
+def counter_add_mode(dict_name):
+    dictionary = DB[dict_name]
     item_name = get_name()
     if not item_name:
-        console_display.refresh_and_print(database, 'Cancelled')
+        refresh_display('Cancelled')
         return
     item_key = item_name.lower()
     if item_key in dictionary:
-        console_display.refresh_and_print(database, 'Counter by that name already exists. Returning to menu')
+        refresh_display('Counter by that name already exists. Returning to menu')
         return
-    history_name = get_history_name(database, dict_name)
+    history_name = get_history_name(dict_name)
     dictionary.update({item_key: {'display_name': item_name,
                                   'numerator': 0,
                                   'pause_timer': 0,
@@ -351,21 +351,21 @@ def counter_add_mode(database, dict_name):
                                   'history_name': history_name,
                                   'tag': None}})
     if history_name:
-        dict_management.create_counter_history(database, history_name)
-    dict_management.default_group(database, 'counter', item_key)  # Add to default container
+        dict_management.create_counter_history(history_name)
+    dict_management.default_group('counter', item_key)  # Add to default container
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, 'Counter item successfully added!')
+    save()
+    refresh_display('Counter item successfully added!')
 
 
-def note_add_mode(database, context, args):
+def note_add_mode(context, args):
     # ex input: note add
     # ex input: note add 0
     if len(args) > 1:
         print('Unnecessary arguments!', end='\n\n')
         raise errors.InvalidCommandUsage('note', 'add')
 
-    dictionary = database[context['command']]
+    dictionary = DB[context['command']]
     note_count = len(dictionary)
     if args:
         note_index = args[0]
@@ -393,10 +393,10 @@ def note_add_mode(database, context, args):
             continue
         break
     dictionary.insert(note_index, note_input)
-    ### add_to_groups(database, 'note', item_key)
+    ### add_to_groups('note', item_key)
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, 'Note item successfully added!')
+    save()
+    refresh_display('Note item successfully added!')
 
 
 def get_name(prompt='> Enter a name for the item (must be unique to goal type, blank = cancel)'):
@@ -412,9 +412,9 @@ def get_name(prompt='> Enter a name for the item (must be unique to goal type, b
         return name
 
 
-def get_history_name(database, dictionary_name):
-    dictionary = database[dictionary_name]
-    history_dict = database['history'][dictionary_name]
+def get_history_name(dictionary_name):
+    dictionary = DB[dictionary_name]
+    history_dict = DB['history'][dictionary_name]
     while True:
         history_name = get_name(prompt="> Enter a name for the matching History item title (unique to goal type; "
                                        "persistent; blank = don't track item)")
@@ -466,7 +466,7 @@ def get_start_timer():
 
 
 # Updating/editing items ------------------------------------------------------------------------------------------
-def update_mode(database, context, args):
+def update_mode(context, args):
     # ex input: daily update itemname 50
     # ex input: daily update clean dishes
 
@@ -475,229 +475,229 @@ def update_mode(database, context, args):
     # rather than updating an item named "Do number" by 9
 
     dict_name = context['command']  # Cycle handled differently
-    dictionary = database[dict_name]
+    dictionary = DB[dict_name]
 
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an item to update')
+        refresh_display('Must provide an item to update')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     full_string = ' '.join(args).lower()  # Lowercase string of entire rest of input
     # Search for full string as an item name; assuming no update value specified
-    if (item_name := dict_management.key_search(database, dictionary, full_string)) in dictionary:
+    if (item_name := dict_management.key_search(dictionary, full_string)) in dictionary:
         update_value = '1'  # str because format_integer takes a string
     else:  # Item wasn't found. Assume update value was specified
         sub_string = ' '.join(args[:-1]).lower()  # Last element should be update value
-        if not (item_name := dict_management.key_search(database, dictionary, sub_string)):
-            console_display.refresh_and_print(database, 'Item not found')
+        if not (item_name := dict_management.key_search(dictionary, sub_string)):
+            refresh_display('Item not found')
             raise errors.InvalidCommandUsage(dict_name, context['mode'])
         update_value = args[-1]  # Worked out this way, proceed
 
     # Validate/format update value from str to int
     if not (update_value := format_integer(update_value)):  # Enforces non-zero integer. Accepts extension ie 1k
-        console_display.refresh_and_print(database, 'Invalid update value')
+        refresh_display('Invalid update value')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])  # Invalid update value
 
     if dict_name == 'cycle':  # Can't update inactive item
-        if item_name not in dict_management.get_active_cycle(database):
-            console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle items')
+        if item_name not in dict_management.get_active_cycle():
+            refresh_display('Cannot update progress for inactive cycle items')
             return
 
-    dict_management.update_item(database, dict_name, item_name, update_value)
+    dict_management.update_item(dict_name, item_name, update_value)
 
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully updated!')
+    save()
+    refresh_display(f'{dict_name.capitalize()} item successfully updated!')
 
 
-def set_mode(database, context, args):
+def set_mode(context, args):
     # ex input: daily set itemname 50
 
     dict_name = context['command']  # Cycle handled differently
-    dictionary = database[dict_name]
+    dictionary = DB[dict_name]
 
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an item to update and set value')
+        refresh_display('Must provide an item to update and set value')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args[:-1]).lower()  # Last element should be set value
-    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Item not found')
+    if not (item_name := dict_management.key_search(dictionary, input_string)):
+        refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if not (set_value := format_integer(args[-1])):  # Enforces non-zero integer. Accepts extension ie 1k
-        console_display.refresh_and_print(database, 'Invalid set value')
+        refresh_display('Invalid set value')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if dict_name == 'cycle':
-        if item_name not in dict_management.get_active_cycle(database):  # Can't update inactive item
-            console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle items')
+        if item_name not in dict_management.get_active_cycle():  # Can't update inactive item
+            refresh_display('Cannot update progress for inactive cycle items')
             return
 
     current_value = dictionary[item_name]['numerator']
     difference = set_value - current_value  # Used to make handling links easier
-    dict_management.update_item(database, dict_name, item_name, difference)
+    dict_management.update_item(dict_name, item_name, difference)
 
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully updated!')
+    save()
+    refresh_display(f'{dict_name.capitalize()} item successfully updated!')
 
 
-def complete_mode(database, context, args):
+def complete_mode(context, args):
     # ex input: daily complete itemname
 
     dict_name = context['command']
-    dictionary = database[dict_name]
+    dictionary = DB[dict_name]
 
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an item to set as complete')
+        refresh_display('Must provide an item to set as complete')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Item not found')
+    if not (item_name := dict_management.key_search(dictionary, input_string)):
+        refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if dict_name == 'cycle':
-        if item_name not in dict_management.get_active_cycle(database):  # Can't update inactive item
-            console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle items')
+        if item_name not in dict_management.get_active_cycle():  # Can't update inactive item
+            refresh_display('Cannot update progress for inactive cycle items')
             return
 
-    dict_management.complete_item(database, dict_name, item_name)
+    dict_management.complete_item(dict_name, item_name)
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'{dict_name.capitalize()} item marked as complete!')
+    save()
+    refresh_display(f'{dict_name.capitalize()} item marked as complete!')
 
 
-def reset_mode(database, context, args):
+def reset_mode(context, args):
     # ex input: daily reset itemname
 
     dict_name = context['command']
-    dictionary = database[dict_name]
+    dictionary = DB[dict_name]
 
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an item to reset')
+        refresh_display('Must provide an item to reset')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Item not found')
+    if not (item_name := dict_management.key_search(dictionary, input_string)):
+        refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if dict_name == 'cycle':
-        if item_name not in dict_management.get_active_cycle(database):  # Can't update inactive item
-            console_display.refresh_and_print(database, 'Cannot update progress for inactive cycle items')
+        if item_name not in dict_management.get_active_cycle():  # Can't update inactive item
+            refresh_display('Cannot update progress for inactive cycle items')
             return
 
-    dict_management.reset_item(database, dict_name, item_name)
+    dict_management.reset_item(dict_name, item_name)
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully updated!')
+    save()
+    refresh_display(f'{dict_name.capitalize()} item successfully updated!')
 
 
-def setall_mode(database, context, args):
+def setall_mode(context, args):
     # ex input: daily setall complete
 
     dict_name = context['command']
-    dictionary = database[dict_name]
+    dictionary = DB[dict_name]
 
     if not args or len(args) > 1:
-        console_display.refresh_and_print(database, 'Must provide a setall type')
+        refresh_display('Must provide a setall type')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     setall_value = args[0]
 
     if dict_name == 'cycle':
-        context['dictionary'] = dictionary = dict_management.get_active_cycle(database)
+        context['dictionary'] = dictionary = dict_management.get_active_cycle()
     elif dict_name == 'counter':
-        counter_setall_mode(database, dict_name, setall_value)
+        counter_setall_mode(dict_name, setall_value)
         return
 
     if setall_value not in {'complete', 'reset'}:
-        console_display.refresh_and_print(database, 'Invalid parameter setall value')
+        refresh_display('Invalid parameter setall value')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if not dictionary:
-        console_display.refresh_and_print(database, 'That dictionary is empty')
+        refresh_display('That dictionary is empty')
         return
 
     if setall_value == 'complete':
         for key in dictionary:
-            dict_management.complete_item(database, dict_name, key)
+            dict_management.complete_item(dict_name, key)
     elif setall_value == 'reset':
         for key in dictionary:
-            dict_management.reset_item(database, dict_name, key)
+            dict_management.reset_item(dict_name, key)
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'{dict_name.capitalize()} items successfully updated!')
+    save()
+    refresh_display(f'{dict_name.capitalize()} items successfully updated!')
 
 
-def counter_setall_mode(database, dict_name, setall_value):
-    dictionary = database[dict_name]
+def counter_setall_mode(dict_name, setall_value):
+    dictionary = DB[dict_name]
     if not (setall_value := format_integer(setall_value)):  # Enforces non-zero integer. Accepts extension ie 1k
         raise errors.InvalidCommandUsage('counter', 'setall')
 
     if not dictionary:
-        console_display.refresh_and_print(database, 'There are no counters')
+        refresh_display('There are no counters')
         return
 
-    if not console_display.confirm(f'> Change ALL counters to a value of {setall_value}? (y/n)'):
+    if not confirm(f'> Change ALL counters to a value of {setall_value}? (y/n)'):
         return
 
     for counter, value in dictionary.items():
         current_value = value['numerator']
         difference = setall_value - current_value  # Used to make handling links easier
-        dict_management.update_item(database, dict_name, counter, difference)
+        dict_management.update_item(dict_name, counter, difference)
 
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'Counter items successfully updated!')
+    save()
+    refresh_display(f'Counter items successfully updated!')
 
 
-def rename_mode(database, context, args):
+def rename_mode(context, args):
     # ex input: daily rename itemname
 
     dict_name = context['command']
-    dictionary = database[dict_name]
+    dictionary = DB[dict_name]
 
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an item to rename')
+        refresh_display('Must provide an item to rename')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (item_key := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Item not found')
+    if not (item_key := dict_management.key_search(dictionary, input_string)):
+        refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     new_name = get_name()
     new_key = new_name.lower()
     if not new_name:
-        console_display.refresh_and_print(database, 'Cancelled')
+        refresh_display('Cancelled')
         return
     if new_key in dictionary:
-        console_display.refresh_and_print(database, f'That name is already in use. Returning to menu')
+        refresh_display(f'That name is already in use. Returning to menu')
         return
 
     # Handle links
     if dictionary[item_key]['link']['linked_to']:
-        dict_management.rename_linked_from(database, dict_name, item_key, new_key)
+        dict_management.rename_linked_from(dict_name, item_key, new_key)
     if dictionary[item_key]['link']['linked_from']:
-        dict_management.rename_linked_to(database, dict_name, item_key, new_key)
+        dict_management.rename_linked_to(dict_name, item_key, new_key)
 
     # Implement rename
     dictionary[new_key] = dictionary.pop(item_key)
     dictionary[new_key]['display_name'] = new_name
 
     # Handle Group
-    current_group = dict_management.get_group(database, dict_name, item_key)
+    current_group = dict_management.get_group(dict_name, item_key)
     current_group['items'].remove(item_key)
     current_group['items'].append(new_key)
 
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully renamed!')
+    save()
+    refresh_display(f'{dict_name.capitalize()} item successfully renamed!')
 
 
-def history_mode(database, context, args):
+def history_mode(context, args):
     # ex input: daily history
     dict_name = context['command']
 
@@ -706,55 +706,54 @@ def history_mode(database, context, args):
         raise errors.InvalidCommandUsage(context['command'], context['mode'])
 
     os.system('cls')
-    history_interface.launch_history_interface(database, dict_name)  # Enters history loop
-    console_display.print_display(database)
-    print('Returned to menu', end='\n\n')
+    history_interface.launch_history_interface(dict_name)  # Enters history loop
+    refresh_display('Returned to menu')
 
 
-def rehistory_mode(database, context, args):
+def rehistory_mode(context, args):
     # ex input: daily rehistory itemname
     dict_name = context['command']
-    dictionary = database[dict_name]
+    dictionary = DB[dict_name]
 
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an item to change the History link of')
+        refresh_display('Must provide an item to change the History link of')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Item not found')
+    if not (item_name := dict_management.key_search(dictionary, input_string)):
+        refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    new_history_name = get_history_name(database, dict_name)
+    new_history_name = get_history_name(dict_name)
     dictionary[item_name]['history_name'] = new_history_name
     if dict_name == 'counter':
-        dict_management.create_counter_history(database, new_history_name)
+        dict_management.create_counter_history(new_history_name)
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'Successfully changed History link to [{new_history_name}]!')
+    save()
+    refresh_display(f'Successfully changed History link to [{new_history_name}]!')
 
 
-def denominator_mode(database, context, args):
+def denominator_mode(context, args):
     # ex input: daily denominator itemname
     dict_name = context['command']
-    dictionary = database[dict_name]
+    dictionary = DB[dict_name]
 
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an item to change the denominator of')
+        refresh_display('Must provide an item to change the denominator of')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Item not found')
+    if not (item_name := dict_management.key_search(dictionary, input_string)):
+        refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if not (new_denominator := get_denominator()):
         return
     dictionary[item_name]['denominator'] = new_denominator
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully updated!')
+    save()
+    refresh_display(f'{dict_name.capitalize()} item successfully updated!')
 
 
-def tag_mode(database, context, args):
+def tag_mode(context, args):
     # There are two alternate implementations of getting the tag. The complication comes from inserting newlines
     # #1 is using a backslash-escape syntax. The user pressing 'enter' submits the string they typed to be parsed
     # #2 is  getting lines in a loop and using a keyword to stop, with a check for if they wanted to insert the keyword
@@ -789,7 +788,7 @@ def tag_mode(database, context, args):
         while True:
             user_input = input()
             if user_input == "done":
-                if console_display.confirm('\nAre you finished (y/n)? (Will insert as a literal line otherwise)'):
+                if confirm('\nAre you finished (y/n)? (Will insert as a literal line otherwise)'):
                     final = '\n'.join(lines)
                     if not final:
                         return None
@@ -800,75 +799,75 @@ def tag_mode(database, context, args):
     # -------------------------------------------------------------------------------------------
     # ex input: daily tag itemname
     dict_name = context['command']
-    dictionary = database[dict_name]
+    dictionary = DB[dict_name]
 
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an item to tag')
+        refresh_display('Must provide an item to tag')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Item not found')
+    if not (item_name := dict_management.key_search(dictionary, input_string)):
+        refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     item = dictionary[item_name]
 
     if not item['history_name']:
-        console_display.refresh_and_print(database, 'Item does not have a History link to store a tag in')
+        refresh_display('Item does not have a History link to store a tag in')
         return
     elif item['tag']:
-        console_display.refresh_and_print(database, f'Item is currently tagged:\n{item["tag"]}')
-        if not console_display.confirm('Overwrite? (y/n)'):
-            console_display.refresh_and_print(database, 'Cancelled')
+        refresh_display(f'Item is currently tagged:\n{item["tag"]}')
+        if not confirm('Overwrite? (y/n)'):
+            refresh_display('Cancelled')
             return
 
     # Control which method to get the tag string with
-    parsed_input_mode = database['settings']['single_line_tag_input']
+    parsed_input_mode = DB['settings']['single_line_tag_input']
     if parsed_input_mode:
         tag_input_func = get_parsed_tag
     else:
         tag_input_func = get_tag_lines
     tag_input = tag_input_func()
     if tag_input is None:
-        console_display.refresh_and_print(database, 'Cancelled')
+        refresh_display('Cancelled')
         return
     item['tag'] = tag_input
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'[{item_name}] successfully tagged!')
+    save()
+    refresh_display(f'[{item_name}] successfully tagged!')
 
 
-def link_mode(database, context, args):
+def link_mode(context, args):
     # ex input: daily link itemname
     dict_name = context['command']
-    dictionary = database[dict_name]
+    dictionary = DB[dict_name]
 
     # Input validation
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an item to link')
+        refresh_display('Must provide an item to link')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     item_input_string = ' '.join(args).lower()
-    if not (item_key := dict_management.key_search(database, dictionary, item_input_string)):
-        console_display.refresh_and_print(database, 'Item not found')
+    if not (item_key := dict_management.key_search(dictionary, item_input_string)):
+        refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     input_dict_name = input('> What type of item would you like to link this item to? '
                             '(Blank input = cancel)\n\n').lower()
     if not input_dict_name:
-        console_display.refresh_and_print(database, 'Cancelled')
+        refresh_display('Cancelled')
         return
     if input_dict_name not in documentation.get_numeric_dictionary_names():
-        console_display.refresh_and_print(database, 'Invalid item type')
+        refresh_display('Invalid item type')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     print()  # Extra newline
 
     input_item_key = input('> What item would you like to link this item to? (Blank input = cancel)\n\n').lower()
     if not input_item_key:
-        console_display.refresh_and_print(database, 'Cancelled')
+        refresh_display('Cancelled')
         return
-    if not (input_item_key := dict_management.key_search(database, database[input_dict_name], input_item_key)):
-        console_display.refresh_and_print(database, 'Item not found')
+    if not (input_item_key := dict_management.key_search(DB[input_dict_name], input_item_key)):
+        refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     print()
-    input_item_name = database[input_dict_name][input_item_key]['display_name']
+    input_item_name = DB[input_dict_name][input_item_key]['display_name']
 
     while True:
         chain_input_string = input('> Would you like this link to trigger other links when applicable? '
@@ -881,23 +880,23 @@ def link_mode(database, context, args):
             chaining = False
             break
         elif not chain_input_string:
-            console_display.refresh_and_print(database, 'Cancelled')
+            refresh_display('Cancelled')
             return
         print()
 
     link = dictionary[item_key]['link']
     link['chaining'] = chaining
     origin = [dict_name, item_key, chaining]
-    next_link = [input_dict_name, input_item_key, database[input_dict_name][input_item_key]['link']['chaining']]
+    next_link = [input_dict_name, input_item_key, DB[input_dict_name][input_item_key]['link']['chaining']]
 
     # Make sure link is not to itself or circular
     if origin == next_link:
-        console_display.refresh_and_print(database, 'Cannot link an item to itself')
+        refresh_display('Cannot link an item to itself')
         return
-    link_chain = dict_management.get_link_chain(database, origin, next_link)
+    link_chain = dict_management.get_link_chain(origin, next_link)
     if link_chain[0] == link_chain[-1]:  # Circular behavior
-        console_display.refresh_and_print(database, f'Invalid link as it would be circular: '
-                                                    f'{dict_management.format_link_chain(link_chain)}')
+        refresh_display(f'Invalid link as it would be circular: '
+                        f'{dict_management.format_link_chain(link_chain)}')
         return
 
     # Check if it's already linked
@@ -905,256 +904,256 @@ def link_mode(database, context, args):
 
     if linked_to:
         if linked_to == [input_dict_name, input_item_name]:  # Already linked to given input
-            console_display.refresh_and_print(database, 'This link already exists')
+            refresh_display('This link already exists')
             return
         # A different link was inputted, confirm overwriting previous
-        if not console_display.confirm(f'This item is already linked to {dictionary[item_key]["link"]["linked_to"]}\n'
-                                       f'Overwrite this link? (y/n)'):
-            console_display.refresh_and_print(database, 'Cancelled')
+        if not confirm(f'This item is already linked to {dictionary[item_key]["link"]["linked_to"]}\n'
+                       f'Overwrite this link? (y/n)'):
+            refresh_display('Cancelled')
             return
-        dict_management.remove_from_linked_from(database, dict_name, item_key)  # Undo link from other side
+        dict_management.remove_from_linked_from(dict_name, item_key)  # Undo link from other side
 
     # Set this item's linked_to
     link['linked_to'] = [input_dict_name, input_item_name]
 
     # Set the linked item's linked_from
-    database[input_dict_name][input_item_name]['link']['linked_from'].append([dict_name, item_key])
+    DB[input_dict_name][input_item_name]['link']['linked_from'].append([dict_name, item_key])
 
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'[{item_key}] successfully linked to [{input_item_name}]! '
-                                                f'Link sequence: {dict_management.format_link_chain(link_chain)}')
+    save()
+    refresh_display(f'[{item_key}] successfully linked to [{input_item_name}]! '
+                    f'Link sequence: {dict_management.format_link_chain(link_chain)}')
 
 
-def unlink_mode(database, context, args):
+def unlink_mode(context, args):
     # ex input: daily unlink itemname
     dict_name = context['command']
-    dictionary = database[dict_name]
+    dictionary = DB[dict_name]
 
     # Input validation
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an item to unlink')
+        refresh_display('Must provide an item to unlink')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Item name not found')
+    if not (item_name := dict_management.key_search(dictionary, input_string)):
+        refresh_display('Item name not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     link = dictionary[item_name]['link']
     linked_to = link['linked_to']
     if not linked_to:
-        console_display.refresh_and_print(database, 'Item is not linked')
+        refresh_display('Item is not linked')
         return
 
     # Remove from the item it's linked to
-    dict_management.remove_from_linked_from(database, dict_name, item_name)
+    dict_management.remove_from_linked_from(dict_name, item_name)
 
     # Reset this item's link
     link['linked_to'] = []
 
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'[{item_name}] successfully unlinked!')
+    save()
+    refresh_display(f'[{item_name}] successfully unlinked!')
 
 
-def viewlink_mode(database, context, args):
+def viewlink_mode(context, args):
     # ex input: daily viewlink itemname
     dict_name = context['command']
-    dictionary = database[dict_name]
+    dictionary = DB[dict_name]
 
     # Input validation
     if not args:
-        console_display.refresh_and_print(database, 'Must provide an item to view the link chain of')
+        refresh_display('Must provide an item to view the link chain of')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Item name not found')
+    if not (item_name := dict_management.key_search(dictionary, input_string)):
+        refresh_display('Item name not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     linked_to = dictionary[item_name]['link']['linked_to']
     if not linked_to:
-        console_display.refresh_and_print(database, 'Item is not linked')
+        refresh_display('Item is not linked')
         return
 
     origin = [dict_name, item_name, dictionary[item_name]['link']['chaining']]
     linked_dict_name, linked_item_name = linked_to
-    next_link = [linked_dict_name, linked_item_name, database[linked_dict_name][linked_item_name]['link']['chaining']]
-    link_chain = dict_management.get_link_chain(database, origin, next_link)
-    console_display.refresh_and_print(database, f'Link: {dict_management.format_link_chain(link_chain)}')
+    next_link = [linked_dict_name, linked_item_name, DB[linked_dict_name][linked_item_name]['link']['chaining']]
+    link_chain = dict_management.get_link_chain(origin, next_link)
+    refresh_display(f'Link: {dict_management.format_link_chain(link_chain)}')
 
 
-def pause_mode(database, context, args):
+def pause_mode(context, args):
     # ex input: daily pause
 
     dict_name = context['command']
-    dictionary = database[dict_name]
+    dictionary = DB[dict_name]
     pause_list = []  # Items to pause
 
     # Input validation
     if args:
-        console_display.refresh_and_print(database, 'Unnecessary arguments!')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     user_response = input('> Enter a response corresponding to a selection mode\n'
                           '  [A] Single item\n'
                           '  [B] Group\n\n').lower()
     if user_response not in {'a', 'b'}:
-        console_display.refresh_and_print(database, 'Invalid response')
+        refresh_display('Invalid response')
         return
     if user_response == 'a':
         input_item_name = input('> What item would you like to pause? (Blank input = cancel)\n\n').lower()
         if not input_item_name:
-            console_display.refresh_and_print(database, 'Cancelled')
+            refresh_display('Cancelled')
             return
-        if not (item_name := dict_management.key_search(database, dictionary, input_item_name)):
-            console_display.refresh_and_print(database, 'Item not found')
+        if not (item_name := dict_management.key_search(dictionary, input_item_name)):
+            refresh_display('Item not found')
             raise errors.InvalidCommandUsage(dict_name, context['mode'])
         pause_list.append(item_name)
     else:  # == 'b'
         input_string = input('> What Group would you like to pause? (Blank input = cancel)\n\n').lower()
         if not input_string:
-            console_display.refresh_and_print(database, 'Cancelled')
+            refresh_display('Cancelled')
             return
-        if not (container_name := dict_management.key_search(database, database['groups'][dict_name],
+        if not (container_name := dict_management.key_search(DB['groups'][dict_name],
                                                              input_string)):
-            console_display.refresh_and_print(database, 'Container not found')
+            refresh_display('Container not found')
             raise errors.InvalidCommandUsage(dict_name, context['mode'])
-        for item in database['groups'][dict_name][container_name]:
+        for item in DB['groups'][dict_name][container_name]:
             pause_list.append(item)
     duration_input = input('> How many days should the item be paused for? (-1 = indefinite, 0 = cancel)\n\n')
     if not (duration_input == '-1' or duration_input.isnumeric()):
-        console_display.refresh_and_print(database, 'Invalid input. Expected -1 or a positive integer')
+        refresh_display('Invalid input. Expected -1 or a positive integer')
         return
     elif duration_input == '0':
-        console_display.refresh_and_print(database, 'Cancelled')
+        refresh_display('Cancelled')
         return
     duration = int(duration_input)
     for item in pause_list:
         dictionary[item]['pause_timer'] = duration
 
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, 'Items successfully paused!')
+    save()
+    refresh_display('Items successfully paused!')
 
 
 # Removing items ------------------------------------------------------------------------------------------
-def remove_mode(database, context, args):
+def remove_mode(context, args):
     # ex input: daily remove itemname
     dict_name = context['command']
-    dictionary = database[dict_name]
+    dictionary = DB[dict_name]
 
     if not args:
         print('Must provide an item to remove', end='\n\n')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Item not found')
+    if not (item_name := dict_management.key_search(dictionary, input_string)):
+        refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    dict_management.remove_item(database, dict_name, item_name)  # Link, Group handled here
+    dict_management.remove_item(dict_name, item_name)  # Link, Group handled here
 
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'{dict_name.capitalize()} item successfully removed!')
+    save()
+    refresh_display(f'{dict_name.capitalize()} item successfully removed!')
 
 
 # Groups ------------------------------------------------------------------------------------------
 
-def groupadd_mode(database, context, args):
+def groupadd_mode(context, args):
     # ex input: daily groupadd
     # Creates a new Group
     dict_name = context['command']
-    groups = database['groups'][dict_name]  # Corresponding Groups dict
-    groups_display = database['groups_display'][dict_name]
+    groups = DB['groups'][dict_name]  # Corresponding Groups dict
+    groups_display = DB['groups_display'][dict_name]
 
     if args:
-        console_display.refresh_and_print(database, 'Unnecessary arguments!')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     group_name = get_name('> Enter a name for the Group (must be unique to goal type)')
     if not group_name:
-        console_display.refresh_and_print(database, 'Cancelled')
+        refresh_display('Cancelled')
         return
     group_key = group_name.lower()
     if group_key in groups:
-        console_display.refresh_and_print(database, 'Group by that name already exists. Returning to menu')
+        refresh_display('Group by that name already exists. Returning to menu')
         return
     groups.update({group_key: {'display_name': group_name, 'manual_order': [], 'sort_override': None, 'expanded': True,
                                'items': []}})
     groups_display.append(group_key)
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'[{dict_name.capitalize()}] Group successfully created!')
+    save()
+    refresh_display(f'[{dict_name.capitalize()}] Group successfully created!')
 
 
-def groupremove_mode(database, context, args):
+def groupremove_mode(context, args):
     # ex input: daily groupremove
     dict_name = context['command']
-    groups = database['groups'][dict_name]
-    groups_display = database['groups_display'][dict_name]
+    groups = DB['groups'][dict_name]
+    groups_display = DB['groups_display'][dict_name]
 
     if not args:
         print('Must provide a Group to remove', end='\n\n')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (group_key := dict_management.key_search(database, groups, input_string, ignore_list=['_Default'])):
-        console_display.refresh_and_print(database, 'Group name not found')
+    if not (group_key := dict_management.key_search(groups, input_string, ignore_list=['_Default'])):
+        refresh_display('Group name not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     for item_key in groups[group_key]['items']:
-        dict_management.default_group(database, dict_name, item_key)  # Back to default
+        dict_management.default_group(dict_name, item_key)  # Back to default
     groups.pop(group_key)
     groups_display.remove(group_key)
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'Successfully deleted Group and returned items to default!')
+    save()
+    refresh_display(f'Successfully deleted Group and returned items to default!')
 
 
-def groupchange_mode(database, context, args):
+def groupchange_mode(context, args):
     # ex input: daily groupchange
     dict_name = context['command']
-    dictionary = database[dict_name]
-    groups = database['groups'][dict_name]  # Corresponding Groups dict
+    dictionary = DB[dict_name]
+    groups = DB['groups'][dict_name]  # Corresponding Groups dict
 
     if args:
-        console_display.refresh_and_print(database, 'Unnecessary arguments!')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = input('> What item would you like to change the Group of?\n\n').lower()
-    if not (item_key := dict_management.key_search(database, dictionary, input_string)):
-        console_display.refresh_and_print(database, 'Item not found')
+    if not (item_key := dict_management.key_search(dictionary, input_string)):
+        refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     print()  # Extra newline
     input_string = input('> What Group would you like to move this item to? '
                          '(BLANK INPUT = REMOVE FROM GROUPS)\n\n').lower()
     if input_string == '':  # Then put back into default
-        dict_management.remove_from_groups(database, dict_name, item_key)
-        dict_management.default_group(database, dict_name, item_key)
-    elif not (destination_name := dict_management.key_search(database, groups, input_string, ignore_list=['_Default'])):
-        console_display.refresh_and_print(database, 'Group not found')
+        dict_management.remove_from_groups(dict_name, item_key)
+        dict_management.default_group(dict_name, item_key)
+    elif not (destination_name := dict_management.key_search(groups, input_string, ignore_list=['_Default'])):
+        refresh_display('Group not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     else:
-        dict_management.move_to_group(database, dict_name, item_key, destination_name)
+        dict_management.move_to_group(dict_name, item_key, destination_name)
 
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'Successfully moved [{item_key}]!')
+    save()
+    refresh_display(f'Successfully moved [{item_key}]!')
 
 
-def groupposition_mode(database, context, args):
+def groupposition_mode(context, args):
     # ex input: daily groupposition
 
     dict_name = context['command']
-    groups = database['groups'][dict_name]  # Corresponding group dict
-    groups_display = database['groups_display'][dict_name]
+    groups = DB['groups'][dict_name]  # Corresponding group dict
+    groups_display = DB['groups_display'][dict_name]
 
     if args:
-        console_display.refresh_and_print(database, 'Unnecessary arguments!')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = input('What Group would you like to reposition?\n\n').lower()
-    if not (group_key := dict_management.key_search(database, groups, input_string, ignore_list=['_Default'])):
-        console_display.refresh_and_print(database, 'Group not found')
+    if not (group_key := dict_management.key_search(groups, input_string, ignore_list=['_Default'])):
+        refresh_display('Group not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     current_index = groups_display.index(group_key)
 
@@ -1165,14 +1164,13 @@ def groupposition_mode(database, context, args):
     input_list = input_string.split()
     input_length = len(input_list)
     if not input_string or input_length > 2:
-        console_display.refresh_and_print(database, 'Invalid number of args. Returning to menu')
+        refresh_display('Invalid number of args. Returning to menu')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     if input_length == 2:
         try:
             int(input_list[1])
         except ValueError:
-            console_display.refresh_and_print(database, 'Invalid second arg; should be an integer. '
-                                                        'Returning to menu')
+            refresh_display('Invalid second arg; should be an integer. Returning to menu')
             return
     arg1 = input_list[0]
     if arg1 in {'up', 'u', 'down', 'd'}:
@@ -1184,15 +1182,15 @@ def groupposition_mode(database, context, args):
         new_index = current_index + move_amount
     elif arg1 in {'set', 's'}:
         if input_length != 2:
-            console_display.refresh_and_print(database, 'Invalid number of args. Returning to menu')
+            refresh_display('Invalid number of args. Returning to menu')
             raise errors.InvalidCommandUsage(dict_name, context['mode'])
         new_index = int(input_list[1]) - 1  # -1 to fix for 0-index
     else:
-        console_display.refresh_and_print(database, 'Invalid first arg. Returning to menu')
+        refresh_display('Invalid first arg. Returning to menu')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if new_index == current_index:
-        console_display.refresh_and_print(database, 'Group is already in that position')
+        refresh_display('Group is already in that position')
         return
     if new_index < 0:
         new_index = 0
@@ -1202,8 +1200,8 @@ def groupposition_mode(database, context, args):
     groups_display.remove(group_key)
     groups_display.insert(new_index, group_key)
     # Save and print display
-    file_management.save(database)
-    console_display.refresh_and_print(database, f'Successfully repositioned [{group_key}]!')
+    save()
+    refresh_display(f'Successfully repositioned [{group_key}]!')
 
 
 # Misc utility ------------------------------------------------------------------------------------------

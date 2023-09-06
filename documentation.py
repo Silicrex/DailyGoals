@@ -1,4 +1,7 @@
 import os
+from database import DB
+
+# TODO: Document all commands and their usage
 
 
 def get_modules():
@@ -6,9 +9,9 @@ def get_modules():
     return modules
 
 
-def get_dictionary_list(database):
-    dictionary_list = [database['daily'], database['optional'], database['todo'], database['cycle'],
-                       database['longterm'], database['counter'], database['note']]
+def get_dictionary_list():
+    dictionary_list = [DB['daily'], DB['optional'], DB['todo'], DB['cycle'],
+                       DB['longterm'], DB['counter'], DB['note']]
     return dictionary_list
 
 
