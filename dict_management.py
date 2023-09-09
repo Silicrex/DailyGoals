@@ -122,44 +122,44 @@ def update_item(dict_name, item_name, update_value, *, chaining=True, depth=1):
     return depth
 
 
-def complete_item(dict_name, objective_name):
+def complete_item(dict_name, item_name):
     dictionary = DB[dict_name]
-    objective = dictionary[objective_name]
-    current_value = objective['numerator']
-    difference = objective['denominator'] - current_value  # Used to make handling links easier
+    item = dictionary[item_name]
+    current_value = item['numerator']
+    difference = item['denominator'] - current_value  # Used to make handling links easier
     if difference <= 0:  # Should not be decreasing anything
         refresh_display('Item is already marked as complete!')
         return
-    update_item(dict_name, objective_name, difference)
+    update_item(dict_name, item_name, difference)
 
 
-def reset_item(dict_name, objective_name):
+def reset_item(dict_name, item_name):
     dictionary = DB[dict_name]
-    objective = dictionary[objective_name]
-    current_value = objective['numerator']
+    item = dictionary[item_name]
+    current_value = item['numerator']
     difference = 0 - current_value  # Used to make handling links easier
     if difference == 0:
         refresh_display('Item already has no progress!')
         return
-    update_item(dict_name, objective_name, difference)
+    update_item(dict_name, item_name, difference)
 
 
-def remove_item(dict_name, objective_name):
+def remove_item(dict_name, item_name):
     dictionary = DB[dict_name]
-    objective = dictionary[objective_name]
-    linked_to = objective['link']['linked_to']
-    linked_from = objective['link']['linked_from']
+    item = dictionary[item_name]
+    linked_to = item['link']['linked_to']
+    linked_from = item['link']['linked_from']
 
     # Handle links
     if linked_to:  # Remove from linked item's linked_from
-        remove_from_linked_from(dict_name, objective_name)
-    if linked_from:  # If any objectives link to this one, remove it from their linked_to
-        remove_from_linked_to(dict_name, objective_name)
+        remove_from_linked_from(dict_name, item_name)
+    if linked_from:  # If any items link to this one, remove it from their linked_to
+        remove_from_linked_to(dict_name, item_name)
 
     # Handle groups
-    remove_from_groups(dict_name, objective_name)
+    remove_from_groups(dict_name, item_name)
 
-    dictionary.pop(objective_name)
+    dictionary.pop(item_name)
 
 
 def get_daily_count():
@@ -179,19 +179,19 @@ def check_streak():
 
 # History ------------------------------------------------------------------------------------------
 
-def add_to_history(dict_name, obj_value):
+def add_to_history(dict_name, item_value):
     def apply_tag(history_val):
-        history_val['tags'].update({date_string: obj_value['tag']})
-        obj_value['tag'] = None
+        history_val['tags'].update({date_string: item_value['tag']})
+        item_value['tag'] = None
 
     history_dict = DB['history'][dict_name]  # Corresponding history dict
-    history_name = obj_value['history_name']
+    history_name = item_value['history_name']
     date = DB['settings']['calendar_date'].copy()
     date_string = date_logic.string_date(date)
     if not history_name:  # No history tracking for this item
         return
     if dict_name == 'counter':  # Everything else for Counter History is handled elsewhere
-        if obj_value['tag']:
+        if item_value['tag']:
             apply_tag(history_dict[history_name.lower()])
         return
 
@@ -216,20 +216,20 @@ def add_to_history(dict_name, obj_value):
                 }})
 
     history_value = history_dict[history_key]
-    completed = obj_value['numerator'] >= obj_value['denominator']
+    completed = item_value['numerator'] >= item_value['denominator']
     if completed and not history_value['first_completed']:
         history_value['first_completed'] = date
-    if obj_value['tag']:
+    if item_value['tag']:
         apply_tag(history_value)
 
     if dict_name == 'longterm':
         return
     elif dict_name == 'todo':
         if completed:
-            history_value['numerator'] += obj_value['numerator']
+            history_value['numerator'] += item_value['numerator']
             history_value['times_completed'] += 1
     else:
-        history_value['numerator'] += obj_value['numerator']
+        history_value['numerator'] += item_value['numerator']
         if completed:
             history_value['times_completed'] += 1
 
@@ -312,7 +312,7 @@ def rename_linked_to(dict_name, item_name, rename_value):
 
 
 def remove_from_linked_from(dict_name, item_name):
-    """For a given objective with an outward link, remove it from the linked_from section of the item it links to
+    """For a given item with an outward link, remove it from the linked_from section of the item it links to
 
     :param dict_name: Dict name of the item being removed
     :param item_name: Name of the item being removed
@@ -324,7 +324,7 @@ def remove_from_linked_from(dict_name, item_name):
 
 
 def rename_linked_from(dict_name, item_name, rename_value):
-    """For a given objective with an outward link, rename it in the linked_from section of the item it links to
+    """For a given item with an outward link, rename it in the linked_from section of the item it links to
 
     :param dict_name: Dict name of the item being renamed
     :param item_name: Name of the item being renamed
@@ -371,15 +371,15 @@ def change_all_daily_dicts(context, mode):
     for dict_name in enforced_dictionary_names:
         enforced_dict_total_items += len(get_container(dict_name))
     if enforced_dict_total_items == 0:
-        refresh_display('There are no active daily objectives')
+        refresh_display('There are no active daily items')
         return
 
     # Get confirmation
     if mode == 'complete':  # If 'complete', print 'complete', else print '0%' for 'reset'
-        if not confirm('Set all daily-enforced objectives to complete? (y/n)'):
+        if not confirm('Set all daily-enforced items to complete? (y/n)'):
             return
     elif mode == 'reset':
-        if not confirm('Set all daily-enforced objectives to 0%? (y/n)'):
+        if not confirm('Set all daily-enforced items to 0%? (y/n)'):
             return
     
     for dict_name in enforced_dictionary_names:
@@ -398,14 +398,14 @@ def change_all_daily_dicts(context, mode):
 def delete_dictionary(mode):
     if mode == 'all':
         dict_list = documentation.get_dictionary_list()
-        total_objectives_to_remove = 0
+        total_items_to_remove = 0
         for dict_name in dict_list:
-            total_objectives_to_remove += len(dict_name)
-        if not total_objectives_to_remove:  # If there are none
-            print('There are no objectives to delete', end='\n\n')
+            total_items_to_remove += len(dict_name)
+        if not total_items_to_remove:  # If there are none
+            print('There are no items to delete', end='\n\n')
             return False
-        if not confirm(f"> Are you sure you'd like to delete ALL objectives/notes "
-                       f"({total_objectives_to_remove})? (y/n)"):
+        if not confirm(f"> Are you sure you'd like to delete ALL items "
+                       f"({total_items_to_remove})? (y/n)"):
             refresh_display('Cancelled')
             return False
         for dictionary in dict_list:
@@ -414,15 +414,15 @@ def delete_dictionary(mode):
 
     else:  # Specified dictionary
         dictionary = DB[mode]
-        total_objectives_to_remove = len(dictionary)
-        if not total_objectives_to_remove:  # If there are none
+        total_items_to_remove = len(dictionary)
+        if not total_items_to_remove:  # If there are none
             refresh_display('That container has no items')
             return False
-        if not confirm(f"> Are you sure you'd like to delete ALL {mode} items ({total_objectives_to_remove})? (y/n)"):
+        if not confirm(f"> Are you sure you'd like to delete ALL {mode} items ({total_items_to_remove})? (y/n)"):
             refresh_display('Cancelled')
             return False
-        for objective_name in dictionary:
-            remove_item(mode, objective_name)
+        for item_name in dictionary:
+            remove_item(mode, item_name)
         return True
 
 

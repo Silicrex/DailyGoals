@@ -362,7 +362,7 @@ def note_add_mode(context, args):
     # ex input: note add
     # ex input: note add 0
     if len(args) > 1:
-        print('Unnecessary arguments!', end='\n\n')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage('note', 'add')
 
     dictionary = DB[context['command']]
@@ -372,10 +372,10 @@ def note_add_mode(context, args):
         try:
             note_index = eval(note_index)
         except (NameError, SyntaxError):
-            print('Invalid index', end='\n\n')
+            refresh_display('Invalid index')
             raise errors.InvalidCommandUsage('note', 'add')
         if not isinstance(note_index, int):
-            print('Invalid index', end='\n\n')
+            refresh_display('Invalid index')
             raise errors.InvalidCommandUsage('note', 'add')
 
         if note_index > note_count - 1:  # If specified index is higher than list length, bump down to end index
@@ -419,7 +419,7 @@ def get_history_name(dictionary_name):
         history_name = get_name(prompt="> Enter a name for the matching History item title (unique to goal type; "
                                        "persistent; blank = don't track item)")
         if not history_name:
-            print('Opted to disable History tracking for this item', end='\n\n')
+            refresh_display('Opted to disable History tracking for this item')
             return None
         valid_key = True
         for item_key in dictionary:
@@ -702,7 +702,7 @@ def history_mode(context, args):
     dict_name = context['command']
 
     if args:
-        print('Unnecessary arguments, returning to menu', end='\n\n')
+        refresh_display('Unnecessary arguments, returning to menu')
         raise errors.InvalidCommandUsage(context['command'], context['mode'])
 
     os.system('cls')
@@ -1041,7 +1041,7 @@ def remove_mode(context, args):
     dictionary = DB[dict_name]
 
     if not args:
-        print('Must provide an item to remove', end='\n\n')
+        refresh_display('Must provide an item to remove')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
@@ -1091,7 +1091,7 @@ def groupremove_mode(context, args):
     groups_display = DB['groups_display'][dict_name]
 
     if not args:
-        print('Must provide a Group to remove', end='\n\n')
+        refresh_display('Must provide a Group to remove')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
@@ -1221,7 +1221,7 @@ def format_integer(value: str):
     try:  # Try an eval
         value = eval(value)
     except (SyntaxError, NameError):
-        print('Value must be a number', end='\n\n')
+        refresh_display('Value must be a number')
         return False
 
     try:  # The input base value can be a float, as long as the end result is an integer
@@ -1229,13 +1229,13 @@ def format_integer(value: str):
         # multiplication by a float involved. Don't want any implicit conversions, so compare int result to float
         # result, and see if they're numerically equal.
         if not (number := int(value * multiplier)) == value * multiplier:
-            print('Value must be an integer', end='\n\n')
+            refresh_display('Value must be an integer')
             return False
     except TypeError:  # Valid eval happened, but not a valid number
-        print('Value must be an integer*', end='\n\n')
+        refresh_display('Value must be an integer*')
         return False
 
     if number == 0:
-        print('Value cannot be 0', end='\n\n')
+        refresh_display('Value cannot be 0')
         return False
     return number

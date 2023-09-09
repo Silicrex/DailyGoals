@@ -19,21 +19,18 @@
 # TODO: Way to view links. When you link, should also specify dict type
 # TODO: Break command, indicate a daily isn't needed today
 # TODO: Fix display settings stuff
-# TODO: Banner text, "Daily completion (by # of objectives): x/y (z%)
-# TODO: Make database a cross-file global variable?
+# TODO: Banner text, "Daily completion (by # of items): x/y (z%)
 
 # TODO: Pause system
 # TODO: Individual item streak backend
 # TODO: Pluralize items in minimized container display
 # TODO: Figure out weird history forced automatch
-# TODO: Way to toggle 'expand' on containers
 # TODO: Add way to rename history item & update references
 # TODO: Move toggles to a toggle section?
 # TODO: Automatch for toggle settings
 # TODO: Give backup an arg for name
 # TODO: Add todo by DATE
 # TODO: Individual Group sort override
-# TODO: Indicate when an item is linked
 # TODO: Setting for cycle preview
 # TODO: Start cd for mode 2 cycles
 # TODO: Full cycle toggle redesign (currently broken)
@@ -41,7 +38,6 @@
 # TODO: Avoid scenarios where you have to close to cancel? (ie submitting a tag)
 # TODO: Completion links
 # TODO: Enter a loop for a counter so blank input increments
-# TODO: Update toggle/settings help menu. Consolidate their location (currently documentation/console_display)
 import commands  # Command functions and formatting
 import errors
 from console_display import refresh_display

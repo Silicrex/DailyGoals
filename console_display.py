@@ -52,27 +52,27 @@ def refresh_display(message=''):  # Refresh display then print message
 
 # Sorting -------------------------------------------------------------------
 
-def completion_then_alpha_sort(obj):
-    # obj[1] refers to dictionary value in tuple (obj_name, dict value)
+def completion_then_alpha_sort(item):
+    # item[1] refers to dictionary value in tuple (item_name, dict value)
     # False sorts before True in ascending. a sorts before z. Sorts incomplete to top, then alphabetically.
     # (completion bool, name)
-    return obj[1]['numerator'] >= obj[1]['denominator'], obj[0]
+    return item[1]['numerator'] >= item[1]['denominator'], item[0]
 
 
-def cycle_sort(obj):
+def cycle_sort(item):
     # (current offset, completion bool, name)
     # 0 sorts before 1, False before True, a before z. Sorts by offset, then completion bool, then name
-    return obj[1]['remaining_cooldown'], obj[1]['numerator'] >= obj[1]['denominator'], obj[0]
+    return item[1]['remaining_cooldown'], item[1]['numerator'] >= item[1]['denominator'], item[0]
 
 
-def todo_sort(obj):
-    # Puts enforced daily to-do objectives on top (False sorts before True, so invert with not)
+def todo_sort(item):
+    # Puts enforced daily to-do items on top (False sorts before True, so invert with not)
     # enforced_todo -> completed or not -> name
-    return not obj[1]['enforced_todo'], obj[1]['numerator'] >= obj[1]['denominator'], obj[0]
+    return not item[1]['enforced_todo'], item[1]['numerator'] >= item[1]['denominator'], item[0]
 
 
-def alpha_sort(obj):
-    return obj[0]  # Just by the name
+def alpha_sort(item):
+    return item[0]  # Just by the name
 
 
 # Item printing --------------------------------------------------------
@@ -83,16 +83,16 @@ def print_dictionary(dict_name):
 
 def print_groups(dictionary, groups, display_order, print_items, sort_key, *, extra_string_func=None,
                  prefix_func=None, suffix_func=None):
-    """Given a dictionary of objectives, print them out with detailed information.
+    """Given a dictionary of items, print them out with detailed information.
 
-    :param dict dictionary: The dictionary of objectives
+    :param dict dictionary: The dictionary of items
     :param dict groups: The Groups dict for the corresponding dict type
     :param list display_order: A list of the order to display Groups in, not including the default
-    :param function print_items: Function that prints a dict of objectives, called within a group.
+    :param function print_items: Function that prints a dict of items, called within a group.
     Signature: (DB, items_dict, extra_string_exec, item_prefix, item_suffix)
-    :param function sort_key: Sorting function that takes an obj_value
-    :param function prefix_func: Function that takes an obj_value and returns a string to prefix the print
-    :param function suffix_func: Function that takes an obj_value and returns a string to suffix the print
+    :param function sort_key: Sorting function that takes an item_value
+    :param function prefix_func: Function that takes an item_value and returns a string to prefix the print
+    :param function suffix_func: Function that takes an item_value and returns a string to suffix the print
     :param function extra_string_func: Function that takes a dict and returns a string.
     Extra text to be inserted after the item name is generated according to this based on the item's value
     :return:
@@ -245,50 +245,23 @@ def print_note():
     pass
 
 
-def get_cycle_sequence_string(obj_value):
-    display_mode = obj_value['display_mode']
+def get_cycle_sequence_string(item_value):
+    display_mode = item_value['display_mode']
     if display_mode == 'number':
-        return f'every {obj_value["cooldown_sequence"][0]}d'
+        return f'every {item_value["cooldown_sequence"][0]}d'
     elif display_mode == 'week_day':
-        week_cooldown = obj_value['week_cooldown']
+        week_cooldown = item_value['week_cooldown']
         if week_cooldown == 0:
             cooldown_string = 'every'
         elif week_cooldown == 1:
             cooldown_string = 'every other'
         else:
-            cooldown_string = f'every {week_cooldown + 1}'  # 2 cooldown = objective occurs every 3 weeks
-        return f'{cooldown_string} [{"/".join(obj_value["week_days"])}]'
+            cooldown_string = f'every {week_cooldown + 1}'  # 2 cooldown = item occurs every 3 weeks
+        return f'{cooldown_string} [{"/".join(item_value["week_days"])}]'
     elif display_mode == 'custom':
-        return obj_value['frequency_description']
+        return item_value['frequency_description']
     else:
         quit('Invalid cycle display mode..')
-
-
-def print_stats():
-    os.system('cls')
-    print(f"Total completed daily goals: {DB['stats']['total_completed']}\n"
-          f"Days completed: {DB['stats']['days_completed']}\n"
-          f"Current streak: {DB['stats']['streak']}\n"
-          f"Best streak: {DB['stats']['best_streak']}", end='\n\n')
-
-
-def print_settings():
-    os.system('cls')
-    settings = DB['settings']
-    print(f">>> Main display dictionary toggles\n\n"
-          f"Daily: {settings['daily']}\n"
-          f"Todo: {settings['todo']}\n"
-          f"Active cycle: {settings['cycle']}\n"
-          f"-> Full cycle: {settings['full_cycle']}\n"
-          f"Longterm: {settings['longterm']}\n"
-          f"Counter: {settings['counter']}\n"
-          f"Note: {settings['note']}\n\n\n"
-          f">>> Main display header\n\n"
-          f"Print DD/MM: {settings['date_switch']}\n"
-          f"Print welcome: {settings['welcome']}\n"
-          f"Show total completed dailies: {settings['display_total']}\n\n\n"
-          f">>> Dictionary functionality\n\n"
-          f"Objective search auto-match (skip confirmation): {settings['auto_match']}", end='\n\n')
 
 
 def confirm(text):  # Take print statement, get yes or no

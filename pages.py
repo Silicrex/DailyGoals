@@ -100,7 +100,7 @@ class HistoryPages(Pages):
               "[previous/prev/p] - Advances the page backwards (can add an integer ie previous 5)\n"
               "[page/pg <#>] - Goes to the given page number\n"
               "[find/f <str>] - Finds first key starting with given str and goes to that page\n"
-              "[tags/tag/t <obj>] - Launches the Tags interface for the given objective\n"
+              "[tags/tag/t <item>] - Launches the Tags interface for the given item\n"
               "[help] - Shows this help dialog\n"
               "[exit] - Exits the history interface and returns to the main menu\n")
 
@@ -136,12 +136,12 @@ class CounterPages(HistoryPages):
 
 
 class TagPages(Pages):
-    def __init__(self, objective_name, dictionary):
-        self.objective_name = objective_name
+    def __init__(self, item_name, dictionary):
+        self.item_name = item_name
         super().__init__(dictionary)
 
     def print_header(self):
-        print(f"Viewing the tags of [{self.objective_name}]\n"
+        print(f"Viewing the tags of [{self.item_name}]\n"
               f"Normal commands will not work until interface is exited (enter blank or 'exit')\n"
               f"'help' for help", end='\n\n')
 

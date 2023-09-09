@@ -49,7 +49,7 @@ def get_template_dict():  # Database structure
             'longterm': [],
             'counter': [],
             'note': [], },
-        'history': {  # Completed objectives
+        'history': {  # Completed items
             'daily': {},
             'optional': {},
             'todo': {},
@@ -82,10 +82,10 @@ def get_template_dict():  # Database structure
             'counter_sort': 'alpha_sort',
             'note': True,  # Always display notes
             'note_sort': None,
-            'auto_match': False,  # Automatically match first objective when searching
+            'auto_match': False,  # Automatically match first item when searching
             'history_auto_match': False,  # auto_match but for history interface
             'single_line_tag_input': True,  # Switch between multi-line and single-line tag input
-            'show_history_link': True,  # Toggle objectives always showing their History item link
+            'show_history_link': True,  # Toggle items always showing their History item link
             'history_keys_per_page': 5,  # History items to display per page
             'tags_keys_per_page': 5,  # Tags to display per page
             'end_day_warning': True}  # Warning when ending day if dailies are not all completed?

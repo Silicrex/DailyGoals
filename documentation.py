@@ -113,6 +113,36 @@ def print_submodule(command, submodule=None):
         pass
 
 
+def print_stats():
+    os.system('cls')
+    print(f"Total completed daily goals: {DB['stats']['total_completed']}\n"
+          f"Days completed: {DB['stats']['days_completed']}\n"
+          f"Current streak: {DB['stats']['streak']}\n"
+          f"Best streak: {DB['stats']['best_streak']}", end='\n\n')
+
+
+def print_settings():
+    os.system('cls')
+    settings = DB['settings']
+    print(f">>> Main display dictionary toggles\n\n"
+          f"Daily: {settings['daily']}\n"
+          f"Todo: {settings['todo']}\n"
+          f"Cycle: {settings['cycle']}\n"
+          f"Longterm: {settings['longterm']}\n"
+          f"Counter: {settings['counter']}\n\n"
+          f">>> Main display header\n\n"
+          f"Print DD/MM: {settings['date_switch']}\n"
+          f"Print welcome: {settings['welcome']}\n"
+          f"Show total completed dailies: {settings['display_total']}\n\n"
+          f">>> Dictionary functionality\n\n"
+          f"Display history links: {settings['show_history_link']}\n"
+          f"Item search auto-match (skip confirmation): {settings['auto_match']}\n"
+          f"History search auto-match (skip confirmation): {settings['history_auto_match']}\n"
+          f"Cycle preview depth (days): {settings['cycle_preview']}\n"
+          f"Single-line tag input: {settings['single_line_tag_input']}\n"
+          f"Endday warning when not all complete: {settings['end_day_warning']}", end='\n\n')
+
+
 def print_toggle_help():
     os.system('cls')
     print("toggle <keyword>\n"
@@ -121,19 +151,20 @@ def print_toggle_help():
           ">>> Settings to display dictionaries in main display (doesn't impact commands like 'dailies')\n\n"
           "[daily]: Show dailies\n"
           "[todo]: Show to-dos\n"
-          "[cycle]: Show active cycle objectives\n"
-          "-> [full_cycle]: Show inactive cycle objectives as well (requires 'cycle' enabled to work)\n"
+          "[cycle]: Show active cycle items\n"
           "[longterm]: Show longterms\n"
           "[counter]: Show counters\n"
           "[note]: Show notes\n\n\n"
           ">>> Show these things in main display header\n\n"
           "[date_switch]: Display DD/MM instead of MM/DD\n"
           "[welcome]: Show welcome message\n"
-          "[display_total]: Include overall number of completed daily objectives\n\n\n"
+          "[display_total]: Include overall number of completed daily items\n\n\n"
           ">>> Dictionary functionality\n\n"
-          "[auto_match]: If a given objective isn't found,"
-          " automatically match to the closest without confirmation\n"
-          "              (looks for as a substring; prioritizes matches *starting with* the substring)", end='\n\n')
+          "[show_history_link]: Show history links in main display\n"
+          "[auto_match]: Automatically match input to closest item without confirmation\n"
+          "[history_auto_match]: Automatically match history input to closest item without confirmation\n"
+          "[single_line_tag_input]: Use the tag input process that expects all input on one line\n"
+          "[end_day_warning]: If not all dailies are complete, will ask for confirmation before ending day", end='\n\n')
 
 
 def print_modules():

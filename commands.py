@@ -1,12 +1,11 @@
-import os  # For os.system('cls')
+import os
 import documentation
 import modes
 import dict_management
 import settings_management
 import date_logic
-import console_display
 import errors
-from console_display import refresh_display
+from console_display import refresh_display, print_dictionary, confirm
 from database import DB, save, get_template_dict
 
 
@@ -43,7 +42,7 @@ def counter_command(context, args):
 # --- Disabled for now
 # def note_command(context, args):
 #     if not len(args) > 1:
-#         console_display.refresh_and_print('Invalid number of parameters, expected at least 2')
+#         refresh_and_print('Invalid number of parameters, expected at least 2')
 #         raise errors.InvalidCommandUsage('note')
 #     mode = args[0]
 #     context['mode'] = mode
@@ -51,7 +50,7 @@ def counter_command(context, args):
 #     if mode in valid_modes:
 #         mode_function = getattr(modes, mode + '_note_mode')  # ie 'add' goes to add_note_mode()
 #     else:
-#         console_display.refresh_and_print('Invalid mode')
+#         refresh_and_print('Invalid mode')
 #         raise errors.InvalidCommandUsage('note')
 #     context['dictionary'] = DB['note']
 #     mode_function(context, args)
@@ -60,7 +59,7 @@ def counter_command(context, args):
 def complete_command(context, args):
     # ex input: complete
     if args:
-        print('Unnecessary arguments!', end='\n\n')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(context['command'])
     dict_management.change_all_daily_dicts(context, 'complete')
 
@@ -68,7 +67,7 @@ def complete_command(context, args):
 def reset_command(context, args):
     # ex input: reset
     if args:
-        print('Unnecessary arguments!', end='\n\n')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(context['command'])
     dict_management.change_all_daily_dicts(context, 'reset')
 
@@ -77,90 +76,88 @@ def delete_command(context, args):
     # ex input: delete daily
     # ex input: delete all
     if len(args) != 1:  # Only ever one valid arg
-        print('Missing argument!', end='\n\n')
+        refresh_display('Missing argument!')
         raise errors.InvalidCommandUsage(context['command'])
     delete_mode_input = args[0]
     if delete_mode_input not in documentation.get_dictionary_names() and delete_mode_input != 'all':
-        print("Invalid delete mode. Expected a dictionary name (ie daily) or 'all'", end='\n\n')
+        refresh_display("Invalid delete mode. Expected a dictionary name (ie daily) or 'all'")
         return
     if not dict_management.delete_dictionary(delete_mode_input):
         return
     save()
-    console_display.print_display()
-    print('Successfully deleted the specified', end='\n\n')
+    refresh_display(f'Successfully deleted [{delete_mode_input}]')
 
 
 # Display ------------------------------------------------------------------------------------------
 
 def print_command(context, args):
     if args:
-        print('Unnecessary arguments!', end='\n\n')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(context['command'])
     os.system('cls')
-    console_display.print_display()
+    refresh_display()
 
 
 def dailies_command(context, args):
     if args:
-        print('Unnecessary arguments!', end='\n\n')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(context['command'])
     os.system('cls')
-    console_display.print_dictionary('daily')
-    console_display.print_dictionary('optional')
+    print_dictionary('daily')
+    print_dictionary('optional')
 
 
 def optionals_command(context, args):
     if args:
-        print('Unnecessary arguments!', end='\n\n')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(context['command'])
     os.system('cls')
-    console_display.print_dictionary('optional')
+    print_dictionary('optional')
 
 
 def todos_command(context, args):
     if args:
-        print('Unnecessary arguments!', end='\n\n')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(context['command'])
     os.system('cls')
-    console_display.print_dictionary('todo')
+    print_dictionary('todo')
 
 
 def cycles_command(context, args):
     if args:
-        print('Unnecessary arguments!', end='\n\n')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(context['command'])
     os.system('cls')
-    console_display.print_dictionary('active_cycle')
-    console_display.print_dictionary('inactive_cycle')
+    print_dictionary('active_cycle')
+    print_dictionary('inactive_cycle')
 
 
 def longterms_command(context, args):
     if args:
-        print('Unnecessary arguments!', end='\n\n')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(context['command'])
     os.system('cls')
-    console_display.print_dictionary('longterm')
+    print_dictionary('longterm')
 
 
 def counters_command(context, args):
     if args:
-        print('Unnecessary arguments!', end='\n\n')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(context['command'])
     os.system('cls')
-    console_display.print_dictionary('counter')
+    print_dictionary('counter')
 
 
 def stats_command(context, args):
     if args:
-        print('Unnecessary arguments!', end='\n\n')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(context['command'])
-    os.system('cls')
-    console_display.print_stats()
+    documentation.print_stats()
 
 
 def help_command(_, context, args):  # Doesn't need database
     if args:
-        print('Unnecessary arguments!', end='\n\n')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(context['command'])
     os.system('cls')
     documentation.print_help()
@@ -175,7 +172,7 @@ def toggle_command(context, args):
     # ex input: toggle defaults
     arg_length = len(args)
     if arg_length > 2:
-        print('Unnecessary arguments!', end='\n\n')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(context['command'])
     if arg_length == 0:  # Just 'toggle'
         documentation.print_toggle_help()
@@ -184,7 +181,7 @@ def toggle_command(context, args):
     toggle_name = args[0]
     if arg_length == 1:  # Either toggling a specific setting or setting to defaults
         if toggle_name not in documentation.get_toggles():
-            print("Invalid setting. See keywords with 'toggle'", end='\n\n')
+            refresh_display("Invalid setting. See keywords with 'toggle'")
             return
         if toggle_name == 'defaults':
             DB['settings'] = get_template_dict()['settings']
@@ -194,11 +191,11 @@ def toggle_command(context, args):
 
     elif arg_length == 2:  # Specified setting and manual value
         if toggle_name not in documentation.get_toggles():
-            print("Invalid setting. See keywords with 'toggle'", end='\n\n')
+            refresh_display("Invalid setting. See keywords with 'toggle'")
             return
         manual_value = args[1]
         if manual_value not in {'on', 'off'}:
-            print("Invalid manual value. Expected 'on' or 'off'", end='\n\n')
+            refresh_display("Invalid manual value. Expected 'on' or 'off'")
             return
         settings_management.toggle(toggle_name, manual_value)
     save()
@@ -221,10 +218,10 @@ def setdate_command(context, args):
     day = int(input_day)
     year = int(input_year)
 
-    # calendar_date = DB['settings']['calendar_date']
-    # if input_month == calendar_date['month'] and input_day == calendar_date['day']:
-    #     print('That date is already set', end='\n\n')
-    #     return
+    calendar_date = DB['settings']['calendar_date']
+    if input_month == calendar_date['month'] and input_day == calendar_date['day']:
+        refresh_display('That date is already set')
+        return
     if not (1 <= month <= 12):
         refresh_display('Invalid month. Expected 1-12 range')
         return
@@ -236,7 +233,7 @@ def setdate_command(context, args):
         return
 
     if DB['stats']['streak'] != 0 or len(DB['cycle']) != 0:
-        if not console_display.confirm('WARNING: Resets streak and *DELETES* ALL CYCLE OBJECTIVES. Proceed? (y/n)'):
+        if not confirm('WARNING: Resets streak and *DELETES* ALL CYCLE ITEMS. Proceed? (y/n)'):
             refresh_display('Cancelled')
             return
     DB['stats']['streak'] = 0
@@ -253,14 +250,14 @@ def setdate_command(context, args):
 def setday_command(context, args):
     # ex input: setday monday
     if len(args) != 1:
-        print('Invalid number of arguments!', end='\n\n')
+        refresh_display('Invalid number of arguments!')
         raise errors.InvalidCommandUsage(context['command'])
     input_week_day = args[0]
     if not (week_day_number := date_logic.convert_day(input_week_day)):
         refresh_display('Invalid day. Enter week day name or keyword (ie Saturday)')
         return
     if DB['stats']['streak'] != 0 or len(DB['cycle']) != 0:
-        if not console_display.confirm('WARNING: Resets streak and *DELETES* ALL CYCLE OBJECTIVES. Proceed? (y/n)'):
+        if not confirm('WARNING: Resets streak and *DELETES* ALL CYCLE ITEMS. Proceed? (y/n)'):
             refresh_display('Cancelled')
             return
     DB['stats']['streak'] = 0
@@ -273,9 +270,9 @@ def setday_command(context, args):
 
 def settings_command(context, args):
     if args:
-        print('Unnecessary arguments!', end='\n\n')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(context['command'])
-    console_display.print_settings()
+    documentation.print_settings()
 
 
 # System/file ------------------------------------------------------------------------------------------
@@ -306,7 +303,7 @@ def endday_command(context, args):
     if dict_management.get_daily_count() > 0:  # There must be at least one daily item
         streak_deserved = dict_management.check_streak()
         if not streak_deserved and DB['settings']['end_day_warning']:
-            if not console_display.confirm('Not all dailies have been completed. Proceed? (y/n)'):
+            if not confirm('Not all dailies have been completed. Proceed? (y/n)'):
                 refresh_display('Cancelled')
                 return
         if streak_deserved:
@@ -318,65 +315,65 @@ def endday_command(context, args):
             stats['streak'] = 0
 
     # Handle daily dict
-    for key, obj_value in daily_dict.items():
-        objective_completed = obj_value['numerator'] >= obj_value['denominator']
-        if objective_completed:
+    for key, item_value in daily_dict.items():
+        item_completed = item_value['numerator'] >= item_value['denominator']
+        if item_completed:
             stats['total_completed'] += 1
-            obj_value['streak'] += 1
+            item_value['streak'] += 1
         else:
-            obj_value['streak'] = 0
-        dict_management.add_to_history('daily', obj_value)
-        obj_value['numerator'] = 0
+            item_value['streak'] = 0
+        dict_management.add_to_history('daily', item_value)
+        item_value['numerator'] = 0
 
     # Handle optional dict
-    for key, obj_value in DB['optional'].items():
-        objective_completed = obj_value['numerator'] >= obj_value['denominator']
-        if objective_completed:
+    for key, item_value in DB['optional'].items():
+        item_completed = item_value['numerator'] >= item_value['denominator']
+        if item_completed:
             stats['total_completed'] += 1
-            obj_value['streak'] += 1
+            item_value['streak'] += 1
         else:
-            obj_value['streak'] = 0
-        dict_management.add_to_history('optional', obj_value)
-        obj_value['numerator'] = 0
+            item_value['streak'] = 0
+        dict_management.add_to_history('optional', item_value)
+        item_value['numerator'] = 0
 
     # Handle to-do dict
     todo_delete_list = []
-    for key, obj_value in DB['todo'].items():
-        objective_completed = obj_value['numerator'] >= obj_value['denominator']
-        if objective_completed:
+    for key, item_value in DB['todo'].items():
+        item_completed = item_value['numerator'] >= item_value['denominator']
+        if item_completed:
             stats['total_completed'] += 1
             todo_delete_list.append(key)  # Completed to-do's are deleted
-        dict_management.add_to_history('todo', obj_value)
+        dict_management.add_to_history('todo', item_value)
     for key in todo_delete_list:
         dict_management.remove_item('todo', key)
 
     # Handle cycle dict
-    for key, obj_value in active_cycle_dict.items():
-        objective_completed = obj_value['numerator'] >= obj_value['denominator']
-        if objective_completed:
+    for key, item_value in active_cycle_dict.items():
+        item_completed = item_value['numerator'] >= item_value['denominator']
+        if item_completed:
             stats['total_completed'] += 1
-            obj_value['streak'] += 1
+            item_value['streak'] += 1
         else:
-            obj_value['streak'] = 0
-        dict_management.add_to_history('cycle', obj_value)
-        obj_value['numerator'] = 0
-    for key, obj_value in cycle_dict.items():
-        if obj_value['remaining_cooldown'] == 0:  # Was an active today
-            next_cooldown_index = obj_value['cooldown_iterator']
-            cooldown_sequence = obj_value['cooldown_sequence']
-            obj_value['remaining_cooldown'] = cooldown_sequence[next_cooldown_index] - 1  # -1 to factor day change
-            obj_value['cooldown_iterator'] = dict_management.roll_over_index(next_cooldown_index,
-                                                                             len(cooldown_sequence))
+            item_value['streak'] = 0
+        dict_management.add_to_history('cycle', item_value)
+        item_value['numerator'] = 0
+    for key, item_value in cycle_dict.items():
+        if item_value['remaining_cooldown'] == 0:  # Was an active today
+            next_cooldown_index = item_value['cooldown_iterator']
+            cooldown_sequence = item_value['cooldown_sequence']
+            item_value['remaining_cooldown'] = cooldown_sequence[next_cooldown_index] - 1  # -1 to factor day change
+            item_value['cooldown_iterator'] = dict_management.roll_over_index(next_cooldown_index,
+                                                                              len(cooldown_sequence))
         else:
-            obj_value['remaining_cooldown'] -= 1
+            item_value['remaining_cooldown'] -= 1
 
     # Handle longterm dict
-    for key, obj_value in DB['longterm'].items():
-        dict_management.add_to_history('longterm', obj_value)
+    for key, item_value in DB['longterm'].items():
+        dict_management.add_to_history('longterm', item_value)
 
     # Handle counter dict
-    for key, obj_value in DB['counter'].items():
-        dict_management.add_to_history('counter', obj_value)
+    for key, item_value in DB['counter'].items():
+        dict_management.add_to_history('counter', item_value)
 
     # Increment month/day/year & week day
     date_logic.increment_date()
@@ -392,16 +389,21 @@ def endday_command(context, args):
 def backup_command(context, args):
     # ex input: backup
     if args:
-        print('Unnecessary arguments!', end='\n\n')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(context['command'])
-    save(file_name='data_manualbackup.json')
-    print('Manual backup successfully created and saved to [data_manualbackup.json]', end='\n\n')
+    num = 1
+    name = 'manual_backup1.dat'
+    while os.path.exists(name):
+        num += 1
+        name = f'manual_backup{num}.dat'
+    save(file_name=name)
+    refresh_display(f'Manual backup successfully created and saved to [{name}]')
 
 
 def stop_command(_, context, args):  # Doesn't need database
     # ex input: stop
     if args:
-        print('Unnecessary arguments!', end='\n\n')
+        refresh_display('Unnecessary arguments!')
         raise errors.InvalidCommandUsage(context['command'])
     quit('Program terminated')
 

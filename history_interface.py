@@ -13,9 +13,9 @@ def launch_history_interface(dict_name):
     launch_pages_interface(pm, dict_name)
 
 
-def launch_tags_interface(objective_name, dictionary):
+def launch_tags_interface(item_name, dictionary):
     keys_per_page = DB['settings']['tags_keys_per_page']
-    pm = pages.TagPages(objective_name, dictionary)
+    pm = pages.TagPages(item_name, dictionary)
     pm.set_keys_per_page(keys_per_page)
     launch_pages_interface(pm, 'tags')
 
