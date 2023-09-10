@@ -4,7 +4,7 @@ import documentation
 import history_interface
 import errors
 import os
-from console_display import refresh_display, confirm
+from console_display import refresh_display, confirm, print_items_counters
 from database import DB, save
 
 
@@ -1055,6 +1055,32 @@ def remove_mode(context, args):
     refresh_display(f'{dict_name.capitalize()} item successfully removed!')
 
 
+def continuous_mode(context, args):
+    dict_name = context['command']
+    if not args:
+        refresh_display('Must provide a counter item')
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
+
+    input_string = ' '.join(args).lower()
+    if not (item_name := dict_management.key_search(DB[dict_name], input_string)):
+        refresh_display('Item not found')
+        raise errors.InvalidCommandUsage(dict_name, context['mode'])
+
+    os.system('cls')
+    while True:
+
+        print("'exit' to return to menu, blank enter for +1 or enter a non-0 integer", end='\n\n')
+        print_items_counters({item_name: DB[dict_name][item_name]})
+        print()
+        user_input = input()
+        if not user_input:
+            update_value = 1
+        else:
+            if not (update_value := format_integer(user_input)):
+                continue
+        dict_management.update_item(dict_name, item_name, update_value)
+        save()
+
 # Groups ------------------------------------------------------------------------------------------
 
 def groupadd_mode(context, args):
@@ -1232,7 +1258,7 @@ def format_integer(value: str):
             refresh_display('Value must be an integer')
             return False
     except TypeError:  # Valid eval happened, but not a valid number
-        refresh_display('Value must be an integer*')
+        refresh_display('Value must be an integer')
         return False
 
     if number == 0:

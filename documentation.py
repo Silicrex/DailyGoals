@@ -44,7 +44,7 @@ def get_modes(command):
                  'viewlink', 'pause', 'history'},
         'counter': {'add', 'reset', 'remove', 'set', 'setall', 'update', 'rename', 'groupadd', 'rehistory',
                     'groupremove', 'groupchange', 'groupposition', 'tag', 'link', 'unlink', 'viewlink', 'pause',
-                    'history'},
+                    'history', 'continuous'},
         'note': {'add', 'remove', 'edit', 'position', 'swap'}
     }
     return modes_dict[command]
@@ -52,7 +52,8 @@ def get_modes(command):
 
 def get_command_alias():
     command_alias_dict = {
-        'c': 'cycle',
+        'cy': 'cycle',
+        'ct': 'counter',
         'com': 'complete',
         'd': 'daily',
         'o': 'optional',
@@ -67,7 +68,8 @@ def get_mode_alias():
     mode_alias_dict = {
         'a': 'add',
         'c': 'complete',
-        'del': 'remove'
+        'del': 'remove',
+        'ctn': 'continuous',
     }
     return mode_alias_dict
 

@@ -113,7 +113,7 @@ def print_groups(dictionary, groups, display_order, print_items, sort_key, *, ex
         print()
 
 
-def print_items_generic(items_dict, extra_string_func, prefix_func, suffix_func):
+def print_items_generic(items_dict, extra_string_func=None, prefix_func=None, suffix_func=None):
     for key, value in items_dict.items():
         display_name = value['display_name']
         extra_string = '' if not extra_string_func else extra_string_func(value)
@@ -132,7 +132,7 @@ def print_items_generic(items_dict, extra_string_func, prefix_func, suffix_func)
         print(f' {prefix}{box}{body}{suffix}{history_link}{linked}{tagged}')
 
 
-def print_items_counters(items_dict, extra_string_func, prefix_func, suffix_func):
+def print_items_counters(items_dict, extra_string_func=None, prefix_func=None, suffix_func=None):
     for key, value in items_dict.items():
         display_name = value['display_name']
         extra_string = '' if not extra_string_func else extra_string_func(value)
