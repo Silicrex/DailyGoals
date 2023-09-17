@@ -426,7 +426,7 @@ def get_history_name(dictionary_name):
             name = dictionary[item_key]['history_name']
             if name and name.lower() == history_name.lower():
                 valid_key = False
-                print(f'That History key is already used by [{item_key}]', end='\n\n')
+                print(f"That History key is already used by [{dictionary[item_key]['display_name']}]", end='\n\n')
                 break
         if valid_key:
             if history_name.lower() in history_dict:
@@ -483,11 +483,11 @@ def update_mode(context, args):
 
     full_string = ' '.join(args).lower()  # Lowercase string of entire rest of input
     # Search for full string as an item name; assuming no update value specified
-    if (item_name := dict_management.key_search(dictionary, full_string)) in dictionary:
+    if (item_key := dict_management.key_search(dictionary, full_string)) in dictionary:
         update_value = '1'  # str because format_integer takes a string
     else:  # Item wasn't found. Assume update value was specified
         sub_string = ' '.join(args[:-1]).lower()  # Last element should be update value
-        if not (item_name := dict_management.key_search(dictionary, sub_string)):
+        if not (item_key := dict_management.key_search(dictionary, sub_string)):
             refresh_display('Item not found')
             raise errors.InvalidCommandUsage(dict_name, context['mode'])
         update_value = args[-1]  # Worked out this way, proceed
@@ -498,11 +498,11 @@ def update_mode(context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])  # Invalid update value
 
     if dict_name == 'cycle':  # Can't update inactive item
-        if item_name not in dict_management.get_active_cycle():
+        if item_key not in dict_management.get_active_cycle():
             refresh_display('Cannot update progress for inactive cycle items')
             return
 
-    dict_management.update_item(dict_name, item_name, update_value)
+    dict_management.update_item(dict_name, item_key, update_value)
 
     # Save and print display
     save()
@@ -520,7 +520,7 @@ def set_mode(context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args[:-1]).lower()  # Last element should be set value
-    if not (item_name := dict_management.key_search(dictionary, input_string)):
+    if not (item_key := dict_management.key_search(dictionary, input_string)):
         refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
@@ -529,13 +529,13 @@ def set_mode(context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if dict_name == 'cycle':
-        if item_name not in dict_management.get_active_cycle():  # Can't update inactive item
+        if item_key not in dict_management.get_active_cycle():  # Can't update inactive item
             refresh_display('Cannot update progress for inactive cycle items')
             return
 
-    current_value = dictionary[item_name]['numerator']
+    current_value = dictionary[item_key]['numerator']
     difference = set_value - current_value  # Used to make handling links easier
-    dict_management.update_item(dict_name, item_name, difference)
+    dict_management.update_item(dict_name, item_key, difference)
 
     # Save and print display
     save()
@@ -553,16 +553,16 @@ def complete_mode(context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(dictionary, input_string)):
+    if not (item_key := dict_management.key_search(dictionary, input_string)):
         refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if dict_name == 'cycle':
-        if item_name not in dict_management.get_active_cycle():  # Can't update inactive item
+        if item_key not in dict_management.get_active_cycle():  # Can't update inactive item
             refresh_display('Cannot update progress for inactive cycle items')
             return
 
-    dict_management.complete_item(dict_name, item_name)
+    dict_management.complete_item(dict_name, item_key)
     # Save and print display
     save()
     refresh_display(f'{dict_name.capitalize()} item marked as complete!')
@@ -579,16 +579,16 @@ def reset_mode(context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(dictionary, input_string)):
+    if not (item_key := dict_management.key_search(dictionary, input_string)):
         refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if dict_name == 'cycle':
-        if item_name not in dict_management.get_active_cycle():  # Can't update inactive item
+        if item_key not in dict_management.get_active_cycle():  # Can't update inactive item
             refresh_display('Cannot update progress for inactive cycle items')
             return
 
-    dict_management.reset_item(dict_name, item_name)
+    dict_management.reset_item(dict_name, item_key)
     # Save and print display
     save()
     refresh_display(f'{dict_name.capitalize()} item successfully updated!')
@@ -719,11 +719,11 @@ def rehistory_mode(context, args):
         refresh_display('Must provide an item to change the History link of')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(dictionary, input_string)):
+    if not (item_key := dict_management.key_search(dictionary, input_string)):
         refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     new_history_name = get_history_name(dict_name)
-    dictionary[item_name]['history_name'] = new_history_name
+    dictionary[item_key]['history_name'] = new_history_name
     if dict_name == 'counter':
         dict_management.create_counter_history(new_history_name)
     # Save and print display
@@ -741,13 +741,13 @@ def denominator_mode(context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(dictionary, input_string)):
+    if not (item_key := dict_management.key_search(dictionary, input_string)):
         refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     if not (new_denominator := get_denominator()):
         return
-    dictionary[item_name]['denominator'] = new_denominator
+    dictionary[item_key]['denominator'] = new_denominator
     # Save and print display
     save()
     refresh_display(f'{dict_name.capitalize()} item successfully updated!')
@@ -806,16 +806,16 @@ def tag_mode(context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(dictionary, input_string)):
+    if not (item_key := dict_management.key_search(dictionary, input_string)):
         refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    item = dictionary[item_name]
+    item = dictionary[item_key]
 
     if not item['history_name']:
         refresh_display('Item does not have a History link to store a tag in')
         return
     elif item['tag']:
-        refresh_display(f'Item is currently tagged:\n{item["tag"]}')
+        refresh_display(f"Item is currently tagged:\n{item['tag']}")
         if not confirm('Overwrite? (y/n)'):
             refresh_display('Cancelled')
             return
@@ -833,7 +833,7 @@ def tag_mode(context, args):
     item['tag'] = tag_input
     # Save and print display
     save()
-    refresh_display(f'[{item_name}] successfully tagged!')
+    refresh_display(f"[{dictionary[item_key]['display_name']}] successfully tagged!")
 
 
 def link_mode(context, args):
@@ -845,29 +845,28 @@ def link_mode(context, args):
     if not args:
         refresh_display('Must provide an item to link')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    item_input_string = ' '.join(args).lower()
-    if not (item_key := dict_management.key_search(dictionary, item_input_string)):
+    input_string = ' '.join(args).lower()
+    if not (item_key := dict_management.key_search(dictionary, input_string)):
         refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    input_dict_name = input('> What type of item would you like to link this item to? '
-                            '(Blank input = cancel)\n\n').lower()
-    if not input_dict_name:
+    new_dict_name = input('> What type of item would you like to link this item to? (Blank input = cancel)\n\n').lower()
+    if not new_dict_name:
         refresh_display('Cancelled')
         return
-    if input_dict_name not in documentation.get_numeric_dictionary_names():
+    if new_dict_name not in documentation.get_numeric_dictionary_names():
         refresh_display('Invalid item type')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     print()  # Extra newline
 
-    input_item_key = input('> What item would you like to link this item to? (Blank input = cancel)\n\n').lower()
-    if not input_item_key:
+    new_item_key = input('> What item would you like to link this item to? (Blank input = cancel)\n\n').lower()
+    if not new_item_key:
         refresh_display('Cancelled')
         return
-    if not (input_item_key := dict_management.key_search(DB[input_dict_name], input_item_key)):
+    if not (new_item_key := dict_management.key_search(DB[new_dict_name], new_item_key)):
         refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     print()
-    input_item_name = DB[input_dict_name][input_item_key]['display_name']
+    new_item_name = DB[new_dict_name][new_item_key]['display_name']
 
     while True:
         chain_input_string = input('> Would you like this link to trigger other links when applicable? '
@@ -887,7 +886,7 @@ def link_mode(context, args):
     link = dictionary[item_key]['link']
     link['chaining'] = chaining
     origin = [dict_name, item_key, chaining]
-    next_link = [input_dict_name, input_item_key, DB[input_dict_name][input_item_key]['link']['chaining']]
+    next_link = [new_dict_name, new_item_key, DB[new_dict_name][new_item_key]['link']['chaining']]
 
     # Make sure link is not to itself or circular
     if origin == next_link:
@@ -903,26 +902,26 @@ def link_mode(context, args):
     linked_to = link['linked_to']
 
     if linked_to:
-        if linked_to == [input_dict_name, input_item_name]:  # Already linked to given input
+        if linked_to == [new_dict_name, new_item_key]:  # Already linked to given input
             refresh_display('This link already exists')
             return
         # A different link was inputted, confirm overwriting previous
-        if not confirm(f'This item is already linked to {dictionary[item_key]["link"]["linked_to"]}\n'
-                       f'Overwrite this link? (y/n)'):
+        if not confirm(f"This item is already linked to {dictionary[item_key]['link']['linked_to']}\n"
+                       f"Overwrite this link? (y/n)"):
             refresh_display('Cancelled')
             return
         dict_management.remove_from_linked_from(dict_name, item_key)  # Undo link from other side
 
     # Set this item's linked_to
-    link['linked_to'] = [input_dict_name, input_item_name]
+    link['linked_to'] = [new_dict_name, new_item_key]
 
     # Set the linked item's linked_from
-    DB[input_dict_name][input_item_name]['link']['linked_from'].append([dict_name, item_key])
+    DB[new_dict_name][new_item_key]['link']['linked_from'].append([dict_name, item_key])
 
     # Save and print display
     save()
-    refresh_display(f'[{item_key}] successfully linked to [{input_item_name}]! '
-                    f'Link sequence: {dict_management.format_link_chain(link_chain)}')
+    refresh_display(f"[{dictionary[item_key]['display_name']}] successfully linked to [{new_item_name}]! "
+                    f"Link sequence: {dict_management.format_link_chain(link_chain)}")
 
 
 def unlink_mode(context, args):
@@ -935,24 +934,24 @@ def unlink_mode(context, args):
         refresh_display('Must provide an item to unlink')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(dictionary, input_string)):
+    if not (item_key := dict_management.key_search(dictionary, input_string)):
         refresh_display('Item name not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    link = dictionary[item_name]['link']
+    link = dictionary[item_key]['link']
     linked_to = link['linked_to']
     if not linked_to:
         refresh_display('Item is not linked')
         return
 
     # Remove from the item it's linked to
-    dict_management.remove_from_linked_from(dict_name, item_name)
+    dict_management.remove_from_linked_from(dict_name, item_key)
 
     # Reset this item's link
     link['linked_to'] = []
 
     # Save and print display
     save()
-    refresh_display(f'[{item_name}] successfully unlinked!')
+    refresh_display(f"[{dictionary[item_key]['display_name']}] successfully unlinked!")
 
 
 def viewlink_mode(context, args):
@@ -965,17 +964,17 @@ def viewlink_mode(context, args):
         refresh_display('Must provide an item to view the link chain of')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
     input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(dictionary, input_string)):
+    if not (item_key := dict_management.key_search(dictionary, input_string)):
         refresh_display('Item name not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    linked_to = dictionary[item_name]['link']['linked_to']
+    linked_to = dictionary[item_key]['link']['linked_to']
     if not linked_to:
         refresh_display('Item is not linked')
         return
 
-    origin = [dict_name, item_name, dictionary[item_name]['link']['chaining']]
-    linked_dict_name, linked_item_name = linked_to
-    next_link = [linked_dict_name, linked_item_name, DB[linked_dict_name][linked_item_name]['link']['chaining']]
+    origin = [dict_name, item_key, dictionary[item_key]['link']['chaining']]
+    linked_dict_name, linked_item_key = linked_to
+    next_link = [linked_dict_name, linked_item_key, DB[linked_dict_name][linked_item_key]['link']['chaining']]
     link_chain = dict_management.get_link_chain(origin, next_link)
     refresh_display(f'Link: {dict_management.format_link_chain(link_chain)}')
 
@@ -999,14 +998,14 @@ def pause_mode(context, args):
         refresh_display('Invalid response')
         return
     if user_response == 'a':
-        input_item_name = input('> What item would you like to pause? (Blank input = cancel)\n\n').lower()
-        if not input_item_name:
+        input_string = input('> What item would you like to pause? (Blank input = cancel)\n\n').lower()
+        if not input_string:
             refresh_display('Cancelled')
             return
-        if not (item_name := dict_management.key_search(dictionary, input_item_name)):
+        if not (item_key := dict_management.key_search(dictionary, input_string)):
             refresh_display('Item not found')
             raise errors.InvalidCommandUsage(dict_name, context['mode'])
-        pause_list.append(item_name)
+        pause_list.append(item_key)
     else:  # == 'b'
         input_string = input('> What Group would you like to pause? (Blank input = cancel)\n\n').lower()
         if not input_string:
@@ -1016,8 +1015,8 @@ def pause_mode(context, args):
                                                              input_string)):
             refresh_display('Container not found')
             raise errors.InvalidCommandUsage(dict_name, context['mode'])
-        for item in DB['groups'][dict_name][container_name]:
-            pause_list.append(item)
+        for item_key in DB['groups'][dict_name][container_name]:
+            pause_list.append(item_key)
     duration_input = input('> How many days should the item be paused for? (-1 = indefinite, 0 = cancel)\n\n')
     if not (duration_input == '-1' or duration_input.isnumeric()):
         refresh_display('Invalid input. Expected -1 or a positive integer')
@@ -1026,8 +1025,8 @@ def pause_mode(context, args):
         refresh_display('Cancelled')
         return
     duration = int(duration_input)
-    for item in pause_list:
-        dictionary[item]['pause_timer'] = duration
+    for item_key in pause_list:
+        dictionary[item_key]['pause_timer'] = duration
 
     # Save and print display
     save()
@@ -1045,10 +1044,10 @@ def remove_mode(context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(dictionary, input_string)):
+    if not (item_key := dict_management.key_search(dictionary, input_string)):
         refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
-    dict_management.remove_item(dict_name, item_name)  # Link, Group handled here
+    dict_management.remove_item(dict_name, item_key)  # Link, Group handled here
 
     # Save and print display
     save()
@@ -1062,7 +1061,7 @@ def continuous_mode(context, args):
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
     input_string = ' '.join(args).lower()
-    if not (item_name := dict_management.key_search(DB[dict_name], input_string)):
+    if not (item_key := dict_management.key_search(DB[dict_name], input_string)):
         refresh_display('Item not found')
         raise errors.InvalidCommandUsage(dict_name, context['mode'])
 
@@ -1070,7 +1069,7 @@ def continuous_mode(context, args):
     while True:
 
         print("'exit' to return to menu, blank enter for +1 or enter a non-0 integer", end='\n\n')
-        print_items_counters({item_name: DB[dict_name][item_name]})
+        print_items_counters({item_key: DB[dict_name][item_key]})
         print()
         user_input = input()
         if not user_input:
@@ -1078,8 +1077,9 @@ def continuous_mode(context, args):
         else:
             if not (update_value := format_integer(user_input)):
                 continue
-        dict_management.update_item(dict_name, item_name, update_value)
+        dict_management.update_item(dict_name, item_key, update_value)
         save()
+
 
 # Groups ------------------------------------------------------------------------------------------
 
@@ -1163,7 +1163,7 @@ def groupchange_mode(context, args):
 
     # Save and print display
     save()
-    refresh_display(f'Successfully moved [{item_key}]!')
+    refresh_display(f"Successfully moved [{dictionary[item_key]['display_name']}]!")
 
 
 def groupposition_mode(context, args):

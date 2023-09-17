@@ -1,44 +1,37 @@
 # Set to enforce ASCII just because it's what Windows cmd can display. Can be avoided if this is interfaced
 # TODO: Help dialog, tutorial dialog, mention backup when running program, mention case sensitivity
 # TODO: Error handling/polishing
-# TODO: uhhhh END DAY Cycles etc. count for streak, todo for total etc
-#       Make the stats increment, make sure auto toggle actually does something
 # TODO: Notes
-# TODO: print help on the command for commands not being used right?
 # TODO: reset data command
-# TODO: setting for sorting counter by counter val instead of name
 # TODO: Note groups (have names and load different configs). Notes that autoload on certain days?
 # TODO: Counter groups in the same fashion
 # TODO: Auto date switching setting (endday alternative)
-# TODO: 7-day preview for upcoming
 # TODO: setdate considers switch_date setting
 # TODO: Add ability to attach a url?
 # TODO: Setting for sorting counter by numerator
-# TODO: Option to combine history entries
 # TODO: show list of options in groupchange
 # TODO: Way to view links. When you link, should also specify dict type
 # TODO: Break command, indicate a daily isn't needed today
 # TODO: Fix display settings stuff
 # TODO: Banner text, "Daily completion (by # of items): x/y (z%)
 
-# TODO: Pause system
-# TODO: Individual item streak backend
+# TODO: Pause system. Needs to be factored in endday
 # TODO: Pluralize items in minimized container display
 # TODO: Figure out weird history forced automatch
 # TODO: Add way to rename history item & update references
 # TODO: Move toggles to a toggle section?
 # TODO: Automatch for toggle settings
-# TODO: Give backup an arg for name
 # TODO: Add todo by DATE
 # TODO: Individual Group sort override
+# TODO: Way to expand/shrink Groups ie grouptoggle mode
 # TODO: Setting for cycle preview
 # TODO: Start cd for mode 2 cycles
 # TODO: Full cycle toggle redesign (currently broken)
 # TODO: Avoid scenarios where you have to close to cancel? (ie submitting a tag)
 # TODO: Completion links
 # TODO: a get_item() func instead of copy/pasting validating args and then searching in a dict
-# TODO: depth param in update feels sloppy
-# TOOD: idk how I feel about the whole printing system rn
+# TODO: should Linked status in display be optional and display full link route?
+# TODO: Long-term data tracking per item
 import commands  # Command functions and formatting
 import errors
 from console_display import refresh_display

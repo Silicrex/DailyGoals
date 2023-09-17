@@ -53,7 +53,7 @@ def refresh_display(message=''):  # Refresh display then print message
 # Sorting -------------------------------------------------------------------
 
 def completion_then_alpha_sort(item):
-    # item[1] refers to dictionary value in tuple (item_name, dict value)
+    # item[1] refers to dictionary value in tuple (item_key, dict value)
     # False sorts before True in ascending. a sorts before z. Sorts incomplete to top, then alphabetically.
     # (completion bool, name)
     return item[1]['numerator'] >= item[1]['denominator'], item[0]
@@ -125,7 +125,7 @@ def print_items_generic(items_dict, extra_string_func=None, prefix_func=None, su
         numerator = value['numerator']
         history_link = ''
         if value['history_name'] and DB['settings']['show_history_link']:
-            history_link = f' [-> {value["history_name"]}]'
+            history_link = f" [-> {value['history_name']}]"
         body = (f'{display_name}{extra_string}: '
                 f'{numerator:,}/{denominator:,} ({numerator / denominator:.2%})')
         box = '[x] ' if numerator >= denominator else '[ ] '
@@ -141,7 +141,7 @@ def print_items_counters(items_dict, extra_string_func=None, prefix_func=None, s
         numerator = value['numerator']
         history_link = ''
         if value['history_name'] and DB['settings']['show_history_link']:
-            history_link = f' [-> {value["history_name"]}]'
+            history_link = f" [-> {value['history_name']}]"
         print(f'{prefix}{display_name}{history_link}{extra_string}: {numerator}{suffix}')
 
 
@@ -213,8 +213,8 @@ def print_inactive_cycle(preview_len=None):
             remaining_cooldown = value['remaining_cooldown']
             denominator = value['denominator']
             if value['display_mode'] == 'number':
-                print(f' {display_name} (x/{denominator}): '
-                      f'Every {value["cooldown_sequence"][0]}d, next in {remaining_cooldown}d')
+                print(f" {display_name} (x/{denominator}): "
+                      f"Every {value['cooldown_sequence'][0]}d, next in {remaining_cooldown}d")
             else:  # == 'week_day'
                 print(f' {display_name} (x/{denominator}): '
                       f'{get_cycle_sequence_string(value).capitalize()}, next in {remaining_cooldown}d')
@@ -248,7 +248,7 @@ def print_note():
 def get_cycle_sequence_string(item_value):
     display_mode = item_value['display_mode']
     if display_mode == 'number':
-        return f'every {item_value["cooldown_sequence"][0]}d'
+        return f"every {item_value['cooldown_sequence'][0]}d"
     elif display_mode == 'week_day':
         week_cooldown = item_value['week_cooldown']
         if week_cooldown == 0:
@@ -257,7 +257,7 @@ def get_cycle_sequence_string(item_value):
             cooldown_string = 'every other'
         else:
             cooldown_string = f'every {week_cooldown + 1}'  # 2 cooldown = item occurs every 3 weeks
-        return f'{cooldown_string} [{"/".join(item_value["week_days"])}]'
+        return f"{cooldown_string} [{'/'.join(item_value['week_days'])}]"
     elif display_mode == 'custom':
         return item_value['frequency_description']
     else:

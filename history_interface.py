@@ -13,9 +13,9 @@ def launch_history_interface(dict_name):
     launch_pages_interface(pm, dict_name)
 
 
-def launch_tags_interface(item_name, dictionary):
+def launch_tags_interface(item_key, dictionary):
     keys_per_page = DB['settings']['tags_keys_per_page']
-    pm = pages.TagPages(item_name, dictionary)
+    pm = pages.TagPages(item_key, dictionary)
     pm.set_keys_per_page(keys_per_page)
     launch_pages_interface(pm, 'tags')
 
@@ -88,10 +88,10 @@ def launch_pages_interface(pm, mode):
                 pm.print_display()
                 print('Missing required arg!', end='\n\n')
                 continue
-            item_name = user_input[1]
+            item_key = user_input[1]
             item_index = 0
             for key in pm.keys:
-                if key.startswith(item_name):
+                if key.startswith(item_key):
                     break
                 item_index += 1
             if item_index == pm.total_keys:  # If loop went through all and found nothing
@@ -106,15 +106,15 @@ def launch_pages_interface(pm, mode):
             # ex input: tags itemname
 
             print()  # Newline to separate input from print
-            item_name = ' '.join(user_input[1:])
+            item_key = ' '.join(user_input[1:])
             history_auto_match = DB['settings']['history_auto_match']
-            if not (item_name := dict_management.key_search(pm.dictionary, item_name,
-                                                            force_manual_match=history_auto_match)):
+            if not (item_key := dict_management.key_search(pm.dictionary, item_key,
+                                                           force_manual_match=history_auto_match)):
                 pm.print_display()
                 print('Item could not be found', end='\n\n')
                 continue
-            tags = pm.dictionary[item_name]['tags']
-            launch_tags_interface(item_name, tags)
+            tags = pm.dictionary[item_key]['tags']
+            launch_tags_interface(item_key, tags)
             pm.print_display()
 
         # Misc commands/not found --------------------------------------------------------------------------------------

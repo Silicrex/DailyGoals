@@ -136,12 +136,13 @@ class CounterPages(HistoryPages):
 
 
 class TagPages(Pages):
-    def __init__(self, item_name, dictionary):
-        self.item_name = item_name
+    def __init__(self, item_key, dictionary):
+        self.item_key = item_key
         super().__init__(dictionary)
 
     def print_header(self):
-        print(f"Viewing the tags of [{self.item_name}]\n"
+        item_name = self.dictionary[self.item_key]['display_name']
+        print(f"Viewing the tags of [{item_name}]\n"
               f"Normal commands will not work until interface is exited (enter blank or 'exit')\n"
               f"'help' for help", end='\n\n')
 

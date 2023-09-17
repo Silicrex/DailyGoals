@@ -86,17 +86,16 @@ def key_search(dictionary, input_string, *, force_manual_match=False, ignore_lis
     return False
 
 
-def update_item(dict_name, item_name, update_value, *, chaining=True, depth=1):
+def update_item(dict_name, item_key, update_value, *, chaining=True):
     """
     :param dict_name:
-    :param item_name:
+    :param item_key:
     :param update_value:
     :param chaining: Used to indicate if a link should trigger a subsequent link
-    :param depth: Used to track the update depth for linked updates
     :return: None
     """
     dictionary = DB[dict_name]
-    item = dictionary[item_name]
+    item = dictionary[item_key]
     item['numerator'] += update_value
 
     # If counter, check if history values need updating
@@ -115,51 +114,49 @@ def update_item(dict_name, item_name, update_value, *, chaining=True, depth=1):
     if linked_to and chaining:
         linked_dict_name = linked_to[0]
         linked_dict = DB[linked_dict_name]
-        linked_item_name = linked_to[1]
-        assert linked_item_name in linked_dict  # Shouldn't be possible to return False
-        depth = update_item(linked_dict_name, linked_item_name, update_value,
-                            chaining=link['chaining'], depth=depth+1)
-    return depth
+        linked_item_key = linked_to[1]
+        assert linked_item_key in linked_dict  # Shouldn't be possible to return False
+        update_item(linked_dict_name, linked_item_key, update_value, chaining=link['chaining'])
 
 
-def complete_item(dict_name, item_name):
+def complete_item(dict_name, item_key):
     dictionary = DB[dict_name]
-    item = dictionary[item_name]
+    item = dictionary[item_key]
     current_value = item['numerator']
     difference = item['denominator'] - current_value  # Used to make handling links easier
     if difference <= 0:  # Should not be decreasing anything
         refresh_display('Item is already marked as complete!')
         return
-    update_item(dict_name, item_name, difference)
+    update_item(dict_name, item_key, difference)
 
 
-def reset_item(dict_name, item_name):
+def reset_item(dict_name, item_key):
     dictionary = DB[dict_name]
-    item = dictionary[item_name]
+    item = dictionary[item_key]
     current_value = item['numerator']
     difference = 0 - current_value  # Used to make handling links easier
     if difference == 0:
         refresh_display('Item already has no progress!')
         return
-    update_item(dict_name, item_name, difference)
+    update_item(dict_name, item_key, difference)
 
 
-def remove_item(dict_name, item_name):
+def remove_item(dict_name, item_key):
     dictionary = DB[dict_name]
-    item = dictionary[item_name]
+    item = dictionary[item_key]
     linked_to = item['link']['linked_to']
     linked_from = item['link']['linked_from']
 
     # Handle links
     if linked_to:  # Remove from linked item's linked_from
-        remove_from_linked_from(dict_name, item_name)
+        remove_from_linked_from(dict_name, item_key)
     if linked_from:  # If any items link to this one, remove it from their linked_to
-        remove_from_linked_to(dict_name, item_name)
+        remove_from_linked_to(dict_name, item_key)
 
     # Handle groups
-    remove_from_groups(dict_name, item_name)
+    remove_from_groups(dict_name, item_key)
 
-    dictionary.pop(item_name)
+    dictionary.pop(item_key)
 
 
 def get_daily_count():
@@ -249,9 +246,9 @@ def create_counter_history(history_name):
 def get_link_chain(origin, next_link):
     """Gets a list of the link sequence produced if given items are linked.
 
-    :param list origin: Starting point [dict_name, item_name, chaining]
-    :param list next_link: Proposed new link [dict_name, item_name, chaining]
-    :return: List of lists [dict_name, item_name, chaining] in order of the link sequence.
+    :param list origin: Starting point [dict_name, item_key, chaining]
+    :param list next_link: Proposed new link [dict_name, item_key, chaining]
+    :return: List of lists [dict_name, item_key, chaining] in order of the link sequence.
     If link is circular, chain ends with origin being reached again
     """
     chain = [origin]  # Initialize chain list
@@ -278,63 +275,63 @@ def format_link_chain(link_chain):
     # ex: (Daily) itemname -> (Optional) Extra work
     res = []
     for link in link_chain:
-        dict_name, item_name, chaining = link
+        dict_name, item_key, chaining = link
         if chaining:
-            res.append(f'({dict_name.capitalize()}) {item_name}')
+            res.append(f'({dict_name.capitalize()}) {item_key}')
         else:
-            res.append(f'({dict_name.capitalize()}; no chaining) {item_name}')
+            res.append(f'({dict_name.capitalize()}; no chaining) {item_key}')
     return ' -> '.join(res)
 
 
-def remove_from_linked_to(dict_name, item_name):
+def remove_from_linked_to(dict_name, item_key):
     """For a given item with a link to it, remove it from the linked_to section of the items which link to it
 
     :param dict_name: Dict name of the item being removed
-    :param item_name: Name of the item being removed
+    :param item_key: Name of the item being removed
     :return: None
     """
-    linked_from = DB[dict_name][item_name]['link']['linked_from']
-    for pair in linked_from:  # pair = [linked_dict_name, linked_item_name]
+    linked_from = DB[dict_name][item_key]['link']['linked_from']
+    for pair in linked_from:  # pair = [linked_dict_name, linked_item_key]
         DB[pair[0]][pair[1]]['link']['linked_to'] = []
 
 
-def rename_linked_to(dict_name, item_name, rename_value):
+def rename_linked_to(dict_name, item_key, rename_value):
     """For a given item with a link to it, rename it in the linked_to section of the items which link to it
 
     :param dict_name: Dict name of the item being renamed
-    :param item_name: Name of the item being renamed
+    :param item_key: Name of the item being renamed
     :param rename_value: What it is being renamed to
     :return: None
     """
-    linked_from = DB[dict_name][item_name]['link']['linked_from']
-    for pair in linked_from:  # pair = [linked_dict_name, linked_item_name]
+    linked_from = DB[dict_name][item_key]['link']['linked_from']
+    for pair in linked_from:  # pair = [linked_dict_name, linked_item_key]
         DB[pair[0]][pair[1]]['link']['linked_to'][1] = rename_value
 
 
-def remove_from_linked_from(dict_name, item_name):
+def remove_from_linked_from(dict_name, item_key):
     """For a given item with an outward link, remove it from the linked_from section of the item it links to
 
     :param dict_name: Dict name of the item being removed
-    :param item_name: Name of the item being removed
+    :param item_key: Name of the item being removed
     :return:
     """
-    linked_to = DB[dict_name][item_name]['link']['linked_to']
+    linked_to = DB[dict_name][item_key]['link']['linked_to']
     foreign_linked_from = DB[linked_to[0]][linked_to[1]]['link']['linked_from']
-    foreign_linked_from.remove([dict_name, item_name])
+    foreign_linked_from.remove([dict_name, item_key])
 
 
-def rename_linked_from(dict_name, item_name, rename_value):
+def rename_linked_from(dict_name, item_key, rename_value):
     """For a given item with an outward link, rename it in the linked_from section of the item it links to
 
     :param dict_name: Dict name of the item being renamed
-    :param item_name: Name of the item being renamed
+    :param item_key: Name of the item being renamed
     :param rename_value: What it is being renamed to
     :return:
     """
-    linked_to = DB[dict_name][item_name]['link']['linked_to']
+    linked_to = DB[dict_name][item_key]['link']['linked_to']
     foreign_linked_from = DB[linked_to[0]][linked_to[1]]['link']['linked_from']
     for pair in foreign_linked_from:
-        if pair == [dict_name, item_name]:
+        if pair == [dict_name, item_key]:
             pair[1] = rename_value
             return
 
@@ -421,8 +418,8 @@ def delete_dictionary(mode):
         if not confirm(f"> Are you sure you'd like to delete ALL {mode} items ({total_items_to_remove})? (y/n)"):
             refresh_display('Cancelled')
             return False
-        for item_name in dictionary:
-            remove_item(mode, item_name)
+        for item_key in dictionary:
+            remove_item(mode, item_key)
         return True
 
 
